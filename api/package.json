@@ -1,0 +1,20 @@
+{
+  "name": "@nillion/api",
+  "private": true,
+  "version": "0.1.0-rc.0",
+  "repository": "https://github.com/NillionNetwork/nil-db",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx --experimental-vm-modules --no-warnings src/main.ts",
+    "test": "jest"
+  },
+  "dependencies": {
+    "debug": "^4.3.7",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@jest/globals": "^29.7.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5"
+  }
+}
