@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "debug": "^4.3.7",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "fastify": "^5.0.0"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
