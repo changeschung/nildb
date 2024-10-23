@@ -1,7 +1,7 @@
-import { describe, expect, it } from "@jest/globals"
+import { describe, expect, test } from "bun:test"
 
 describe("api", () => {
-  it("is alive", () => {
-    expect(true).toBeTruthy()
+  test("is alive", () => {
+    expect(1).toBe(1)
   })
 })

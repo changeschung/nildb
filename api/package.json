@@ -5,17 +5,13 @@
   "repository": "https://github.com/NillionNetwork/nil-db",
   "type": "module",
   "scripts": {
-    "start": "tsx --experimental-vm-modules --no-warnings src/main.ts",
-    "test": "jest"
+    "dev": "tsx --experimental-vm-modules --no-warnings src/dev-main.ts",
+    "start": "bun run src/main.ts",
+    "test": "bun test"
   },
   "dependencies": {
-    "debug": "^4.3.7",
+    "@hono/node-server": "^1.13.2",
     "dotenv": "^16.4.5",
-    "fastify": "^5.0.0"
-  },
-  "devDependencies": {
-    "@jest/globals": "^29.7.0",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.2.5"
+    "hono": "^4.6.6"
   }
 }
