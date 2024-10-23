@@ -1,6 +1,4 @@
-function main(): void {
-  const name = "api"
-  console.log("Hi, I'm ", name, " at your service!")
-}
+import { buildApp } from "@nillion/api/build"
 
-main()
+// biome-ignore lint: bun runtime expects the server as a default export
+export default buildApp()

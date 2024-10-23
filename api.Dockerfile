@@ -1,8 +1,6 @@
-FROM node:23-alpine
-WORKDIR /app
+FROM oven/bun:1
+WORKDIR /usr/src/app
 COPY . .
-RUN npm ci
-
-USER node
-EXPOSE 8080
-CMD ["npm", "-w", "@nillion/api", "start"]
+RUN LEFTHOOK=0 bun install --frozen-lockfile
+USER bun
+ENTRYPOINT [ "bun", "--filter", "@nillion/api", "start" ]

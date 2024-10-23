@@ -4,6 +4,8 @@
   "compilerOptions": {
     "lib": ["es2023"],
     "noEmit": true,
+    "module": "ESNext",
+    "target": "ESNext",
 
     "strict": true,
     "esModuleInterop": true,
