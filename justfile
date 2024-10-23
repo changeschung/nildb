@@ -11,3 +11,7 @@ update-deps:
   set -uxo pipefail
   npx npm-check-updates -u --workspaces --root
   npm installnp
+
+test-api:
+  #!/usr/bin/env bash
+  npm -w @nillion/api test -- --coverage
