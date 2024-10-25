@@ -1,4 +1,4 @@
-import { RuleConfigSeverity, type UserConfig } from "@commitlint/types"
+import { RuleConfigSeverity, type UserConfig } from "@commitlint/types";
 
 const config: UserConfig = {
   extends: ["@commitlint/config-conventional"],
@@ -9,7 +9,7 @@ const config: UserConfig = {
       Number.POSITIVE_INFINITY,
     ],
   },
-}
+};
 
 // biome-ignore lint/style/noDefaultExport: commitlint requires default export
-export default config
+export default config;

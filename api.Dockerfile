@@ -1,6 +1,9 @@
-FROM oven/bun:1
-WORKDIR /usr/src/app
+FROM node:23-alpine
+
+WORKDIR /app
 COPY . .
-RUN LEFTHOOK=0 bun install --frozen-lockfile
-USER bun
-ENTRYPOINT [ "bun", "--filter", "@nillion/api", "start" ]
+RUN LEFTHOOK=0 pnpm install
+
+USER node
+EXPOSE 8080
+ENTRYPOINT [ "pnpm", "run", "start" ]

@@ -23,16 +23,23 @@
       "all": true,
       "correctness": {
         "all": true,
-        "noUndeclaredDependencies": {
-          "level": "off"
-        }
+        "noUndeclaredDependencies": "off",
+        "useImportExtensions": "off",
+        "noNodejsModules": "off"
+      },
+      "style": {
+        "all": true,
+        "noNonNullAssertion": "off",
+        "useNamingConvention": "off"
+      },
+      "suspicious": {
+        "all": false
       }
     }
   },
   "javascript": {
     "formatter": {
       "quoteStyle": "double",
-      "semicolons": "asNeeded",
       "trailingCommas": "all"
     }
   }

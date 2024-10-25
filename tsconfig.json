@@ -11,10 +11,11 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "moduleResolution": "node",
+    "resolveJsonModule": true,
 
     "baseUrl": ".",
     "paths": {
-      "@nillion/api/*": ["api/src/*"]
+      "#/*": ["src/*"]
     }
   }
 }

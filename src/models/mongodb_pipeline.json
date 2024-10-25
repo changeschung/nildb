@@ -1,0 +1,124 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "Schema for MongoDB aggregation pipeline array",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "oneOf": [
+      {
+        "required": ["$match"],
+        "properties": {
+          "$match": { "type": "object" }
+        },
+        "additionalProperties": false
+      },
+      {
+        "required": ["$group"],
+        "properties": {
+          "$group": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "oneOf": [
+                  { "type": "string" },
+                  { "type": "object" },
+                  { "type": "null" }
+                ]
+              }
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "required": ["$sort"],
+        "properties": {
+          "$sort": {
+            "type": "object",
+            "patternProperties": {
+              "^.*$": {
+                "enum": [1, -1]
+              }
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "required": ["$limit"],
+        "properties": {
+          "$limit": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "required": ["$skip"],
+        "properties": {
+          "$skip": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "required": ["$project"],
+        "properties": {
+          "$project": {
+            "type": "object",
+            "patternProperties": {
+              "^.*$": {
+                "oneOf": [
+                  { "type": "integer", "enum": [0, 1] },
+                  { "type": "object" },
+                  { "type": "boolean" }
+                ]
+              }
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "required": ["$lookup"],
+        "properties": {
+          "$lookup": {
+            "type": "object",
+            "required": ["from", "localField", "foreignField", "as"],
+            "properties": {
+              "from": { "type": "string" },
+              "localField": { "type": "string" },
+              "foreignField": { "type": "string" },
+              "as": { "type": "string" }
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "required": ["$unwind"],
+        "properties": {
+          "$unwind": {
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "object",
+                "properties": {
+                  "path": { "type": "string" },
+                  "preserveNullAndEmptyArrays": { "type": "boolean" }
+                },
+                "required": ["path"]
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    ],
+    "minProperties": 1
+  },
+  "minItems": 1
+}

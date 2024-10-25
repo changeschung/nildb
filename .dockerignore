@@ -1,7 +1,6 @@
 **/node_modules
 README.md
-.husky
 .idea
 .vscode
 .github
-api/tests
+tests
