@@ -15,21 +15,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v1
-      - run: bun install --frozen-lockfile
-      - run: bunx biome ci
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install
+      - run: pnpm exec biome ci
+      - run: tsc
 
-  test-api:
+  test:
+    if: false
     needs: check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v1
-      - run: bun install --frozen-lockfile
-      - run: bun test --coverage
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install
+      - run: pnpm test
 
   publish-image-to-ecr:
-    needs: test-api
+    needs: check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

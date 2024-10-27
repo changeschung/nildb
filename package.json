@@ -5,7 +5,6 @@
   "repository": "https://github.com/NillionNetwork/nil-db",
   "type": "module",
   "scripts": {
-    "dev": "tsx src/main.ts",
     "start": "tsx src/main.ts",
     "test": "vitest test",
     "install-hooks": "lefthook install"
