@@ -16,6 +16,7 @@ import { handleGenerateApiKey } from "#/handlers/handle-generate-api-key";
 import { handleHealthCheck } from "#/handlers/handle-health-check";
 import { handleListOrgs } from "#/handlers/handle-list-orgs";
 import { handleListSchemas } from "#/handlers/handle-list-schemas";
+import { handleOpenApi } from "#/handlers/handle-openapi";
 import { handleRunQuery } from "#/handlers/handle-run-query";
 import { handleUploadData } from "#/handlers/handle-upload-data";
 import { handleUserLogin } from "#/handlers/handle-user-login";
@@ -58,6 +59,7 @@ export function buildApp(
   app.use(logging(variables));
 
   handleHealthCheck(app, "/health");
+  handleOpenApi(app, "/openapi");
   handleUserLogin(app, "/api/v1/auth/login");
 
   app.use("*", jwt({ secret: bindings.jwtSecret }));
