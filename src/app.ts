@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { jwt } from "hono/jwt";
 import type { MongoClient } from "mongodb";
@@ -57,6 +58,8 @@ export function buildApp(
   });
 
   app.use(logging(variables));
+
+  app.use("/api/*", cors());
 
   handleHealthCheck(app, "/health");
   handleOpenApi(app, "/openapi");
