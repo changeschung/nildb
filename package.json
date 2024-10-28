@@ -1,7 +1,7 @@
 {
   "name": "@nillion/api",
   "private": true,
-  "version": "0.1.0-rc.0",
+  "version": "0.1.0-rc.1",
   "repository": "https://github.com/NillionNetwork/nil-db",
   "type": "module",
   "scripts": {
@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.13.2",
+    "@hono/swagger-ui": "^0.4.1",
     "@hono/zod-validator": "^0.4.1",
     "ajv": "^8.17.1",
     "argon2": "^0.41.1",
@@ -22,6 +23,7 @@
     "nanoid": "^5.0.7",
     "pino": "^9.5.0",
     "pino-pretty": "^11.3.0",
+    "tsx": "^4.19.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -32,7 +34,6 @@
     "@faker-js/faker": "^9.0.3",
     "@testcontainers/mongodb": "^10.13.2",
     "lefthook": "^1.8.0",
-    "tsx": "^4.19.2",
     "typescript": "^5.6.3",
     "vite": "^5.4.10",
     "vite-tsconfig-paths": "^5.0.1",

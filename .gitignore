@@ -2,6 +2,7 @@
 .idea
 .vscode
 .env
+.husky
 
 node_modules
 dist
