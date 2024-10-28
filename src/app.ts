@@ -57,7 +57,7 @@ export function buildApp(
     await next();
   });
 
-  app.use(logging(variables));
+  app.use(logging());
 
   app.use("/api/*", cors());
 
