@@ -44,6 +44,9 @@ importers:
       pino-pretty:
         specifier: ^11.3.0
         version: 11.3.0
+      tsx:
+        specifier: ^4.19.2
+        version: 4.19.2
       zod:
         specifier: ^3.23.8
         version: 3.23.8
@@ -69,9 +72,6 @@ importers:
       lefthook:
         specifier: ^1.8.0
         version: 1.8.1
-      tsx:
-        specifier: ^4.19.2
-        version: 4.19.2
       typescript:
         specifier: ^5.6.3
         version: 5.6.3
