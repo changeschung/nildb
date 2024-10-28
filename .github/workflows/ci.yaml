@@ -15,21 +15,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v1
-      - run: bun install --frozen-lockfile
-      - run: bunx biome ci
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "23"
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install
+      - run: pnpm exec biome ci
+      - run: tsc
 
-  test-api:
+  test:
     needs: check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v1
-      - run: bun install --frozen-lockfile
-      - run: bun test --coverage
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "23"
+      - uses: pnpm/action-setup@v4
+      - uses: supercharge/mongodb-github-action@1.11.0
+        with:
+          mongodb-version: "8.0"
+      - run: pnpm install
+      - run: pnpm test
 
   publish-image-to-ecr:
-    needs: test-api
+    needs: check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,10 +63,10 @@ jobs:
           ECR_REPOSITORY: datablocks-api
           IMAGE_TAG_SHA: ${{ github.sha }}
         run: |
-          IMAGE_TAG_VERSION=$(cat api/package.json | jq -r .version)
+          IMAGE_TAG_VERSION=$(cat package.json | jq -r .version)
           docker build \
             --push \
-            -f api.Dockerfile \
+            -f Dockerfile \
             -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG_SHA} \
             -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG_VERSION} \
             .
