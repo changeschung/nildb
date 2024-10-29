@@ -1,124 +1,165 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "description": "Schema for MongoDB aggregation pipeline array",
+  "title": "MongoDB Aggregation Pipeline Schema",
+  "description": "Schema for validating MongoDB aggregation pipeline stages",
   "type": "array",
   "items": {
     "type": "object",
     "oneOf": [
       {
+        "properties": {
+          "$match": {
+            "type": "object"
+          }
+        },
         "required": ["$match"],
-        "properties": {
-          "$match": { "type": "object" }
-        },
         "additionalProperties": false
       },
       {
-        "required": ["$group"],
-        "properties": {
-          "$group": {
-            "type": "object",
-            "properties": {
-              "_id": {
-                "oneOf": [
-                  { "type": "string" },
-                  { "type": "object" },
-                  { "type": "null" }
-                ]
-              }
-            }
-          }
-        },
-        "additionalProperties": false
-      },
-      {
-        "required": ["$sort"],
-        "properties": {
-          "$sort": {
-            "type": "object",
-            "patternProperties": {
-              "^.*$": {
-                "enum": [1, -1]
-              }
-            }
-          }
-        },
-        "additionalProperties": false
-      },
-      {
-        "required": ["$limit"],
-        "properties": {
-          "$limit": {
-            "type": "integer",
-            "minimum": 1
-          }
-        },
-        "additionalProperties": false
-      },
-      {
-        "required": ["$skip"],
-        "properties": {
-          "$skip": {
-            "type": "integer",
-            "minimum": 0
-          }
-        },
-        "additionalProperties": false
-      },
-      {
-        "required": ["$project"],
-        "properties": {
-          "$project": {
-            "type": "object",
-            "patternProperties": {
-              "^.*$": {
-                "oneOf": [
-                  { "type": "integer", "enum": [0, 1] },
-                  { "type": "object" },
-                  { "type": "boolean" }
-                ]
-              }
-            }
-          }
-        },
-        "additionalProperties": false
-      },
-      {
-        "required": ["$lookup"],
         "properties": {
           "$lookup": {
-            "type": "object",
-            "required": ["from", "localField", "foreignField", "as"],
-            "properties": {
-              "from": { "type": "string" },
-              "localField": { "type": "string" },
-              "foreignField": { "type": "string" },
-              "as": { "type": "string" }
-            }
+            "type": "object"
           }
         },
+        "required": ["$lookup"],
         "additionalProperties": false
       },
       {
-        "required": ["$unwind"],
         "properties": {
-          "$unwind": {
-            "oneOf": [
-              { "type": "string" },
-              {
-                "type": "object",
-                "properties": {
-                  "path": { "type": "string" },
-                  "preserveNullAndEmptyArrays": { "type": "boolean" }
-                },
-                "required": ["path"]
-              }
-            ]
+          "$project": {
+            "type": "object"
           }
         },
+        "required": ["$project"],
+        "additionalProperties": false
+      },
+      {
+        "properties": {
+          "$group": {
+            "type": "object"
+          }
+        },
+        "required": ["$group"],
+        "additionalProperties": false
+      },
+      {
+        "properties": {
+          "$sort": {
+            "type": "object"
+          }
+        },
+        "required": ["$sort"],
+        "additionalProperties": false
+      },
+      {
+        "properties": {
+          "$limit": {
+            "type": "number"
+          }
+        },
+        "required": ["$limit"],
+        "additionalProperties": false
+      },
+      {
+        "properties": {
+          "$skip": {
+            "type": "number"
+          }
+        },
+        "required": ["$skip"],
+        "additionalProperties": false
+      },
+      {
+        "properties": {
+          "$unwind": {
+            "oneOf": [{ "type": "string" }, { "type": "object" }]
+          }
+        },
+        "required": ["$unwind"],
+        "additionalProperties": false
+      },
+      {
+        "properties": {
+          "$addFields": {
+            "type": "object"
+          }
+        },
+        "required": ["$addFields"],
+        "additionalProperties": false
+      },
+      {
+        "properties": {
+          "$count": {
+            "type": "string"
+          }
+        },
+        "required": ["$count"],
+        "additionalProperties": false
+      },
+      {
+        "properties": {
+          "$replaceRoot": {
+            "type": "object"
+          }
+        },
+        "required": ["$replaceRoot"],
+        "additionalProperties": false
+      },
+      {
+        "properties": {
+          "$facet": {
+            "type": "object"
+          }
+        },
+        "required": ["$facet"],
+        "additionalProperties": false
+      },
+      {
+        "properties": {
+          "$bucket": {
+            "type": "object"
+          }
+        },
+        "required": ["$bucket"],
+        "additionalProperties": false
+      },
+      {
+        "properties": {
+          "$bucketAuto": {
+            "type": "object"
+          }
+        },
+        "required": ["$bucketAuto"],
+        "additionalProperties": false
+      },
+      {
+        "properties": {
+          "$sortByCount": {
+            "oneOf": [{ "type": "string" }, { "type": "object" }]
+          }
+        },
+        "required": ["$sortByCount"],
+        "additionalProperties": false
+      },
+      {
+        "properties": {
+          "$merge": {
+            "type": "object"
+          }
+        },
+        "required": ["$merge"],
+        "additionalProperties": false
+      },
+      {
+        "properties": {
+          "$out": {
+            "oneOf": [{ "type": "string" }, { "type": "object" }]
+          }
+        },
+        "required": ["$out"],
         "additionalProperties": false
       }
-    ],
-    "minProperties": 1
+    ]
   },
   "minItems": 1
 }

@@ -137,17 +137,6 @@ components:
     AddSchemaRequest:
       type: object
       required:
-        - schemaName
-        - schema
-      properties:
-        schemaName:
-          type: string
-        schema:
-          type: object
-
-    DeleteSchemaRequest:
-      type: object
-      required:
         - primaryKeys
         - schema
       properties:
@@ -157,6 +146,14 @@ components:
             type: string
         schema:
           type: object
+
+    DeleteSchemaRequest:
+      type: object
+      required:
+        - schemaName
+      properties:
+        schemaName:
+          type: string
 
     SchemaResponse:
       type: object
