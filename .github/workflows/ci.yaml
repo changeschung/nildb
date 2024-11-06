@@ -36,7 +36,11 @@ jobs:
         with:
           mongodb-version: "8.0"
       - run: pnpm install
-      - run: pnpm test
+      - run: pnpm vitest --coverage
+      - uses: davelosert/vitest-coverage-report-action@v2
+        if: always()
+        with:
+          comment-on: "pr"
 
   publish-image-to-ecr:
     needs: check
