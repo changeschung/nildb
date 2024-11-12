@@ -1,16 +1,15 @@
 pre-commit:
   commands:
-    biome-check:
-      glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
-      run: pnpm exec biome check --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off {staged_files}
-      stage_fixed: true
-    tsc-check:
-      glob: "*.{ts,tsx}"
-      run: pnpm exec tsc
+    biome-format:
+      glob: "*.{ts,json,jsonc}"
+      run: pnpm exec biome format --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off {staged_files}
       stage_fixed: true
 
 pre-push:
   commands:
-    check:
-      glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
+    biome-check:
+      glob: "*.{ts,json,jsonc}"
       run: pnpm biome check --no-errors-on-unmatched --files-ignore-unknown=true --colors=off {push_files}
+    tsc-check:
+      glob: "*.{ts}"
+      run: pnpm exec tsc
