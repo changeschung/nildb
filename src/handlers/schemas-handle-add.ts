@@ -8,6 +8,7 @@ import { DataRepository } from "#/models/data";
 import type { SchemaBase } from "#/models/schemas";
 import { Uuid, type UuidDto } from "#/types";
 import { type Handler, foldToApiResponse } from "./handler";
+import addFormats from "ajv-formats";
 
 export const AddSchemaRequest = z.object({
   org: Uuid,
@@ -45,6 +46,7 @@ export function schemasHandleAdd(
       E.flatMap((request) => {
         try {
           const ajv = new Ajv({ strict: false });
+          addFormats(ajv)
           // Compile throws on invalid schemas
           ajv.compile(request.schema);
           return E.succeed(request);
