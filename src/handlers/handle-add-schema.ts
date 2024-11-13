@@ -12,6 +12,7 @@ import { createShortId, findRootError } from "#/utils";
 
 export const OrgSchemaRegistration = z.object({
   primaryKeys: z.array(z.string()),
+  // TODO type this as Record<string | number | boolean, JSON>
   schema: z.record(z.unknown()),
 });
 export type OrgSchemaRegistration = z.infer<typeof OrgSchemaRegistration>;

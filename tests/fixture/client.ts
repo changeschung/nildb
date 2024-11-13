@@ -26,7 +26,7 @@ import type {
 } from "#/handlers/handle-run-query";
 import type { UploadDataPath } from "#/handlers/handle-upload-data";
 import type { UserLoginPath } from "#/handlers/handle-user-login";
-import type { OrgDocument, OrgQuery } from "#/models/orgs";
+import type { FlattenedOrgSchema, OrgDocument, OrgQuery } from "#/models/orgs";
 import type { UserDocument } from "#/models/users";
 
 export type TestClientOptions = {
@@ -170,14 +170,14 @@ export class TestClient {
     return body as { token: string };
   }
 
-  async listSchemas(): Promise<{ data: [string, string][] }> {
+  async listSchemas(): Promise<{ data: FlattenedOrgSchema[] }> {
     const path: ListSchemasPath = `${apiV1}/orgs/schemas`;
     const response = await this.app.request(path, {
       headers: { authorization: `Bearer ${this.jwt}` },
     });
 
     const body = await response.json();
-    return body as { data: [string, string][] };
+    return body as { data: FlattenedOrgSchema[] };
   }
 
   async addSchema(body: string): Promise<string> {

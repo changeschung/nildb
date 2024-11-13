@@ -30,10 +30,15 @@ export function handleUploadData(
       E.flatMap(({ orgId, reqBody }) =>
         E.tryPromise(async () => {
           const schemas = await listOrgSchemas(orgId).pipe(E.runPromise);
-          const record = schemas.find((s) => s.id === reqBody.schemaName)!;
-          const schema = JSON.parse(record.schema);
+
+          const schemaWithId = schemas.find((s) => s.id === reqBody.schemaName);
+
+          if (!schemaWithId) {
+            throw new Error(`Failed to find schema ${reqBody.schemaName}`);
+          }
+
           const ajv = new Ajv({ strict: "log" });
-          const validator = ajv.compile(schema);
+          const validator = ajv.compile(schemaWithId.schema);
 
           const valid = validator(reqBody.data);
 

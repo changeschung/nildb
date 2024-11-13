@@ -1,6 +1,10 @@
 import { Effect as E, pipe } from "effect";
 import type { MongoClient } from "mongodb";
-import { type OrgDocument, OrgDocumentModel } from "#/models/orgs";
+import {
+  type FlattenedOrgSchema,
+  type OrgDocument,
+  OrgDocumentModel,
+} from "#/models/orgs";
 
 export function addOrgSchemaRecord(
   orgId: string,
@@ -13,7 +17,7 @@ export function addOrgSchemaRecord(
         { _id: orgId },
         {
           $set: {
-            [`schemas.${schemaName}`]: JSON.stringify(schema),
+            [`schemas.${schemaName}`]: schema,
           },
         },
       ),
@@ -107,26 +111,57 @@ export function removeOrgSchemaCollection(
   );
 }
 
+type SchemaProjection = {
+  schemas: Record<string, JsonObject>;
+};
+
 export function listOrgSchemas(
   orgId: string,
-): E.Effect<{ id: string; schema: string }[], Error> {
+): E.Effect<Record<SchemaName, JsonObject>, Error> {
   return pipe(
     E.tryPromise(() => {
-      return OrgDocumentModel.findById(orgId);
+      return OrgDocumentModel.findById(orgId, {
+        schemas: 1,
+      }).lean<SchemaProjection>();
     }),
     E.flatMap((doc) =>
-      doc
-        ? E.succeed(doc.toObject().schemas)
+      doc?.schemas
+        ? E.succeed(doc.schemas)
         : E.fail(new Error(`Failed to find orgs/${orgId}`)),
     ),
-    E.mapError((cause) => new Error(`Failed to find orgs/${orgId}`, { cause })),
-    E.map((schemas) =>
-      Array.from(schemas.entries()).map(([id, schema]) => {
-        return {
-          id,
-          schema,
-        };
-      }),
+    E.mapError((cause) =>
+      cause instanceof UnknownException
+        ? cause
+        : new Error(`Failed to find orgs/${orgId}`, { cause }),
+    ),
+  );
+}
+
+export function findOrgSchemaById(
+  orgId: string,
+  schemaId: string,
+): E.Effect<JsonObject, Error> {
+  return pipe(
+    E.tryPromise(() => {
+      return OrgDocumentModel.findOne(
+        {
+          _id: orgId,
+          [`schemas.${schemaId}`]: { $exists: true },
+        },
+        {
+          [`schemas.${schemaId}`]: 1,
+        },
+      ).lean<SchemaProjection>();
+    }),
+    E.flatMap((doc) =>
+      doc?.schemas[schemaId]
+        ? E.succeed(doc.schemas[schemaId])
+        : E.fail(new Error(`Failed to find orgs/${orgId}/schemas/${schemaId}`)),
+    ),
+    E.mapError((cause) =>
+      cause instanceof UnknownException
+        ? cause
+        : new Error(`Failed to find orgs/${orgId}`, { cause }),
     ),
   );
 }
