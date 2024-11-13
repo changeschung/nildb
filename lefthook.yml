@@ -4,6 +4,8 @@ pre-commit:
       glob: "*.{ts,json,jsonc}"
       run: pnpm exec biome format --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off {staged_files}
       stage_fixed: true
+    commitlint:
+      run: pnpm commitlint --edit $1
 
 pre-push:
   commands:
