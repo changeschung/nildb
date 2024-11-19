@@ -1,39 +1,26 @@
 import type { Hono } from "hono";
 import pino from "pino";
 import type { AppEnv } from "#/app";
-import type { AddQueryPath } from "#/handlers/handle-add-query";
-import type { AddSchemaPath } from "#/handlers/handle-add-schema";
-import type {
-  CreateOrgPath,
-  CreateOrgReqBody,
-} from "#/handlers/handle-create-org";
-import type {
-  CreateUserPath,
-  CreateUserReqBody,
-} from "#/handlers/handle-create-user";
-import type { DeleteOrgPath } from "#/handlers/handle-delete-org";
-import type { DeleteQueryPath } from "#/handlers/handle-delete-query";
-import type { DeleteSchemaPath } from "#/handlers/handle-delete-schema";
-import type { DeleteUserPath } from "#/handlers/handle-delete-user";
-import type { GenerateOrgApiKeyPath } from "#/handlers/handle-generate-api-key";
-import type { HealthCheckPath } from "#/handlers/handle-health-check";
-import type { ListOrgsPath } from "#/handlers/handle-list-orgs";
-import type { ListQueriesPath } from "#/handlers/handle-list-queries";
-import type { ListSchemasPath } from "#/handlers/handle-list-schemas";
-import type {
-  RunQueryPath,
-  RunQueryResBody,
-} from "#/handlers/handle-run-query";
-import type { UploadDataPath } from "#/handlers/handle-upload-data";
-import type { UserLoginPath } from "#/handlers/handle-user-login";
-import type { FlattenedOrgSchema, OrgDocument, OrgQuery } from "#/models/orgs";
-import type { UserDocument } from "#/models/users";
+import type { HealthCheckPath } from "#/handlers/admin-handle-health-check";
+import type { AuthLoginHandler } from "#/handlers/auth-handle-login";
+import type { UploadDataHandler } from "#/handlers/data-handle-upload";
+import type { CreateOrganizationHandler } from "#/handlers/organizations-handle-create";
+import type { CreateOrganizationAccessTokenHandler } from "#/handlers/organizations-handle-create-access-token";
+import type { DeleteOrganizationHandler } from "#/handlers/organizations-handle-delete";
+import type { AddQueryHandler } from "#/handlers/queries-handle-add";
+import type { DeleteQueryHandler } from "#/handlers/queries-handle-delete";
+import type { ExecuteQueryHandler } from "#/handlers/queries-handle-execute";
+import type { ListQueriesHandler } from "#/handlers/queries-handle-list";
+import type { AddSchemaHandler } from "#/handlers/schemas-handle-add";
+import type { DeleteSchemaHandler } from "#/handlers/schemas-handle-delete";
+import type { ListSchemasHandler } from "#/handlers/schemas-handle-list";
+import type { CreateUserHandler } from "#/handlers/users-handle-create";
+import type { DeleteUserHandler } from "#/handlers/users-handle-delete";
 
 export type TestClientOptions = {
   app: Hono<AppEnv>;
   email: string;
   password: string;
-  type: "root" | "admin" | "backend";
   jwt: string;
 };
 
@@ -42,7 +29,6 @@ const apiV1 = "/api/v1";
 export class TestClient {
   _log = pino();
 
-  // biome-ignore lint:
   constructor(public _options: TestClientOptions) {}
 
   get app(): Hono<AppEnv> {
@@ -71,165 +57,181 @@ export class TestClient {
     return (await response.text()) as "OK";
   }
 
-  async login(): Promise<{ token: string }> {
-    const path: UserLoginPath = `${apiV1}/auth/login`;
+  async login(): Promise<AuthLoginHandler["response"]> {
+    const request: AuthLoginHandler["request"] = {
+      email: this._options.email,
+      password: this._options.password,
+    };
+    const path: AuthLoginHandler["path"] = `${apiV1}/auth/login`;
     const response = await this.app.request(path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: this._options.email,
-        password: this._options.password,
-      }),
+      body: JSON.stringify(request),
     });
 
     const body = await response.json();
-    return body as { token: string };
+    return body as AuthLoginHandler["response"];
   }
 
-  async createUser(user: CreateUserReqBody): Promise<{ data: UserDocument }> {
-    const path: CreateUserPath = `${apiV1}/users`;
+  async createUser(
+    request: CreateUserHandler["request"],
+  ): Promise<CreateUserHandler["response"]> {
+    const path: CreateUserHandler["path"] = `${apiV1}/users`;
     const response = await this.app.request(path, {
       method: "POST",
       headers: {
         "content-type": "application/json",
         authorization: `Bearer ${this.jwt}`,
       },
-      body: JSON.stringify(user),
+      body: JSON.stringify(request),
     });
 
     const body = await response.json();
-    return body as { data: UserDocument };
+    return body as CreateUserHandler["response"];
   }
 
-  async deleteUser(email: string): Promise<boolean> {
-    const path: DeleteUserPath = `${apiV1}/users`;
+  async deleteUser(
+    request: DeleteUserHandler["request"],
+  ): Promise<DeleteUserHandler["response"]> {
+    const path: DeleteUserHandler["path"] = `${apiV1}/users`;
     const response = await this.app.request(path, {
       method: "DELETE",
       headers: {
         authorization: `Bearer ${this.jwt}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify(request),
     });
 
-    return response.ok;
+    const body = await response.json();
+    return body as DeleteUserHandler["response"];
   }
 
-  async createOrg(reg: CreateOrgReqBody): Promise<{ data: OrgDocument }> {
-    const path: CreateOrgPath = `${apiV1}/orgs`;
+  async createOrganization(
+    request: CreateOrganizationHandler["request"],
+  ): Promise<CreateOrganizationHandler["response"]> {
+    const path: CreateOrganizationHandler["path"] = `${apiV1}/organizations`;
     const response = await this.app.request(path, {
       method: "POST",
       headers: {
         authorization: `Bearer ${this.jwt}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify(reg),
+      body: JSON.stringify(request),
     });
 
     const body = await response.json();
-    return body as { data: OrgDocument };
+    return body as CreateOrganizationHandler["response"];
   }
 
-  async deleteOrg(orgId: string): Promise<boolean> {
-    const path: DeleteOrgPath = `${apiV1}/orgs`;
+  async deleteOrganization(
+    request: DeleteOrganizationHandler["request"],
+  ): Promise<DeleteOrganizationHandler["response"]> {
+    const path: DeleteOrganizationHandler["path"] = `${apiV1}/organizations`;
     const response = await this.app.request(path, {
       method: "DELETE",
       headers: {
         authorization: `Bearer ${this.jwt}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({ orgId }),
+      body: JSON.stringify(request),
     });
 
-    return response.ok;
+    const body = await response.json();
+    return body as DeleteOrganizationHandler["response"];
   }
 
-  async listOrgs(): Promise<{ data: OrgDocument[] }> {
-    const path: ListOrgsPath = `${apiV1}/orgs`;
+  async listOrganizations(): Promise<CreateOrganizationHandler["response"]> {
+    const path: CreateOrganizationHandler["path"] = `${apiV1}/organizations`;
     const response = await this.app.request(path, {
       method: "GET",
       headers: { authorization: `Bearer ${this.jwt}` },
     });
 
     const body = await response.json();
-    return body as { data: OrgDocument[] };
+    return body as CreateOrganizationHandler["response"];
   }
 
-  async generateApiKey(orgId: string): Promise<{ token: string }> {
-    const path: GenerateOrgApiKeyPath = `${apiV1}/orgs/keys/generate`;
+  async createOrganizationAccessToken(
+    request: CreateOrganizationAccessTokenHandler["request"],
+  ): Promise<CreateOrganizationAccessTokenHandler["response"]> {
+    const path: CreateOrganizationAccessTokenHandler["path"] = `${apiV1}/organizations/access-tokens`;
     const response = await this.app.request(path, {
       method: "POST",
       headers: {
         authorization: `Bearer ${this.jwt}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({ orgId }),
+      body: JSON.stringify(request),
     });
 
     const body = await response.json();
-    return body as { token: string };
+    return body as CreateOrganizationAccessTokenHandler["response"];
   }
 
-  async listSchemas(): Promise<{ data: FlattenedOrgSchema[] }> {
-    const path: ListSchemasPath = `${apiV1}/orgs/schemas`;
+  async listSchemas(): Promise<ListSchemasHandler["response"]> {
+    const path: ListSchemasHandler["path"] = `${apiV1}/schemas`;
     const response = await this.app.request(path, {
       headers: { authorization: `Bearer ${this.jwt}` },
     });
 
     const body = await response.json();
-    return body as { data: FlattenedOrgSchema[] };
+    return body as ListSchemasHandler["response"];
   }
 
-  async addSchema(body: string): Promise<string> {
-    const path: AddSchemaPath = `${apiV1}/orgs/schemas`;
+  async addSchema(
+    request: AddSchemaHandler["request"],
+  ): Promise<AddSchemaHandler["response"]> {
+    const path: AddSchemaHandler["path"] = `${apiV1}/schemas`;
     const response = await this.app.request(path, {
       method: "POST",
       headers: {
         authorization: `Bearer ${this.jwt}`,
         "content-type": "application/json",
       },
-      body,
+      body: JSON.stringify(request),
     });
 
-    if (!response.ok) {
-      throw new Error("Add org schema request failed", { cause: response });
-    }
-    return await response.text();
+    const body = await response.json();
+    return body as AddSchemaHandler["response"];
   }
 
-  async uploadData(schemaName: string, data: unknown[]): Promise<boolean> {
-    const path: UploadDataPath = `${apiV1}/data/upload`;
+  async uploadData(
+    request: UploadDataHandler["request"],
+  ): Promise<UploadDataHandler["response"]> {
+    const path: UploadDataHandler["path"] = `${apiV1}/data`;
     const response = await this.app.request(path, {
       method: "POST",
       headers: {
         authorization: `Bearer ${this.jwt}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({
-        schemaName,
-        data,
-      }),
+      body: JSON.stringify(request),
     });
 
-    return response.ok;
+    const body = await response.json();
+    return body as UploadDataHandler["response"];
   }
 
-  async addQuery(schemaName: string, pipeline: object[]): Promise<string> {
-    const path: AddQueryPath = `${apiV1}/orgs/queries`;
+  async addQuery(
+    request: AddQueryHandler["request"],
+  ): Promise<AddQueryHandler["response"]> {
+    const path: AddQueryHandler["path"] = `${apiV1}/queries`;
     const response = await this.app.request(path, {
       method: "POST",
       headers: {
         authorization: `Bearer ${this.jwt}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({ schemaName, pipeline }),
+      body: JSON.stringify(request),
     });
 
-    return await response.text();
+    const body = await response.json();
+    return body as AddQueryHandler["response"];
   }
 
-  async listQueries(): Promise<{ data: (OrgQuery & { name: string })[] }> {
-    const path: ListQueriesPath = `${apiV1}/orgs/queries`;
+  async listQueries(): Promise<ListQueriesHandler["response"]> {
+    const path: ListQueriesHandler["path"] = `${apiV1}/queries`;
     const response = await this.app.request(path, {
       headers: {
         authorization: `Bearer ${this.jwt}`,
@@ -237,48 +239,58 @@ export class TestClient {
     });
 
     const body = await response.json();
-    return body as { data: (OrgQuery & { name: string })[] };
+    return body as ListQueriesHandler["response"];
   }
 
-  async runQuery<T>(queryName: string): Promise<RunQueryResBody<T>> {
-    const path: RunQueryPath = `${apiV1}/data/query`;
+  async executeQuery(
+    request: ExecuteQueryHandler["request"],
+  ): Promise<ExecuteQueryHandler["response"]> {
+    const path: ExecuteQueryHandler["path"] = `${apiV1}/queries/execute`;
     const response = await this.app.request(path, {
       method: "POST",
       headers: {
         authorization: `Bearer ${this.jwt}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({ queryName }),
+      body: JSON.stringify(request),
     });
 
-    return (await response.json()) as unknown as RunQueryResBody<T>;
+    const body = await response.json();
+    return body as ExecuteQueryHandler["response"];
   }
 
-  async deleteQuery(queryName: string): Promise<boolean> {
-    const path: DeleteQueryPath = `${apiV1}/orgs/queries`;
+  async deleteQuery(
+    request: DeleteQueryHandler["request"],
+  ): Promise<DeleteQueryHandler["response"]> {
+    const path: DeleteQueryHandler["path"] = `${apiV1}/queries`;
+
     const response = await this.app.request(path, {
       method: "DELETE",
       headers: {
         authorization: `Bearer ${this.jwt}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({ queryName }),
+      body: JSON.stringify(request),
     });
 
-    return response.ok;
+    const body = await response.json();
+    return body as DeleteQueryHandler["response"];
   }
 
-  async deleteSchema(schemaName: string): Promise<boolean> {
-    const path: DeleteSchemaPath = `${apiV1}/orgs/schemas`;
+  async deleteSchema(
+    request: DeleteSchemaHandler["request"],
+  ): Promise<DeleteSchemaHandler["response"]> {
+    const path: DeleteSchemaHandler["path"] = `${apiV1}/schemas`;
     const response = await this.app.request(path, {
       method: "DELETE",
       headers: {
         authorization: `Bearer ${this.jwt}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({ schemaName }),
+      body: JSON.stringify(request),
     });
 
-    return response.ok;
+    const body = await response.json();
+    return body as DeleteSchemaHandler["response"];
   }
 }

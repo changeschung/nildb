@@ -3,7 +3,7 @@ import type { AppEnv } from "#/app";
 
 export type HealthCheckPath = "/health";
 
-export function handleHealthCheck(
+export function adminHandleHealthCheck(
   app: Hono<AppEnv>,
   path: HealthCheckPath,
 ): void {
