@@ -1,20 +1,23 @@
 import { faker } from "@faker-js/faker";
+import dotenv from "dotenv";
 import { Effect as E, pipe } from "effect";
 import type { Hono } from "hono";
 import { MongoClient } from "mongodb";
-import type { Mongoose } from "mongoose";
 import { connect as createMongoose } from "mongoose";
 import pino from "pino";
 import pretty from "pino-pretty";
-import { type AppEnv, type Bindings, type Variables, buildApp } from "#/app";
-import { createUserRecord } from "#/models/users";
+import { type AppEnv, type Variables, buildApp } from "#/app";
+import { loadEnv } from "#/env";
+import { createLogger } from "#/logging";
+import { UsersRepository } from "#/models";
+import { assertSuccessResponse } from "./assertions";
 import { TestClient } from "./client";
 
 export interface AppFixture {
   app: Hono<AppEnv>;
   clients: {
-    db: MongoClient;
-    mongoose: Mongoose;
+    primary: MongoClient;
+    data: MongoClient;
   };
   users: {
     root: TestClient;
@@ -24,66 +27,67 @@ export interface AppFixture {
 }
 
 export async function buildAppFixture(): Promise<AppFixture> {
-  const log = pino(pretty());
-  const dbUri = "mongodb://localhost:27017/test";
+  dotenv.config({ path: ".env.test" });
+
+  const Log = createLogger().child({ module: "test" });
+  Log.info("Building app test fixture");
+
+  const bindings = loadEnv();
+
+  const primaryDbUri = `${bindings.dbUri}/${bindings.dbNamePrefix}`;
+  const dataDbUri = `${bindings.dbUri}/${bindings.dbNamePrefix}_data`;
+
+  await createMongoose(primaryDbUri, { bufferCommands: false });
+  const primary = await MongoClient.connect(primaryDbUri);
+  const data = await MongoClient.connect(dataDbUri);
 
   const clients = {
-    db: await MongoClient.connect(dbUri),
-    mongoose: await createMongoose(dbUri),
+    primary,
+    data,
   };
 
-  const bindings: Bindings = {
-    name: "test",
-    webPort: 9090,
-    dbUri,
-    jwtSecret: "0xdeadbeef",
-    logLevel: "debug",
-  };
-
-  const context: Variables = {
+  const variables: Variables = {
     db: {
-      mongo: clients.db,
-      mongoose: clients.mongoose,
+      primary: clients.primary,
+      data: clients.data,
     },
-    log,
+    Log,
   };
-  const app = buildApp(bindings, context);
+  const app = buildApp(bindings, variables);
 
   const users = {
     root: new TestClient({
       app,
       email: "root@datablocks.com",
       password: "datablocks-root-password",
-      type: "root",
       jwt: "",
     }),
     admin: new TestClient({
       app,
       email: faker.internet.email().toLowerCase(),
       password: faker.internet.password(),
-      type: "admin",
       jwt: "",
     }),
     backend: new TestClient({
       app,
       email: "backend@fe.com",
       password: "",
-      type: "backend",
       jwt: "",
     }),
   };
 
-  log.info("test fixture: dropping database");
-  await clients.db.db().dropDatabase();
+  Log.info(`Dropping database: ${primaryDbUri}`);
+  await clients.primary.db().dropDatabase();
+  Log.info(`Dropping database: ${dataDbUri}`);
+  await clients.data.db().dropDatabase();
 
-  log.info("test fixture: create root user");
+  Log.info("test fixture: create root user");
   try {
     await pipe(
-      createUserRecord({
+      UsersRepository.create({
         email: users.root._options.email,
         password: users.root._options.password,
-        // @ts-expect-error: root user is an exception
-        type: users.root._options.type,
+        type: "root",
       }),
       E.runPromise,
     );
@@ -91,10 +95,11 @@ export async function buildAppFixture(): Promise<AppFixture> {
     console.error(e);
   }
 
-  log.info("test fixture: logging root user in");
+  Log.info("test fixture: logging root user in");
 
-  const { token } = await users.root.login();
-  users.root.jwt = token;
+  const response = await users.root.login();
+  assertSuccessResponse(response);
+  users.root.jwt = response.data;
 
   return { app, clients, users };
 }

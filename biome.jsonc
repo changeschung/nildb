@@ -20,20 +20,12 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "all": true,
+      "recommended": true,
       "correctness": {
-        "all": true,
-        "noUndeclaredDependencies": "off",
-        "useImportExtensions": "off",
-        "noNodejsModules": "off"
+        "useExhaustiveDependencies": "off"
       },
       "style": {
-        "all": true,
-        "noNonNullAssertion": "off",
-        "useNamingConvention": "off"
-      },
-      "suspicious": {
-        "all": false
+        "noNonNullAssertion": "warn"
       }
     }
   },

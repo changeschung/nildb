@@ -1,43 +1,37 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { HTTPException } from "hono/http-exception";
-import { jwt } from "hono/jwt";
-import type { MongoClient } from "mongodb";
-import type { Mongoose } from "mongoose";
-import type { BaseLogger } from "pino";
-import { handleAddQuery } from "#/handlers/handle-add-query";
-import { handleAddSchema } from "#/handlers/handle-add-schema";
-import { handleCreateOrg } from "#/handlers/handle-create-org";
-import { handleCreateUser } from "#/handlers/handle-create-user";
-import { handleDeleteOrg } from "#/handlers/handle-delete-org";
-import { handleDeleteQuery } from "#/handlers/handle-delete-query";
-import { handleDeleteSchema } from "#/handlers/handle-delete-schema";
-import { handleDeleteUser } from "#/handlers/handle-delete-user";
-import { handleGenerateApiKey } from "#/handlers/handle-generate-api-key";
-import { handleHealthCheck } from "#/handlers/handle-health-check";
-import { handleListOrgs } from "#/handlers/handle-list-orgs";
-import { handleListSchemas } from "#/handlers/handle-list-schemas";
-import { handleOpenApi } from "#/handlers/handle-openapi";
-import { handleRunQuery } from "#/handlers/handle-run-query";
-import { handleUploadData } from "#/handlers/handle-upload-data";
-import { handleUserLogin } from "#/handlers/handle-user-login";
-import { handleListQueries } from "./handlers/handle-list-queries";
+import type { MongoClient, UUID } from "mongodb";
+import type { Logger } from "pino";
+import { queriesHandleExecute } from "#/handlers/queries-handle-execute";
+import type { Bindings } from "./env";
+import { adminHandleHealthCheck } from "./handlers/admin-handle-health-check";
+import { handleOpenApi } from "./handlers/admin-handle-openapi";
+import { authHandleLogin } from "./handlers/auth-handle-login";
+import { authMiddleware } from "./handlers/auth-middleware";
+import { dataHandleUpload } from "./handlers/data-handle-upload";
+import { organizationsHandleCreate } from "./handlers/organizations-handle-create";
+import { organizationsHandleCreateAccessToken } from "./handlers/organizations-handle-create-access-token";
+import { organizationsHandleDelete } from "./handlers/organizations-handle-delete";
+import { organizationsHandleList } from "./handlers/organizations-handle-list";
+import { queriesHandleAdd } from "./handlers/queries-handle-add";
+import { queriesHandleDelete } from "./handlers/queries-handle-delete";
+import { queriesHandleList } from "./handlers/queries-handle-list";
+import { schemasHandleAdd } from "./handlers/schemas-handle-add";
+import { schemasHandleDelete } from "./handlers/schemas-handle-delete";
+import { schemasHandleList } from "./handlers/schemas-handle-list";
+import { usersHandleCreate } from "./handlers/users-handle-create";
+import { usersHandleDelete } from "./handlers/users-handle-delete";
 import { logging } from "./logging";
-
-export type Bindings = {
-  name: string;
-  webPort: number;
-  dbUri: string;
-  jwtSecret: string;
-  logLevel: string;
-};
 
 export type Variables = {
   db: {
-    mongo: MongoClient;
-    mongoose: Mongoose;
+    // Primary holds organizations, users, schemas, queries collections
+    primary: MongoClient;
+    // Data holds data collections and is what aggregations target
+    data: MongoClient;
   };
-  log: BaseLogger;
+  Log: Logger<never, boolean>;
+  subject?: UUID;
 };
 
 export type AppEnv = {
@@ -54,7 +48,7 @@ export function buildApp(
   app.use("*", async (c, next) => {
     c.env = bindings;
     c.set("db", variables.db);
-    c.set("log", variables.log);
+    c.set("Log", variables.Log);
     await next();
   });
 
@@ -62,37 +56,38 @@ export function buildApp(
 
   app.use("/api/*", cors());
 
-  handleHealthCheck(app, "/health");
+  adminHandleHealthCheck(app, "/health");
   handleOpenApi(app, "/openapi");
-  handleUserLogin(app, "/api/v1/auth/login");
 
-  app.use("*", jwt({ secret: bindings.jwtSecret }));
+  authHandleLogin(app, "/api/v1/auth/login");
+  authMiddleware(app, bindings.jwtSecret);
 
-  handleCreateUser(app, "/api/v1/users");
-  handleDeleteUser(app, "/api/v1/users");
-  handleRunQuery(app, "/api/v1/data/query");
-  handleUploadData(app, "/api/v1/data/upload");
-  handleAddQuery(app, "/api/v1/orgs/queries");
-  handleAddSchema(app, "/api/v1/orgs/schemas");
-  handleCreateOrg(app, "/api/v1/orgs");
-  handleDeleteOrg(app, "/api/v1/orgs");
-  handleDeleteQuery(app, "/api/v1/orgs/queries");
-  handleDeleteSchema(app, "/api/v1/orgs/schemas");
-  handleGenerateApiKey(app, "/api/v1/orgs/keys/generate");
-  handleListSchemas(app, "/api/v1/orgs/schemas");
-  handleListQueries(app, "/api/v1/orgs/queries");
-  handleListOrgs(app, "/api/v1/orgs");
+  // TODO add ACL for endpoints (eg admin only, api-key only, etc)
+  // TODO /api/v1/data DELETE id = ...
 
-  app.onError((err, c) => {
-    const { log } = c.var;
-    if (err instanceof HTTPException) {
-      log.error(err.message);
-      return err.getResponse();
-    }
+  usersHandleCreate(app, "/api/v1/users");
+  usersHandleDelete(app, "/api/v1/users");
 
-    log.error(err);
-    return c.text("Internal Server Error", 500);
-  });
+  organizationsHandleCreate(app, "/api/v1/organizations");
+  organizationsHandleDelete(app, "/api/v1/organizations");
+  organizationsHandleList(app, "/api/v1/organizations");
+  organizationsHandleCreateAccessToken(
+    app,
+    "/api/v1/organizations/access-tokens",
+  );
+
+  schemasHandleAdd(app, "/api/v1/schemas");
+
+  // TODO if delete schema check no dependent queries
+  schemasHandleDelete(app, "/api/v1/schemas");
+  schemasHandleList(app, "/api/v1/schemas");
+
+  dataHandleUpload(app, "/api/v1/data");
+
+  queriesHandleAdd(app, "/api/v1/queries");
+  queriesHandleList(app, "/api/v1/queries");
+  queriesHandleDelete(app, "/api/v1/queries");
+  queriesHandleExecute(app, "/api/v1/queries/execute");
 
   return app;
 }

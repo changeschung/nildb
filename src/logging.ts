@@ -1,9 +1,27 @@
 import type { MiddlewareHandler } from "hono";
 import { logger as loggingMiddleware } from "hono/logger";
-import pino from "pino";
+import pino, { type Logger } from "pino";
+import { loadEnv } from "#/env";
+
+export function createLogger(): Logger<never, boolean> {
+  const { env, logLevel } = loadEnv();
+
+  const options: Record<string, unknown> = {
+    level: logLevel,
+  };
+
+  if (env.toLowerCase() !== "prod") {
+    options.transport = {
+      target: "pino-pretty",
+    };
+  }
+
+  return pino(options);
+}
 
 export function logging(): MiddlewareHandler {
   function stripAnsi(str: string): string {
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: strip console colour code for aws logging
     return str.replace(/\u001b\[\d+m/g, "");
   }
 

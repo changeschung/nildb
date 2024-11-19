@@ -2,50 +2,45 @@ import { serve } from "@hono/node-server";
 import dotenv from "dotenv";
 import { MongoClient } from "mongodb";
 import mongoose from "mongoose";
-import pino from "pino";
-import { type Bindings, type Variables, buildApp } from "./app";
+import { createLogger } from "#/logging";
+import { type Variables, buildApp } from "./app";
+import { loadEnv } from "./env";
 
-dotenv.config();
+async function main() {
+  dotenv.config();
+  const Bindings = loadEnv();
+  const Log = createLogger();
 
-const name = String(process.env.APP_ENV ?? "prod");
-const webPort = Number(process.env.APP_PORT);
-const dbUri = String(process.env.APP_DB_URI);
-const jwtSecret = String(process.env.APP_JWT_SECRET);
-const logLevel = String(process.env.APP_LOG_LEVEL);
+  Log.info("✅  Initializing nil-db api");
 
-const options: Record<string, unknown> = {
-  level: logLevel,
-};
+  const primaryDbName = Bindings.dbNamePrefix;
+  const dataDbName = `${Bindings.dbNamePrefix}_data`;
 
-if (name.toLowerCase() !== "prod") {
-  options.transport = {
-    target: "pino-pretty",
+  const primaryDbUri = `${Bindings.dbUri}/${primaryDbName}`;
+  const dataDbUri = `${Bindings.dbUri}/${dataDbName}`;
+
+  // All Models share the pool initialised with this call
+  await mongoose.connect(primaryDbUri, { bufferCommands: false });
+  const primary = await MongoClient.connect(primaryDbUri);
+  const data = await MongoClient.connect(dataDbUri);
+  Log.info("✅  Connected to database");
+
+  const variables: Variables = {
+    db: {
+      primary,
+      data,
+    },
+    Log,
   };
+
+  const app = buildApp(Bindings, variables);
+
+  serve({
+    port: Bindings.webPort,
+    fetch: app.fetch,
+  });
+
+  Log.info("✅  Nil-db api ready");
 }
 
-const log = pino(options);
-log.info("🚀 Starting nil-db api");
-
-// how do I pass these into hono?
-const bindings: Bindings = {
-  name,
-  webPort,
-  dbUri,
-  jwtSecret,
-  logLevel,
-};
-
-const variables: Variables = {
-  db: {
-    mongo: await MongoClient.connect(dbUri),
-    mongoose: await mongoose.connect(dbUri),
-  },
-  log,
-};
-
-const app = buildApp(bindings, variables);
-
-serve({
-  port: bindings.webPort,
-  fetch: app.fetch,
-});
+await main();
