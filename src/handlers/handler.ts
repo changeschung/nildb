@@ -1,3 +1,4 @@
+import { ValidationError } from "ajv";
 import { Effect as E, pipe } from "effect";
 import type { Context } from "hono";
 import type { JsonArray } from "type-fest";
@@ -42,6 +43,10 @@ export function foldToApiResponse<T>(c: Context<AppEnv>) {
             errors.push(e.flatten());
           } else if (e instanceof DbError) {
             errors.push(e.sanitizedMessage());
+          } else if (e instanceof ValidationError) {
+            errors.push(...e.errors);
+          } else {
+            errors.push(e.message);
           }
 
           return {

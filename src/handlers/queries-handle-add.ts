@@ -1,4 +1,4 @@
-import Ajv from "ajv";
+import Ajv, { ValidationError } from "ajv";
 import { Effect as E, pipe } from "effect";
 import type { Hono } from "hono";
 import { z } from "zod";
@@ -50,11 +50,7 @@ export function queriesHandleAdd(
 
         return valid
           ? E.succeed(request)
-          : E.fail(
-              new Error("Invalid pipeline schema", {
-                cause: request.pipeline,
-              }),
-            );
+          : E.fail(new ValidationError(validator.errors ?? []));
       }),
 
       E.flatMap((request) =>

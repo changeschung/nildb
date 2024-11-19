@@ -1,4 +1,5 @@
 import Ajv from "ajv";
+import addFormats from "ajv-formats";
 import { Effect as E, pipe } from "effect";
 import type { Hono } from "hono";
 import { z } from "zod";
@@ -8,7 +9,6 @@ import { DataRepository } from "#/models/data";
 import type { SchemaBase } from "#/models/schemas";
 import { Uuid, type UuidDto } from "#/types";
 import { type Handler, foldToApiResponse } from "./handler";
-import addFormats from "ajv-formats";
 
 export const AddSchemaRequest = z.object({
   org: Uuid,
@@ -46,12 +46,14 @@ export function schemasHandleAdd(
       E.flatMap((request) => {
         try {
           const ajv = new Ajv({ strict: false });
-          addFormats(ajv)
+          addFormats(ajv);
           // Compile throws on invalid schemas
           ajv.compile(request.schema);
           return E.succeed(request);
         } catch (error) {
-          return E.fail(new Error("Invalid query schema", { cause: error }));
+          return E.fail(
+            new Error("Schema failed compilation check", { cause: error }),
+          );
         }
       }),
 

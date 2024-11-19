@@ -1,4 +1,5 @@
-import Ajv from "ajv";
+import Ajv, { ValidationError } from "ajv";
+import addFormats from "ajv-formats";
 import { Effect as E, pipe } from "effect";
 import type { Hono } from "hono";
 import { UUID } from "mongodb";
@@ -8,7 +9,6 @@ import { type Handler, foldToApiResponse } from "#/handlers/handler";
 import { DataRepository } from "#/models/data";
 import { SchemasRepository } from "#/models/schemas";
 import { Uuid, type UuidDto } from "#/types";
-import addFormats from "ajv-formats";
 
 export const UploadDataRequestBody = z.object({
   schema: Uuid,
@@ -47,18 +47,14 @@ export function dataHandleUpload(
           ),
           E.bind("data", ({ document }) => {
             const ajv = new Ajv({ strict: "log" });
-            addFormats(ajv)
+            addFormats(ajv);
 
             const validator = ajv.compile(document.schema);
             const valid = validator(request.data);
 
             return valid
               ? E.succeed(request.data)
-              : E.fail(
-                  new Error("Upload data failed schema validation", {
-                    cause: validator.errors,
-                  }),
-                );
+              : E.fail(new ValidationError(validator.errors ?? []));
           }),
           E.flatMap(({ document, data }) => {
             return DataRepository.insert(

@@ -227,6 +227,24 @@ describe("Organizations", () => {
     expect(records).toHaveLength(3);
   });
 
+  it("rejects data that does not conform", async () => {
+    const schema = organization.schema.id;
+    const data = [
+      {
+        wallet: true,
+        country_code: "GBR",
+        age: 30,
+      },
+    ];
+
+    const response = await fixture.users.backend.uploadData({
+      schema,
+      data,
+    });
+    assertFailureResponse(response);
+    expect(response.errors).toHaveLength(1);
+  });
+
   it("can list queries", async () => {
     const response = await fixture.users.backend.listQueries();
     assertSuccessResponse(response);
@@ -234,7 +252,7 @@ describe("Organizations", () => {
     expect(response.data).toHaveLength(0);
   });
 
-  it("can upload a query", async () => {
+  it("can add a query", async () => {
     const { id, query } = organization;
     const response = await fixture.users.backend.addQuery({
       org: id,
