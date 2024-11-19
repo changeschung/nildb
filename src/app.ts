@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { MongoClient, UUID } from "mongodb";
 import type { Logger } from "pino";
+import { dataHandleTail } from "#/handlers/data-handle-tail";
 import { queriesHandleExecute } from "#/handlers/queries-handle-execute";
 import type { Bindings } from "./env";
 import { adminHandleHealthCheck } from "./handlers/admin-handle-health-check";
@@ -83,6 +84,7 @@ export function buildApp(
   schemasHandleList(app, "/api/v1/schemas");
 
   dataHandleUpload(app, "/api/v1/data");
+  dataHandleTail(app, "/api/v1/data/tail");
 
   queriesHandleAdd(app, "/api/v1/queries");
   queriesHandleList(app, "/api/v1/queries");
