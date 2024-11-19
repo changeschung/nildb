@@ -6,10 +6,12 @@ import { MongoClient } from "mongodb";
 import { connect as createMongoose } from "mongoose";
 import pino from "pino";
 import pretty from "pino-pretty";
+import { JsonArray, type JsonObject, JsonValue } from "type-fest";
 import { type AppEnv, type Variables, buildApp } from "#/app";
 import { loadEnv } from "#/env";
 import { createLogger } from "#/logging";
 import { UsersRepository } from "#/models";
+import type { UuidDto } from "#/types";
 import { assertSuccessResponse } from "./assertions";
 import { TestClient } from "./client";
 
@@ -102,4 +104,79 @@ export async function buildAppFixture(): Promise<AppFixture> {
   users.root.jwt = response.data;
 
   return { app, clients, users };
+}
+
+export type OrganizationFixture = {
+  id: UuidDto;
+  name: string;
+  schema: SchemaFixture;
+  query: QueryFixture;
+};
+
+export type SchemaFixture = {
+  id: UuidDto;
+  name: string;
+  keys: string[];
+  definition: JsonObject;
+};
+
+export type QueryFixture = {
+  id: UuidDto;
+  name: string;
+  schema: UuidDto;
+  variables: JsonObject;
+  pipeline: Record<string, unknown>[];
+};
+
+export async function setupOrganization(
+  fixture: AppFixture,
+  schema: SchemaFixture,
+  query: QueryFixture,
+): Promise<OrganizationFixture> {
+  const organization: Partial<OrganizationFixture> = {};
+  const { root, backend } = fixture.users;
+
+  {
+    const response = await root.createOrganization({
+      name: faker.company.name(),
+    });
+    assertSuccessResponse(response);
+    organization.id = response.data;
+  }
+
+  {
+    const response = await root.createOrganizationAccessToken({
+      id: organization.id,
+    });
+    assertSuccessResponse(response);
+    backend.jwt = response.data;
+  }
+
+  {
+    const response = await backend.addSchema({
+      org: organization.id,
+      name: schema.name,
+      keys: schema.keys,
+      schema: schema.definition,
+    });
+    assertSuccessResponse(response);
+    schema.id = response.data;
+    query.schema = response.data;
+  }
+
+  {
+    const response = await backend.addQuery({
+      org: organization.id,
+      name: query.name,
+      schema: query.schema,
+      variables: query.variables,
+      pipeline: query.pipeline,
+    });
+    assertSuccessResponse(response);
+    query.id = response.data;
+  }
+
+  organization.schema = schema;
+  organization.query = query;
+  return organization as OrganizationFixture;
 }
