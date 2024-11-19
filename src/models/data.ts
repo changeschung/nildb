@@ -70,7 +70,13 @@ export const DataRepository = {
         const result = await client
           .db()
           .collection(collectionName)
-          .insertMany(data);
+          .insertMany(
+            data.map((doc) => ({
+              ...doc,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            })),
+          );
 
         return result.insertedCount;
       }),
@@ -107,6 +113,35 @@ export const DataRepository = {
         db: getDataDbName(),
         collection: collectionName,
         name: "runPipeline",
+        params: {},
+      }),
+    );
+  },
+
+  tail<T extends JsonValue>(
+    client: MongoClient,
+    schema: UUID,
+  ): E.Effect<T, DbError> {
+    const collectionName = schema.toJSON();
+    return pipe(
+      E.tryPromise(async () => {
+        const result = await client
+          .db()
+          .collection(collectionName)
+          .find({})
+          .sort({ createdAt: -1 })
+          .limit(25)
+          .project({
+            _id: 0,
+          })
+          .toArray();
+
+        return result as unknown as T;
+      }),
+      succeedOrMapToDbError({
+        db: getDataDbName(),
+        collection: collectionName,
+        name: "tail",
         params: {},
       }),
     );
