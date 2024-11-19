@@ -1,4 +1,5 @@
 import Ajv from "ajv";
+import addFormats from "ajv-formats";
 import { Effect as E, pipe } from "effect";
 import type { Hono } from "hono";
 import { z } from "zod";
@@ -45,11 +46,14 @@ export function schemasHandleAdd(
       E.flatMap((request) => {
         try {
           const ajv = new Ajv({ strict: false });
+          addFormats(ajv);
           // Compile throws on invalid schemas
           ajv.compile(request.schema);
           return E.succeed(request);
         } catch (error) {
-          return E.fail(new Error("Invalid query schema", { cause: error }));
+          return E.fail(
+            new Error("Schema failed compilation check", { cause: error }),
+          );
         }
       }),
 
