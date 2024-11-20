@@ -1,6 +1,8 @@
+import { faker } from "@faker-js/faker";
 import { decode } from "hono/jwt";
 import type { Document } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
+import type { AuthLoginHandler } from "#/handlers/auth-handle-login";
 import type { UserBase } from "#/models/users";
 import { type AppFixture, buildAppFixture } from "./fixture/app-fixture";
 import { assertDefined, assertSuccessResponse } from "./fixture/assertions";
@@ -42,6 +44,34 @@ describe("Auth and accounts", () => {
 
     expect(document.email).toEqual(admin.email);
     expect(document.type).toEqual("admin");
+  });
+
+  it("rejects invalid passwords", async () => {
+    const request: AuthLoginHandler["request"] = {
+      email: fixture.users.admin.email,
+      password: fixture.users.admin.password.toUpperCase(),
+    };
+    const path: AuthLoginHandler["path"] = "/api/v1/auth/login";
+    const response = await fixture.app.request(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+    expect(response.status).toBe(401);
+  });
+
+  it("rejects invalid username", async () => {
+    const request: AuthLoginHandler["request"] = {
+      email: faker.internet.email(),
+      password: fixture.users.admin.password,
+    };
+    const path: AuthLoginHandler["path"] = "/api/v1/auth/login";
+    const response = await fixture.app.request(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+    expect(response.status).toBe(401);
   });
 
   it("admin can login", async () => {

@@ -1,17 +1,14 @@
 import { faker } from "@faker-js/faker";
 import dotenv from "dotenv";
-import { Effect as E, pipe } from "effect";
 import type { Hono } from "hono";
 import { MongoClient } from "mongodb";
 import { connect as createMongoose } from "mongoose";
-import pino from "pino";
-import pretty from "pino-pretty";
-import { JsonArray, type JsonObject, JsonValue } from "type-fest";
+import type { JsonObject } from "type-fest";
 import { type AppEnv, type Variables, buildApp } from "#/app";
 import { loadEnv } from "#/env";
+import { createJwt } from "#/handlers/auth-middleware";
 import { createLogger } from "#/logging";
-import { UsersRepository } from "#/models";
-import type { UuidDto } from "#/types";
+import { Uuid, type UuidDto } from "#/types";
 import { assertSuccessResponse } from "./assertions";
 import { TestClient } from "./client";
 
@@ -62,7 +59,14 @@ export async function buildAppFixture(): Promise<AppFixture> {
       app,
       email: "root@datablocks.com",
       password: "datablocks-root-password",
-      jwt: "",
+      jwt: await createJwt(
+        {
+          sub: Uuid.parse("00000000-0000-0000-0000-000000000000"),
+          iat: Math.round(Date.now() / 1000),
+          type: "root",
+        },
+        bindings.jwtSecret,
+      ),
     }),
     admin: new TestClient({
       app,
@@ -82,26 +86,6 @@ export async function buildAppFixture(): Promise<AppFixture> {
   await clients.primary.db().dropDatabase();
   Log.info(`Dropping database: ${dataDbUri}`);
   await clients.data.db().dropDatabase();
-
-  Log.info("test fixture: create root user");
-  try {
-    await pipe(
-      UsersRepository.create({
-        email: users.root._options.email,
-        password: users.root._options.password,
-        type: "root",
-      }),
-      E.runPromise,
-    );
-  } catch (e) {
-    console.error(e);
-  }
-
-  Log.info("test fixture: logging root user in");
-
-  const response = await users.root.login();
-  assertSuccessResponse(response);
-  users.root.jwt = response.data;
 
   return { app, clients, users };
 }

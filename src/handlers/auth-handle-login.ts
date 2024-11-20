@@ -1,7 +1,6 @@
 import argon2 from "argon2";
 import { Effect as E, pipe } from "effect";
 import type { Hono } from "hono";
-import { sign } from "hono/jwt";
 import { z } from "zod";
 import type { AppEnv } from "#/app";
 import { createJwt } from "#/handlers/auth-middleware";
@@ -24,35 +23,55 @@ export function authHandleLogin(
   app: Hono<AppEnv>,
   path: AuthLoginHandler["path"],
 ): void {
-  app.post(path, async (c) => {
-    const response: AuthLoginHandler["response"] = await pipe(
-      E.Do,
-      E.bind("data", () => E.tryPromise(() => c.req.json<unknown>())),
-      E.bind("request", ({ data }) => {
+  app.post(path, (c) => {
+    return pipe(
+      E.tryPromise(() => c.req.json<unknown>()),
+
+      E.flatMap((data) => {
         const result = UserLoginRequestBody.safeParse(data);
         return result.success ? E.succeed(result.data) : E.fail(result.error);
       }),
-      E.bind("user", ({ request }) =>
-        UsersRepository.findByEmail(request.email),
+
+      E.flatMap((request) =>
+        pipe(
+          UsersRepository.findByEmail(request.email),
+          E.flatMap((user) =>
+            E.tryPromise(async () => {
+              const valid = await argon2.verify(
+                user.password,
+                request.password,
+              );
+
+              if (!valid) throw new Error("Unauthorized");
+
+              return user;
+            }),
+          ),
+        ),
       ),
-      E.bind("verified", ({ user, request }) =>
-        E.tryPromise(() => argon2.verify(user.password, request.password)),
-      ),
-      E.flatMap(({ user }) =>
-        E.tryPromise(() =>
-          createJwt(
+
+      E.flatMap((user) =>
+        E.tryPromise(() => {
+          return createJwt(
             {
               sub: user._id,
               type: user.type,
             },
             c.env.jwtSecret,
-          ),
-        ),
+          );
+        }),
       ),
-      foldToApiResponse(c),
+
+      E.match({
+        onFailure: () => {
+          return c.text("Unauthorized", 401);
+        },
+        onSuccess: (token) => {
+          return c.json({ data: token });
+        },
+      }),
+
       E.runPromise,
     );
-
-    return c.json(response, 200);
   });
 }
