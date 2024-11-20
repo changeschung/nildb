@@ -27,7 +27,7 @@ const SchemaDocumentSchema = new mongoose.Schema(
       get: (val: Buffer) => new UUID(val),
     },
     name: { type: String, required: true },
-    keys: [{ type: String, default: [] }],
+    keys: { type: [String] },
     schema: { type: mongoose.Schema.Types.Mixed, required: true },
   },
   { timestamps: true },
@@ -41,8 +41,7 @@ export const SchemasRepository = {
       E.tryPromise(async () => {
         const document = await Model.create({
           ...data,
-          // Oddly, if keys is an empty array and it's passed into create this fails so we need to check
-          // if its empty and if so pass undefined until I understand why this is happening.
+          // Mongoose fails if keys is empty; so when no keys then pass `undefined`
           keys: data.keys.length > 0 ? data.keys : undefined,
         });
         return new UUID(document._id);
