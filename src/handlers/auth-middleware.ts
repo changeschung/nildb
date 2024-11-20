@@ -18,19 +18,15 @@ export function authMiddleware(app: Hono<AppEnv>, secret: string): void {
   app.use("*", jwt({ secret }), async (c, next) => {
     const data = c.get("jwtPayload");
 
-    if (data.type === "root") {
-      // Root user doesn't have an account and jwts must be manually minted
-      c.set("subject", data.sub);
-    } else {
-      const result = JwtPayload.safeParse(data);
+    const result = JwtPayload.safeParse(data);
 
-      if (!result.success) {
-        c.var.Log.warn("JwtPayload parse failed: %O", result.error.flatten());
-        return c.text("Unauthorized", 401);
-      }
-
-      c.set("subject", result.data.sub);
+    if (!result.success) {
+      c.var.Log.warn("JwtPayload parse failed: %O", result.error.flatten());
+      return c.text("Unauthorized", 401);
     }
+
+    // root uses the nil uuid, eg `00000000-0000-0000-0000-000000000000`
+    c.set("subject", result.data.sub);
 
     await next();
   });
