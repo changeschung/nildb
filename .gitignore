@@ -1,8 +1,9 @@
 .DS_Store
 .idea
 .vscode
-.env
+.env*
 .husky
+tmp
 
 node_modules
 dist
