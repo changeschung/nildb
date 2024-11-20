@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import type { MongoClient, UUID } from "mongodb";
+import type { Db, MongoClient, UUID } from "mongodb";
 import type { Logger } from "pino";
 import { dataHandleTail } from "#/handlers/data-handle-tail";
 import { queriesHandleExecute } from "#/handlers/queries-handle-execute";
@@ -26,10 +26,12 @@ import { logging } from "./logging";
 
 export type Variables = {
   db: {
-    // Primary holds organizations, users, schemas, queries collections
-    primary: MongoClient;
-    // Data holds data collections and is what aggregations target
-    data: MongoClient;
+    // Default db is the primary (eg `datablocks`)
+    client: MongoClient;
+    // Holds organizations, users, schemas, queries collections (eg `datablocks`)
+    primary: Db;
+    // Holds schema data (eg `datablocks_data`)
+    data: Db;
   };
   Log: Logger<never, boolean>;
   subject?: UUID;

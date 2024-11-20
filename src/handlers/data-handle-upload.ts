@@ -57,13 +57,7 @@ export function dataHandleUpload(
               : E.fail(new ValidationError(validator.errors ?? []));
           }),
           E.flatMap(({ document, data }) => {
-            return DataRepository.insert(
-              {
-                client: c.var.db.data,
-                schema: document,
-              },
-              data,
-            );
+            return DataRepository.insert(c.var.db.data, document._id, data);
           }),
         ),
       ),
