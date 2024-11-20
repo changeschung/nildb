@@ -28,7 +28,7 @@ jobs:
 
       - run: |
           aws ecs describe-task-definition \
-            --task-definition datablocks-api \
+            --task-definition nil-db-sandbox-nil-db \
             --query taskDefinition > task-definition.json
 
       - uses: aws-actions/amazon-ecs-render-task-definition@v1
@@ -42,5 +42,5 @@ jobs:
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           cluster: app-cluster-sandbox
-          service: datablocks-api
+          service: nil-db-sandbox-nil-db
           wait-for-service-stability: true
