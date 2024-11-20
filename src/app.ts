@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { Db, MongoClient, UUID } from "mongodb";
 import type { Logger } from "pino";
+import { dataHandleDelete } from "#/handlers/data-handle-delete";
 import { dataHandleFlush } from "#/handlers/data-handle-flush";
 import { dataHandleTail } from "#/handlers/data-handle-tail";
 import { queriesHandleExecute } from "#/handlers/queries-handle-execute";
@@ -89,6 +90,7 @@ export function buildApp(
   dataHandleUpload(app, "/api/v1/data");
   dataHandleTail(app, "/api/v1/data/tail");
   dataHandleFlush(app, "/api/v1/data/flush");
+  dataHandleDelete(app, "/api/v1/data/delete");
 
   queriesHandleAdd(app, "/api/v1/queries");
   queriesHandleList(app, "/api/v1/queries");
