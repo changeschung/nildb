@@ -1,23 +1,19 @@
 import { faker } from "@faker-js/faker";
 import dotenv from "dotenv";
 import type { Hono } from "hono";
-import { MongoClient } from "mongodb";
-import { connect as createMongoose } from "mongoose";
 import type { JsonObject } from "type-fest";
 import { type AppEnv, type Variables, buildApp } from "#/app";
 import { loadEnv } from "#/env";
 import { createJwt } from "#/handlers/auth-middleware";
 import { createLogger } from "#/logging";
+import { initAndCreateDbClients } from "#/models/clients";
 import { Uuid, type UuidDto } from "#/types";
 import { assertSuccessResponse } from "./assertions";
 import { TestClient } from "./client";
 
 export interface AppFixture {
   app: Hono<AppEnv>;
-  clients: {
-    primary: MongoClient;
-    data: MongoClient;
-  };
+  db: Variables["db"];
   users: {
     root: TestClient;
     admin: TestClient;
@@ -28,31 +24,16 @@ export interface AppFixture {
 export async function buildAppFixture(): Promise<AppFixture> {
   dotenv.config({ path: ".env.test" });
 
-  const Log = createLogger().child({ module: "test" });
+  const Log = createLogger();
   Log.info("Building app test fixture");
 
-  const bindings = loadEnv();
+  const env = loadEnv();
+  const db = await initAndCreateDbClients(env);
 
-  const primaryDbUri = `${bindings.dbUri}/${bindings.dbNamePrefix}`;
-  const dataDbUri = `${bindings.dbUri}/${bindings.dbNamePrefix}_data`;
-
-  await createMongoose(primaryDbUri, { bufferCommands: false });
-  const primary = await MongoClient.connect(primaryDbUri);
-  const data = await MongoClient.connect(dataDbUri);
-
-  const clients = {
-    primary,
-    data,
-  };
-
-  const variables: Variables = {
-    db: {
-      primary: clients.primary,
-      data: clients.data,
-    },
+  const app = buildApp(env, {
+    db,
     Log,
-  };
-  const app = buildApp(bindings, variables);
+  });
 
   const users = {
     root: new TestClient({
@@ -65,7 +46,7 @@ export async function buildAppFixture(): Promise<AppFixture> {
           iat: Math.round(Date.now() / 1000),
           type: "root",
         },
-        bindings.jwtSecret,
+        env.jwtSecret,
       ),
     }),
     admin: new TestClient({
@@ -82,12 +63,11 @@ export async function buildAppFixture(): Promise<AppFixture> {
     }),
   };
 
-  Log.info(`Dropping database: ${primaryDbUri}`);
-  await clients.primary.db().dropDatabase();
-  Log.info(`Dropping database: ${dataDbUri}`);
-  await clients.data.db().dropDatabase();
+  Log.info("Dropping test databases");
+  await db.primary.dropDatabase();
+  await db.data.dropDatabase();
 
-  return { app, clients, users };
+  return { app, db, users };
 }
 
 export type OrganizationFixture = {

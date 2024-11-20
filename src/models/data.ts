@@ -1,19 +1,13 @@
 import { Effect as E, pipe } from "effect";
-import type { Document, MongoClient, UUID } from "mongodb";
+import type { Db, Document, UUID } from "mongodb";
 import type { JsonValue } from "type-fest";
 import { type DbError, succeedOrMapToDbError } from "./errors";
 import { getDataDbName } from "./names";
 import type { QueryBase } from "./queries";
-import type { SchemaBase } from "./schemas";
-
-type DataContext = {
-  schema: SchemaBase;
-  client: MongoClient;
-};
 
 export const DataRepository = {
   createCollection(
-    client: MongoClient,
+    db: Db,
     schemaId: UUID,
     keys: string[],
   ): E.Effect<UUID, DbError> {
@@ -21,7 +15,7 @@ export const DataRepository = {
 
     return pipe(
       E.tryPromise(async () => {
-        const collection = client.db().collection(collectionName);
+        const collection = await db.createCollection(collectionName);
 
         if (keys.length > 0) {
           await collection.createIndex(keys, { unique: true });
@@ -38,45 +32,38 @@ export const DataRepository = {
     );
   },
 
-  deleteCollection(
-    client: MongoClient,
-    schemaId: UUID,
-  ): E.Effect<boolean, DbError> {
-    const collectionName = schemaId.toJSON();
+  deleteCollection(db: Db, schema: UUID): E.Effect<boolean, DbError> {
+    const collectionName = schema.toJSON();
     return pipe(
       E.tryPromise(async () => {
-        await client.db().dropCollection(collectionName);
+        await db.dropCollection(collectionName);
         return true;
       }),
       succeedOrMapToDbError({
         db: getDataDbName(),
         collection: collectionName,
         name: "deleteCollection",
-        params: { schemaId },
+        params: { schema },
       }),
     );
   },
 
   insert(
-    context: DataContext,
+    db: Db,
+    schema: UUID,
     data: Record<string, unknown>[],
   ): E.Effect<number, DbError> {
-    const { client, schema } = context;
-    const schemaId = schema._id;
-    const collectionName = schemaId.toJSON();
+    const collectionName = schema.toJSON();
 
     return pipe(
       E.tryPromise(async () => {
-        const result = await client
-          .db()
-          .collection(collectionName)
-          .insertMany(
-            data.map((doc) => ({
-              ...doc,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            })),
-          );
+        const result = await db.collection(collectionName).insertMany(
+          data.map((doc) => ({
+            ...doc,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })),
+        );
 
         return result.insertedCount;
       }),
@@ -84,25 +71,24 @@ export const DataRepository = {
         db: getDataDbName(),
         collection: collectionName,
         name: "insert",
-        params: { schemaId },
+        params: { schema },
       }),
     );
   },
 
-  delete(context: DataContext, id: UUID): E.Effect<true, DbError> {
+  delete(db: Db, id: UUID): E.Effect<true, DbError> {
     return E.succeed(true);
   },
 
   runPipeline<T extends JsonValue>(
-    client: MongoClient,
+    db: Db,
     query: QueryBase,
   ): E.Effect<T, DbError> {
     const collectionName = query.schema.toJSON();
 
     return pipe(
       E.tryPromise(async () => {
-        const result = await client
-          .db()
+        const result = await db
           .collection(collectionName)
           .aggregate(query.pipeline as Document[])
           .toArray();
@@ -118,15 +104,11 @@ export const DataRepository = {
     );
   },
 
-  tail<T extends JsonValue>(
-    client: MongoClient,
-    schema: UUID,
-  ): E.Effect<T, DbError> {
+  tail<T extends JsonValue>(db: Db, schema: UUID): E.Effect<T, DbError> {
     const collectionName = schema.toJSON();
     return pipe(
       E.tryPromise(async () => {
-        const result = await client
-          .db()
+        const result = await db
           .collection(collectionName)
           .find({})
           .sort({ createdAt: -1 })
@@ -142,7 +124,7 @@ export const DataRepository = {
         db: getDataDbName(),
         collection: collectionName,
         name: "tail",
-        params: {},
+        params: { schema },
       }),
     );
   },

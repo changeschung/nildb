@@ -32,7 +32,7 @@ export class DbError extends Error {
         return "We couldn't find what you're looking for";
       }
       default: {
-        console.log(this.context.message);
+        console.error(this.context.message);
         return "Internal db error";
       }
     }

@@ -87,8 +87,7 @@ describe("Organizations", () => {
 
     assertSuccessResponse(response);
 
-    const document = await fixture.clients.primary
-      .db()
+    const document = await fixture.db.primary
       .collection<OrganizationBase>(CollectionName.Organizations)
       .findOne({
         _id: new UUID(response.data),
@@ -173,7 +172,7 @@ describe("Organizations", () => {
     assertSuccessResponse(response);
     expect(response.data).toBe(3);
 
-    const cursor = fixture.clients.data.db().collection(schema).find({});
+    const cursor = fixture.db.data.collection(schema).find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(3);
   });
@@ -196,7 +195,7 @@ describe("Organizations", () => {
 
     expect(response.errors).toHaveLength(1);
 
-    const cursor = fixture.clients.data.db().collection(schema).find({});
+    const cursor = fixture.db.data.collection(schema).find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(3);
   });
@@ -222,7 +221,7 @@ describe("Organizations", () => {
     });
     assertFailureResponse(response);
 
-    const cursor = fixture.clients.data.db().collection(schema).find({});
+    const cursor = fixture.db.data.collection(schema).find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(3);
   });
@@ -300,15 +299,13 @@ describe("Organizations", () => {
     });
     assertSuccessResponse(response);
 
-    const queryDocument = await fixture.clients.primary
-      .db()
+    const queryDocument = await fixture.db.primary
       .collection<SchemaBase>(CollectionName.Schemas)
       .findOne({ _id: new UUID(id) });
 
     expect(queryDocument).toBeNull();
 
-    const record = await fixture.clients.primary
-      .db()
+    const record = await fixture.db.primary
       .collection<OrganizationBase>(CollectionName.Organizations)
       .findOne({ _id: new UUID(organization.id) });
     assertDefined(record);
@@ -323,25 +320,20 @@ describe("Organizations", () => {
     });
     assertSuccessResponse(response);
 
-    const schemaDocument = await fixture.clients.primary
-      .db()
+    const schemaDocument = await fixture.db.primary
       .collection<SchemaBase>(CollectionName.Schemas)
       .findOne({ _id: new UUID(id) });
 
     expect(schemaDocument).toBeNull();
 
-    const organizationDocument = await fixture.clients.primary
-      .db()
+    const organizationDocument = await fixture.db.primary
       .collection<OrganizationBase>(CollectionName.Organizations)
       .findOne({ _id: new UUID(organization.id) });
     assertDefined(organizationDocument);
 
     expect(organizationDocument.schemas).toHaveLength(0);
 
-    const dataCount = await fixture.clients.data
-      .db()
-      .collection(id)
-      .countDocuments({});
+    const dataCount = await fixture.db.data.collection(id).countDocuments({});
 
     expect(dataCount).toBe(0);
   });
@@ -352,8 +344,7 @@ describe("Organizations", () => {
     });
     assertSuccessResponse(response);
 
-    const document = await fixture.clients.primary
-      .db()
+    const document = await fixture.db.primary
       .collection<OrganizationBase>(CollectionName.Organizations)
       .findOne({ id: new UUID(organization.id) });
 

@@ -64,6 +64,11 @@ describe("Schemas datetime type", () => {
     organization = await setupOrganization(fixture, schema, query);
   });
 
+  it("setup organization", async () => {
+    organization = await setupOrganization(fixture, schema, query);
+    expect(organization).toBeDefined();
+  });
+
   it("can upload date-times", async () => {
     const schema = organization.schema.id;
 
@@ -80,7 +85,7 @@ describe("Schemas datetime type", () => {
     assertSuccessResponse(response);
     expect(response.data).toBe(3);
 
-    const cursor = fixture.clients.data.db().collection(schema).find({});
+    const cursor = fixture.db.data.collection(schema).find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(3);
   });

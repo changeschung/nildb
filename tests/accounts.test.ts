@@ -35,8 +35,7 @@ describe("Auth and accounts", () => {
 
     assertSuccessResponse(response);
 
-    const document = await fixture.clients.primary
-      .db()
+    const document = await fixture.db.primary
       .collection("users")
       .findOne<UserBase & Document>({ email: admin.email });
 
@@ -79,8 +78,7 @@ describe("Auth and accounts", () => {
     const response = await admin.login();
     assertSuccessResponse(response);
 
-    const document = await fixture.clients.primary
-      .db()
+    const document = await fixture.db.primary
       .collection("users")
       .findOne<UserBase & Document>({ email: admin.email });
 
@@ -99,8 +97,7 @@ describe("Auth and accounts", () => {
     const response = await admin.deleteUser({ email: admin.email });
     assertSuccessResponse(response);
 
-    const document = await fixture.clients.primary
-      .db()
+    const document = await fixture.db.primary
       .collection("users")
       .findOne<UserBase & Document>({ email: admin.email });
 

@@ -13,7 +13,7 @@ import { type Handler, foldToApiResponse } from "./handler";
 export const AddSchemaRequest = z.object({
   org: Uuid,
   name: z.string().min(1),
-  keys: z.array(z.string().min(1)),
+  keys: z.array(z.string()),
   schema: z.record(z.string(), z.unknown()),
 });
 
