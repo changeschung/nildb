@@ -35,7 +35,7 @@ jobs:
         id: task-def
         with:
           task-definition: task-definition.json
-          container-name: api
+          container-name: nil-db
           image: 592920173613.dkr.ecr.eu-west-1.amazonaws.com/datablocks-api:${{ inputs.tag }}
 
       - uses: aws-actions/amazon-ecs-deploy-task-definition@v2
