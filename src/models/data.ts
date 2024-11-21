@@ -71,13 +71,47 @@ export const DataRepository = {
         db: getDataDbName(),
         collection: collectionName,
         name: "insert",
-        params: { schema },
+        params: { collectionName },
       }),
     );
   },
 
-  delete(db: Db, id: UUID): E.Effect<true, DbError> {
-    return E.succeed(true);
+  delete(
+    db: Db,
+    schema: UUID,
+    filter: Record<string, unknown>,
+  ): E.Effect<number, DbError> {
+    const collectionName = schema.toJSON();
+
+    return pipe(
+      E.tryPromise(async () => {
+        const result = await db.collection(collectionName).deleteMany(filter);
+        return result.deletedCount;
+      }),
+      succeedOrMapToDbError({
+        db: getDataDbName(),
+        collection: collectionName,
+        name: "delete",
+        params: { collectionName, filter },
+      }),
+    );
+  },
+
+  flush(db: Db, schema: UUID): E.Effect<number, DbError> {
+    const collectionName = schema.toJSON();
+
+    return pipe(
+      E.tryPromise(async () => {
+        const result = await db.collection(collectionName).deleteMany({});
+        return result.deletedCount;
+      }),
+      succeedOrMapToDbError({
+        db: getDataDbName(),
+        collection: collectionName,
+        name: "flush",
+        params: { collectionName },
+      }),
+    );
   },
 
   runPipeline<T extends JsonValue>(

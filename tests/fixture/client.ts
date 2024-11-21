@@ -3,6 +3,8 @@ import pino from "pino";
 import type { AppEnv } from "#/app";
 import type { HealthCheckPath } from "#/handlers/admin-handle-health-check";
 import type { AuthLoginHandler } from "#/handlers/auth-handle-login";
+import type { DeleteDataHandler } from "#/handlers/data-handle-delete";
+import type { FlushDataHandler } from "#/handlers/data-handle-flush";
 import type { UploadDataHandler } from "#/handlers/data-handle-upload";
 import type { CreateOrganizationHandler } from "#/handlers/organizations-handle-create";
 import type { CreateOrganizationAccessTokenHandler } from "#/handlers/organizations-handle-create-access-token";
@@ -211,6 +213,42 @@ export class TestClient {
 
     const body = await response.json();
     return body as UploadDataHandler["response"];
+  }
+
+  async flushData(
+    request: FlushDataHandler["request"],
+  ): Promise<FlushDataHandler["response"]> {
+    const path: FlushDataHandler["path"] = `${apiV1}/data/flush`;
+
+    const response = await this.app.request(path, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${this.jwt}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(request),
+    });
+
+    const body = await response.json();
+    return body as FlushDataHandler["response"];
+  }
+
+  async deleteData(
+    request: DeleteDataHandler["request"],
+  ): Promise<DeleteDataHandler["response"]> {
+    const path: DeleteDataHandler["path"] = `${apiV1}/data/delete`;
+
+    const response = await this.app.request(path, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${this.jwt}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(request),
+    });
+
+    const body = await response.json();
+    return body as FlushDataHandler["response"];
   }
 
   async addQuery(
