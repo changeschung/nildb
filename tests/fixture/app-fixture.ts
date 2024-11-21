@@ -5,6 +5,7 @@ import type { JsonObject } from "type-fest";
 import { type AppEnv, type Variables, buildApp } from "#/app";
 import { loadEnv } from "#/env";
 import { createJwt } from "#/handlers/auth-middleware";
+import type { QueryVariables } from "#/handlers/queries-handle-add";
 import { createLogger } from "#/logging";
 import { initAndCreateDbClients } from "#/models/clients";
 import { Uuid, type UuidDto } from "#/types";
@@ -88,7 +89,7 @@ export type QueryFixture = {
   id: UuidDto;
   name: string;
   schema: UuidDto;
-  variables: JsonObject;
+  variables: QueryVariables;
   pipeline: Record<string, unknown>[];
 };
 

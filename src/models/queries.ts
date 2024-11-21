@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 import { Effect as E, Option as O, pipe } from "effect";
 import { UUID } from "mongodb";
 import mongoose from "mongoose";
-import type { JsonArray, JsonObject } from "type-fest";
+import type { JsonArray } from "type-fest";
+import type { QueryVariables } from "#/handlers/queries-handle-add";
 import { type DbError, succeedOrMapToDbError } from "#/models/errors";
 import { CollectionName, getPrimaryDbName } from "./names";
 
@@ -12,7 +13,7 @@ export type QueryBase = {
   name: string;
   // Determines the pipeline's starting collection
   schema: UUID;
-  variables: JsonObject;
+  variables: QueryVariables;
   pipeline: JsonArray;
 };
 

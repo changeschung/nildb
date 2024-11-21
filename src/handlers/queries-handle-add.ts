@@ -9,18 +9,27 @@ import pipelineSchema from "#/models/mongodb_pipeline.json";
 import type { QueryBase } from "#/models/queries";
 import { Uuid, type UuidDto } from "#/types";
 
+export const QueryVariable = z.object({
+  type: z.enum(["string", "number", "boolean"]),
+  description: z.string(),
+});
+export type QueryVariable = z.infer<typeof QueryVariable>;
+
+export const QueryVariables = z.record(z.string(), QueryVariable);
+export type QueryVariables = z.infer<typeof QueryVariables>;
+
 export const AddQueryRequestBody = z.object({
   org: Uuid,
   name: z.string(),
   schema: Uuid,
-  variables: z.record(z.string(), z.unknown()),
+  variables: QueryVariables,
   pipeline: z.array(z.record(z.string(), z.unknown())),
 });
 export type AddQueryRequestBody = {
   org: UuidDto;
   name: string;
   schema: UuidDto;
-  variables: Record<string, unknown>;
+  variables: QueryVariables;
   pipeline: Record<string, unknown>[];
 };
 
