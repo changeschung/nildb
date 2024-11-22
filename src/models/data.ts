@@ -1,9 +1,11 @@
 import { Effect as E, pipe } from "effect";
 import type { Db, Document, UUID } from "mongodb";
-import type { JsonValue } from "type-fest";
+import type { JsonArray, JsonObject, JsonValue } from "type-fest";
 import { type DbError, succeedOrMapToDbError } from "./errors";
 import { getDataDbName } from "./names";
 import type { QueryBase } from "./queries";
+
+export type QueryRuntimeVariables = Record<string, string | number | boolean>;
 
 export const DataRepository = {
   createCollection(
@@ -117,14 +119,16 @@ export const DataRepository = {
   runPipeline<T extends JsonValue>(
     db: Db,
     query: QueryBase,
+    variables: QueryRuntimeVariables,
   ): E.Effect<T, DbError> {
     const collectionName = query.schema.toJSON();
+    const pipeline = injectVariables(query.pipeline, variables);
 
     return pipe(
       E.tryPromise(async () => {
         const result = await db
           .collection(collectionName)
-          .aggregate(query.pipeline as Document[])
+          .aggregate(pipeline)
           .toArray();
 
         return result as unknown as T;
@@ -133,7 +137,7 @@ export const DataRepository = {
         db: getDataDbName(),
         collection: collectionName,
         name: "runPipeline",
-        params: {},
+        params: { pipeline },
       }),
     );
   },
@@ -163,3 +167,35 @@ export const DataRepository = {
     );
   },
 } as const;
+
+export function injectVariables(
+  pipeline: JsonArray,
+  variables: QueryRuntimeVariables,
+): Document[] {
+  const prefixIdentifier = "##";
+  const traverse = (current: JsonValue): JsonValue => {
+    if (typeof current === "string" && current.startsWith(prefixIdentifier)) {
+      const key = current.split(prefixIdentifier)[1];
+
+      if (key in variables) {
+        return variables[key] as JsonValue;
+      }
+      throw new Error(`Missing pipeline variable: ${current}`);
+    }
+
+    if (Array.isArray(current)) {
+      return current.map((e) => traverse(e));
+    }
+
+    if (typeof current === "object" && current !== null) {
+      const result: JsonObject = {};
+      for (const [key, value] of Object.entries(current)) {
+        result[key] = traverse(value);
+      }
+      return result;
+    }
+
+    return current;
+  };
+  return traverse(pipeline) as Document[];
+}
