@@ -1,11 +1,18 @@
 import { Effect as E, pipe } from "effect";
 import type { Db, Document, UUID } from "mongodb";
 import type { JsonArray, JsonObject, JsonValue } from "type-fest";
+import type { SchemaBase } from "#/models/schemas";
 import { type DbError, succeedOrMapToDbError } from "./errors";
 import { getDataDbName } from "./names";
 import type { QueryBase } from "./queries";
 
 export type QueryRuntimeVariables = Record<string, string | number | boolean>;
+
+export type InsertResult = {
+  created: number;
+  updated: number;
+  errors: number;
+};
 
 export const DataRepository = {
   createCollection(
@@ -52,23 +59,42 @@ export const DataRepository = {
 
   insert(
     db: Db,
-    schema: UUID,
+    schema: SchemaBase,
     data: Record<string, unknown>[],
-  ): E.Effect<number, DbError> {
-    const collectionName = schema.toJSON();
+  ): E.Effect<InsertResult, DbError> {
+    const collectionName = schema._id.toString();
+    const now = new Date();
 
     return pipe(
       E.tryPromise(async () => {
-        const result = await db.collection(collectionName).insertMany(
-          data.map((doc) => ({
-            ...doc,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          })),
-        );
+        const bulk = db.collection(collectionName).initializeUnorderedBulkOp();
 
-        return result.insertedCount;
+        for (const element of data) {
+          const filter: Record<string, unknown> = {};
+
+          for (const key of schema.keys) {
+            filter[key] = element[key];
+          }
+
+          bulk
+            .find(filter)
+            .upsert()
+            .replaceOne({
+              ...element,
+              createdAt: { $setOnInsert: now },
+              updatedAt: now,
+            });
+        }
+
+        const result = await bulk.execute();
+
+        return {
+          created: result.upsertedCount,
+          updated: result.modifiedCount,
+          errors: result.getWriteErrorCount(),
+        };
       }),
+
       succeedOrMapToDbError({
         db: getDataDbName(),
         collection: collectionName,
