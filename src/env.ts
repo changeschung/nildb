@@ -17,7 +17,7 @@ export function loadEnv(): Bindings {
     return env;
   }
 
-  return EnvSchema.parse({
+  env = EnvSchema.parse({
     dbNamePrefix: process.env.APP_DB_NAME_PREFIX,
     dbUri: process.env.APP_DB_URI,
     env: process.env.APP_ENV,
@@ -25,4 +25,6 @@ export function loadEnv(): Bindings {
     logLevel: process.env.APP_LOG_LEVEL,
     webPort: Number(process.env.APP_PORT),
   });
+
+  return env;
 }
