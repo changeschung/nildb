@@ -4,13 +4,19 @@ import type { JsonArray, JsonObject, JsonValue } from "type-fest";
 import { type DbError, succeedOrMapToDbError } from "#/common/errors";
 import type { QueryBase } from "#/queries/repository";
 import type { SchemaBase } from "#/schemas/repository";
+import { DocumentBase } from "#/common/mongo";
+import { UuidDto } from "#/common/types";
 
 export type QueryRuntimeVariables = Record<string, string | number | boolean>;
 
-export type InsertResult = {
-  created: number;
-  updated: number;
-  errors: number;
+export type CreatedResult = {
+  created: UuidDto[];
+  errors: CreateFailure[];
+};
+
+export type CreateFailure = {
+  error: string;
+  data: unknown;
 };
 
 export const DataRepository = {
@@ -25,9 +31,10 @@ export const DataRepository = {
       E.tryPromise(async () => {
         const collection = await db.createCollection(collectionName);
 
-        const idDropped = { ...keys, _id: undefined };
-        if (idDropped.length > 0) {
-          await collection.createIndex(keys, { unique: true });
+        // _id is a key by default so we remove to avoid the collision
+        const keysWithOutId = keys.filter((key) => key !== "_id");
+        if (keysWithOutId.length > 0) {
+          await collection.createIndex(keysWithOutId, { unique: true });
         }
 
         return schemaId;
@@ -58,38 +65,51 @@ export const DataRepository = {
   insert(
     db: Db,
     schema: SchemaBase,
-    data: Record<string, unknown>[],
-  ): E.Effect<InsertResult, DbError> {
+    data: DocumentBase[],
+  ): E.Effect<CreatedResult, DbError> {
     const collectionName = schema._id.toString();
-    const now = new Date();
 
     return pipe(
       E.tryPromise(async () => {
-        const bulk = db.collection(collectionName).initializeUnorderedBulkOp();
+        const created = new Set<UuidDto>();
+        const errors: CreateFailure[] = [];
 
-        for (const element of data) {
-          const filter: Record<string, unknown> = {};
+        // TODO using a bulk write or concurrently is trickier than anticipated
+        //  going for simple solution until I have time to come back to this
+        const now = new Date();
 
-          for (const key of schema.keys) {
-            filter[key] = element[key];
-          }
+        const promises = data.map(async (d) => {
+          const id = d._id.toString() as UuidDto;
+          try {
+            const doc: Document = {
+              ...d,
+              _created: now,
+              _updated: now,
+            };
 
-          bulk
-            .find(filter)
-            .upsert()
-            .replaceOne({
-              ...element,
-              createdAt: { $setOnInsert: now },
-              updatedAt: now,
+            const result = await db.collection(collectionName).insertOne(doc);
+
+            if (result.acknowledged) {
+              created.add(id);
+            } else {
+              errors.push({
+                error: "Failed to insert document",
+                data: doc,
+              });
+            }
+          } catch (error) {
+            console.error(error);
+            errors.push({
+              error: "Unhandled error occurred",
+              data: d,
             });
-        }
-
-        const result = await bulk.execute();
+          }
+        });
+        await Promise.all(promises);
 
         return {
-          created: result.upsertedCount,
-          updated: result.modifiedCount,
-          errors: result.getWriteErrorCount(),
+          created: Array.from(created),
+          errors,
         };
       }),
 

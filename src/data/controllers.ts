@@ -2,34 +2,35 @@ import Ajv, { ValidationError } from "ajv";
 import addFormats from "ajv-formats";
 import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
-import { UUID } from "mongodb";
+import { Document, UUID } from "mongodb";
 import type { EmptyObject, JsonArray } from "type-fest";
 import { z } from "zod";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { Uuid, type UuidDto } from "#/common/types";
 import { SchemasRepository } from "#/schemas/repository";
-import { DataRepository, type InsertResult } from "./repository";
+import { DataRepository, type CreatedResult } from "./repository";
+import { DocumentBase } from "#/common/mongo";
 
 export const MAX_RECORDS_LENGTH = 10_000;
 
-export const UploadDataRequest = z.object({
+export const CreateDataRequest = z.object({
   schema: Uuid,
   data: z.array(z.record(z.unknown())),
 });
-export type UploadDataRequest = {
+export type CreateDataRequest = {
   schema: UuidDto;
-  data: Record<string, unknown>[];
+  data: (Document & Omit<DocumentBase, "_created" | "_updated">)[];
 };
-export type UploadDataResponse = ApiResponse<InsertResult>;
+export type CreateDataResponse = ApiResponse<CreatedResult>;
 
-export const uploadDataController: RequestHandler<
+export const createDataController: RequestHandler<
   EmptyObject,
-  UploadDataResponse,
-  UploadDataRequest
+  CreateDataResponse,
+  CreateDataRequest
 > = async (req, res) => {
   const response = await pipe(
     E.try({
-      try: () => UploadDataRequest.parse(req.body),
+      try: () => CreateDataRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
 
@@ -53,7 +54,7 @@ export const uploadDataController: RequestHandler<
           const valid = validator(body.data);
 
           return valid
-            ? E.succeed(body.data)
+            ? E.succeed(body.data as DocumentBase[])
             : E.fail(new ValidationError(validator.errors ?? []));
         }),
         E.flatMap(({ schema, data }) => {
@@ -61,6 +62,7 @@ export const uploadDataController: RequestHandler<
         }),
       ),
     ),
+
     foldToApiResponse(req.context),
     E.runPromise,
   );

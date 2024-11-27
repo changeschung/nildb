@@ -1,6 +1,6 @@
 {
   "id": "",
-  "name": "test-query-with-variables",
+  "name": "variables.wallet.query.json",
   "schema": "",
   "variables": {
     "minAmount": {

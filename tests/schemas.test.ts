@@ -3,7 +3,7 @@ import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
 import { CollectionName } from "#/common/mongo";
 import type { UuidDto } from "#/common/types";
-import type { InsertResult } from "#/data/repository";
+import type { CreatedResult } from "#/data/repository";
 import type { Context } from "#/env";
 import type { OrganizationBase } from "#/organizations/repository";
 import type { SchemaBase } from "#/schemas/repository";
@@ -93,8 +93,8 @@ describe("schemas.test.ts", () => {
       })
       .expect(200);
 
-    const result = response.body.data as InsertResult;
-    expect(result.created).toBe(1);
+    const result = response.body.data as CreatedResult;
+    expect(result.created).toHaveLength(1);
 
     const data = await db.data.collection(schema.id).find().toArray();
 

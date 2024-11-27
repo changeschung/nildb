@@ -45,7 +45,7 @@ describe("schemas.datetime.test", async () => {
         data,
       })
       .expect(200);
-    expect(response.body.data.created).toBe(3);
+    expect(response.body.data.created).toHaveLength(3);
 
     const cursor = db.data.collection(schema).find({});
     const records = await cursor.toArray();
@@ -69,7 +69,7 @@ describe("schemas.datetime.test", async () => {
           data: [invalid],
         })
         .expect(200);
-      expect(response.body.errors).toBeTruthy();
+      expect(response.body.errors).toHaveLength(1);
     }
   });
 

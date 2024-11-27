@@ -1,6 +1,6 @@
 {
   "id": "",
-  "name": "datetime.schema.json",
+  "name": "simple.schema.json",
   "keys": ["_id"],
   "schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -12,13 +12,9 @@
         "_id": {
           "type": "string",
           "format": "uuid"
-        },
-        "datetime": {
-          "type": "string",
-          "format": "date-time"
         }
       },
-      "required": ["_id", "datetime"]
+      "required": ["_id"]
     }
   }
 }

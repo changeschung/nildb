@@ -3,11 +3,11 @@ import {
   deleteDataController,
   flushDataController,
   tailDataController,
-  uploadDataController,
+  createDataController,
 } from "./controllers";
 
 export const DataEndpoint = {
-  Upload: "/data",
+  Create: "/data/create",
   Delete: "/data/delete",
   Flush: "/data/flush",
   Tail: "/data/tail",
@@ -16,7 +16,7 @@ export const DataEndpoint = {
 export function buildDataRouter(): Router {
   const router = Router();
 
-  router.post(DataEndpoint.Upload, uploadDataController);
+  router.post(DataEndpoint.Create, createDataController);
   router.post(DataEndpoint.Delete, deleteDataController);
   router.post(DataEndpoint.Flush, flushDataController);
   router.post(DataEndpoint.Tail, tailDataController);

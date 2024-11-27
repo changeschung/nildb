@@ -5,8 +5,8 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { CollectionName } from "#/common/mongo";
 import type { UuidDto } from "#/common/types";
 import type { Context } from "#/env";
-import type { JwtPayload } from "#/middleware/auth.middleware";
-import type { OrganizationBase } from "#/organizations/organizations.repository";
+import type { JwtPayload } from "#/middleware/auth";
+import type { OrganizationBase } from "#/organizations/repository";
 import {
   type AppFixture,
   QueryFixture,

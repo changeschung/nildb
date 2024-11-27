@@ -6,7 +6,7 @@ import {
   type DeleteDataResponse,
   type FlushDataRequest,
   type TailDataRequest,
-  type UploadDataRequest,
+  type CreateDataRequest,
 } from "#/data/controllers";
 import { DataEndpoint } from "#/data/routes";
 import type {
@@ -157,9 +157,9 @@ export class TestClient {
       .send(body);
   }
 
-  uploadData(body: UploadDataRequest): Test {
+  uploadData(body: CreateDataRequest): Test {
     return this.request
-      .post(`${apiv1Base}${DataEndpoint.Upload}`)
+      .post(`${apiv1Base}${DataEndpoint.Create}`)
       .set("Authorization", `Bearer ${this.jwt}`)
       .send(body);
   }

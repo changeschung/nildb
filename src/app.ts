@@ -22,7 +22,7 @@ export function buildApp(context: Context): express.Application {
 
   app.use(createSystemRouter());
   app.use(buildApiDocsRoutes());
-  app.use(express.json());
+  app.use(express.json({ limit: "10mb" }));
 
   const v1Router = Router();
 

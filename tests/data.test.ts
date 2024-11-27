@@ -12,6 +12,7 @@ import {
   setupOrganization,
 } from "./fixture/app-fixture";
 import type { TestClient } from "./fixture/client";
+import { CreatedResult } from "#/data/repository";
 
 describe("data.test.ts", () => {
   let fixture: AppFixture;
@@ -59,7 +60,7 @@ describe("data.test.ts", () => {
         data,
       })
       .expect(200);
-    expect(response.body.data.created).toBe(3);
+    expect(response.body.data.created).toHaveLength(3);
 
     const cursor = db.data.collection(schema).find({});
     const records = await cursor.toArray();
@@ -72,7 +73,36 @@ describe("data.test.ts", () => {
       {
         _id: faker.string.uuid(),
         wallet: "0x1",
-        country_code: "GBR",
+        country: "GBR",
+        age: 30,
+      },
+    ];
+
+    const response = await backend.uploadData({
+      schema,
+      data,
+    });
+    const result = response.body.data as CreatedResult;
+    expect(result.errors).toHaveLength(1);
+
+    const cursor = db.data.collection(schema).find({});
+    const records = await cursor.toArray();
+    expect(records).toHaveLength(3);
+  });
+
+  it("allows for partial success", async () => {
+    const schema = organization.schema.id;
+    const data = [
+      {
+        _id: faker.string.uuid(),
+        wallet: "0x1", // collides expect failure
+        country: "GBR",
+        age: 30,
+      },
+      {
+        _id: faker.string.uuid(),
+        wallet: "0x4", // unique expect success
+        country: "GBR",
         age: 30,
       },
     ];
@@ -82,11 +112,9 @@ describe("data.test.ts", () => {
       data,
     });
 
-    expect(response.body.errors).toHaveLength(1);
-
-    const cursor = db.data.collection(schema).find({});
-    const records = await cursor.toArray();
-    expect(records).toHaveLength(3);
+    const result = response.body.data as CreatedResult;
+    expect(result.errors).toHaveLength(1);
+    expect(result.created).toHaveLength(1);
   });
 
   it("rejects duplicates in data payload", async () => {
@@ -94,12 +122,12 @@ describe("data.test.ts", () => {
     const data = [
       {
         wallet: "0x4",
-        country_code: "GBR",
+        country: "GBR",
         age: 30,
       },
       {
         wallet: "0x4",
-        country_code: "GBR",
+        country: "GBR",
         age: 30,
       },
     ];
@@ -113,7 +141,7 @@ describe("data.test.ts", () => {
 
     const cursor = db.data.collection(schema).find({});
     const records = await cursor.toArray();
-    expect(records).toHaveLength(3);
+    expect(records).toHaveLength(4);
   });
 
   it("rejects data that does not conform", async () => {
@@ -121,7 +149,7 @@ describe("data.test.ts", () => {
     const data = [
       {
         wallet: true,
-        country_code: "GBR",
+        country: "GBR",
         age: 30,
       },
     ];
@@ -133,7 +161,8 @@ describe("data.test.ts", () => {
       })
       .expect(200);
 
-    expect(response.body.errors).toHaveLength(1);
+    const result = response.body;
+    expect(result.errors).toHaveLength(1);
   });
 
   it("can run a query", async () => {
@@ -148,7 +177,7 @@ describe("data.test.ts", () => {
     expect(response.body.data).toEqual([
       {
         averageAge: 30,
-        count: 2,
+        count: 3,
       },
     ]);
   });

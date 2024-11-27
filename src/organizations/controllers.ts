@@ -8,11 +8,8 @@ import {
   type JwtPayload,
   type JwtSerialized,
   createJwt,
-} from "#/middleware/auth.middleware";
-import {
-  type OrganizationBase,
-  OrganizationsRepository,
-} from "./organizations.repository";
+} from "#/middleware/auth";
+import { type OrganizationBase, OrganizationsRepository } from "./repository";
 
 export const CreateOrganizationRequest = z.object({
   name: z.string(),

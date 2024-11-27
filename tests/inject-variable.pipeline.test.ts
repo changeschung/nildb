@@ -1,6 +1,6 @@
 import type { JsonArray } from "type-fest";
 import { describe, expect, it } from "vitest";
-import { injectVariables } from "#/data/data.repository";
+import { injectVariables } from "#/data/repository";
 
 describe("inject.variable.pipeline.test", () => {
   it("replaces simple variables", () => {
