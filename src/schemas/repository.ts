@@ -13,24 +13,21 @@ export type SchemaBase = DocumentBase & {
   schema: JsonObject;
 };
 
-const SchemaDocumentSchema = new mongoose.Schema(
-  {
-    _id: {
-      type: mongoose.Schema.Types.UUID,
-      default: () => randomUUID(),
-      get: (val: Buffer) => new UUID(val),
-    },
-    org: {
-      type: mongoose.Schema.Types.UUID,
-      required: true,
-      get: (val: Buffer) => new UUID(val),
-    },
-    name: { type: String, required: true },
-    keys: { type: [String] },
-    schema: { type: mongoose.Schema.Types.Mixed, required: true },
+const SchemaDocumentSchema = new mongoose.Schema({
+  _id: {
+    type: mongoose.Schema.Types.UUID,
+    default: () => randomUUID(),
+    get: (val: Buffer) => new UUID(val),
   },
-  { timestamps: true },
-);
+  org: {
+    type: mongoose.Schema.Types.UUID,
+    required: true,
+    get: (val: Buffer) => new UUID(val),
+  },
+  name: { type: String, required: true },
+  keys: { type: [String] },
+  schema: { type: mongoose.Schema.Types.Mixed, required: true },
+});
 
 const Model = mongoose.model(CollectionName.Schemas, SchemaDocumentSchema);
 
