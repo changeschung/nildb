@@ -9,7 +9,11 @@ import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import type { DocumentBase } from "#/common/mongo";
 import { Uuid, type UuidDto } from "#/common/types";
 import { SchemasRepository } from "#/schemas/repository";
-import { type CreatedResult, DataRepository } from "./repository";
+import {
+  type CreatedResult,
+  DataRepository,
+  type UpdateResult,
+} from "./repository";
 
 export const MAX_RECORDS_LENGTH = 10_000;
 
@@ -93,6 +97,47 @@ export const readDataController: RequestHandler<
 
     E.flatMap((body) =>
       DataRepository.find(req.context.db.data, body.schema, body.filter),
+    ),
+
+    E.map((data) => data),
+
+    foldToApiResponse(req.context),
+    E.runPromise,
+  );
+
+  res.send(response);
+};
+
+export const UpdateDataRequest = z.object({
+  schema: Uuid,
+  filter: z.record(z.string(), z.unknown()),
+  update: z.record(z.string(), z.unknown()),
+});
+export type UpdateDataRequest = {
+  schema: UuidDto;
+  filter: Record<string, unknown>;
+  update: Record<string, unknown>;
+};
+export type UpdateDataResponse = ApiResponse<UpdateResult>;
+
+export const updateDataController: RequestHandler<
+  EmptyObject,
+  UpdateDataResponse,
+  UpdateDataRequest
+> = async (req, res) => {
+  const response = await pipe(
+    E.try({
+      try: () => UpdateDataRequest.parse(req.body),
+      catch: (error) => error as z.ZodError,
+    }),
+
+    E.flatMap((body) =>
+      DataRepository.update(
+        req.context.db.data,
+        body.schema,
+        body.filter,
+        body.update,
+      ),
     ),
 
     E.map((data) => data),

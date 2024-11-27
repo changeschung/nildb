@@ -8,6 +8,7 @@ import type {
   FlushDataRequest,
   ReadDataRequest,
   TailDataRequest,
+  UpdateDataRequest,
 } from "#/data/controllers";
 import { DataEndpoint } from "#/data/routes";
 import type {
@@ -189,6 +190,13 @@ export class TestClient {
   readData(body: ReadDataRequest): Test {
     return this.request
       .post(`${apiv1Base}${DataEndpoint.Read}`)
+      .set("Authorization", `Bearer ${this.jwt}`)
+      .send(body);
+  }
+
+  updateData(body: UpdateDataRequest): Test {
+    return this.request
+      .post(`${apiv1Base}${DataEndpoint.Update}`)
       .set("Authorization", `Bearer ${this.jwt}`)
       .send(body);
   }

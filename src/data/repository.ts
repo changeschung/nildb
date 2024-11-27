@@ -1,6 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import type { Db, Document, UUID } from "mongodb";
-import type { Filter } from "mongodb/lib/beta";
+import type { Filter, UpdateFilter } from "mongodb/lib/beta";
 import type { JsonArray, JsonObject, JsonValue } from "type-fest";
 import { type DbError, succeedOrMapToDbError } from "#/common/errors";
 import type { DocumentBase } from "#/common/mongo";
@@ -11,6 +11,11 @@ import type { SchemaBase } from "#/schemas/repository";
 export const TAIL_DATA_LIMIT = 25;
 
 export type QueryRuntimeVariables = Record<string, string | number | boolean>;
+
+export type UpdateResult = {
+  matched: number;
+  updated: number;
+};
 
 export type CreatedResult = {
   created: UuidDto[];
@@ -120,6 +125,32 @@ export const DataRepository = {
         collection: collectionName,
         name: "insert",
         params: { collectionName },
+      }),
+    );
+  },
+
+  update(
+    db: Db,
+    schema: UUID,
+    filter: Filter<DocumentBase>,
+    update: UpdateFilter<DocumentBase>,
+  ): E.Effect<UpdateResult, DbError> {
+    const collectionName = schema.toJSON();
+    return pipe(
+      E.tryPromise(async () => {
+        const result = await db
+          .collection<DocumentBase>(collectionName)
+          .updateMany(filter, update);
+
+        return {
+          matched: result.matchedCount,
+          updated: result.modifiedCount,
+        };
+      }),
+      succeedOrMapToDbError({
+        collection: collectionName,
+        name: "update",
+        params: { schema },
       }),
     );
   },
