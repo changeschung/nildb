@@ -1,0 +1,18 @@
+{
+  "id": "",
+  "name": "simple.query.json",
+  "schema": "",
+  "variables": {
+    "name": {
+      "type": "string",
+      "description": "The name value"
+    }
+  },
+  "pipeline": [
+    {
+      "$match": {
+        "name": "##name"
+      }
+    }
+  ]
+}

@@ -1,20 +1,18 @@
 import { faker } from "@faker-js/faker";
 import dotenv from "dotenv";
-import type { Hono } from "hono";
+import type { Db } from "mongodb";
+import supertest from "supertest";
 import type { JsonObject } from "type-fest";
-import { type AppEnv, type Variables, buildApp } from "#/app";
-import { loadEnv } from "#/env";
-import { createJwt } from "#/handlers/auth-middleware";
-import type { QueryVariables } from "#/handlers/queries-handle-add";
-import { createLogger } from "#/logging";
-import { initAndCreateDbClients } from "#/models/clients";
-import { Uuid, type UuidDto } from "#/types";
-import { assertSuccessResponse } from "./assertions";
+import { buildApp } from "#/app";
+import { Uuid, type UuidDto } from "#/common/types";
+import { type Context, createContext } from "#/env";
+import { createJwt } from "#/middleware/auth";
+import type { QueryVariables } from "#/queries/controllers";
 import { TestClient } from "./client";
 
 export interface AppFixture {
-  app: Hono<AppEnv>;
-  db: Variables["db"];
+  app: Express.Application;
+  context: Context;
   users: {
     root: TestClient;
     admin: TestClient;
@@ -22,53 +20,63 @@ export interface AppFixture {
   };
 }
 
-export async function buildAppFixture(): Promise<AppFixture> {
+export async function buildFixture(): Promise<AppFixture> {
   dotenv.config({ path: ".env.test" });
-
-  const Log = createLogger();
-  Log.info("Building app test fixture");
-
-  const env = loadEnv();
-  const db = await initAndCreateDbClients(env);
-
-  const app = buildApp(env, {
-    db,
-    Log,
-  });
+  const context = await createContext();
+  const app = buildApp(context);
 
   const users = {
     root: new TestClient({
-      app,
+      request: supertest(app),
       email: "root@datablocks.com",
       password: "datablocks-root-password",
-      jwt: await createJwt(
+      jwt: createJwt(
         {
           sub: Uuid.parse("00000000-0000-0000-0000-000000000000"),
           iat: Math.round(Date.now() / 1000),
           type: "root",
         },
-        env.jwtSecret,
+        context.config.jwtSecret,
       ),
     }),
     admin: new TestClient({
-      app,
+      request: supertest(app),
       email: faker.internet.email().toLowerCase(),
       password: faker.internet.password(),
       jwt: "",
     }),
     backend: new TestClient({
-      app,
-      email: "backend@fe.com",
-      password: "",
+      request: supertest(app),
+      email: faker.internet.email().toLowerCase(),
+      password: faker.internet.password(),
       jwt: "",
     }),
   };
 
-  Log.info("Dropping test databases");
-  await db.primary.dropDatabase();
-  await db.data.dropDatabase();
+  await dropDatabaseWithRetry(context.db.primary);
+  await dropDatabaseWithRetry(context.db.data);
+  await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  return { app, db, users };
+  return { app, context, users };
+}
+
+async function dropDatabaseWithRetry(db: Db, maxRetries = 3, delay = 1000) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      await db.dropDatabase();
+      return;
+    } catch (error: unknown) {
+      if (
+        error instanceof Error &&
+        error.message.includes("currently being dropped") &&
+        i < maxRetries - 1
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error;
+    }
+  }
 }
 
 export type OrganizationFixture = {
@@ -82,7 +90,7 @@ export type SchemaFixture = {
   id: UuidDto;
   name: string;
   keys: string[];
-  definition: JsonObject;
+  schema: JsonObject;
 };
 
 export type QueryFixture = {
@@ -93,55 +101,108 @@ export type QueryFixture = {
   pipeline: Record<string, unknown>[];
 };
 
+export async function setupAdmin(fixture: AppFixture): Promise<void> {
+  const { root, admin } = fixture.users;
+  await root.createUser({
+    email: admin.email,
+    password: admin.password,
+    type: "admin",
+  });
+
+  const response = await admin.login({
+    email: admin.email,
+    password: admin.password,
+  });
+  admin.jwt = response.body.data;
+}
+
 export async function setupOrganization(
   fixture: AppFixture,
   schema: SchemaFixture,
   query: QueryFixture,
 ): Promise<OrganizationFixture> {
   const organization: Partial<OrganizationFixture> = {};
-  const { root, backend } = fixture.users;
+  const { admin, backend } = fixture.users;
+
+  await setupAdmin(fixture);
 
   {
-    const response = await root.createOrganization({
-      name: faker.company.name(),
-    });
-    assertSuccessResponse(response);
-    organization.id = response.data;
+    const response = await admin
+      .createOrganization({
+        name: faker.company.name(),
+      })
+      .expect(200);
+
+    if (response.body.errors) {
+      console.log(response.body.errors);
+    }
+
+    organization.id = response.body.data;
   }
 
   {
-    const response = await root.createOrganizationAccessToken({
-      id: organization.id,
-    });
-    assertSuccessResponse(response);
-    backend.jwt = response.data;
+    const response = await admin
+      .createOrganizationAccessToken({
+        id: organization.id!,
+      })
+      .expect(200);
+
+    if (response.body.errors) {
+      console.log(response.body.errors);
+    }
+
+    backend.jwt = response.body.data;
   }
 
   {
-    const response = await backend.addSchema({
-      org: organization.id,
-      name: schema.name,
-      keys: schema.keys,
-      schema: schema.definition,
-    });
-    assertSuccessResponse(response);
-    schema.id = response.data;
-    query.schema = response.data;
+    const response = await backend
+      .addSchema({
+        org: organization.id!,
+        name: schema.name,
+        keys: schema.keys,
+        schema: schema.schema,
+      })
+      .expect(200);
+
+    if (response.body.errors) {
+      console.log(response.body.errors);
+    }
+
+    const id = response.body.data as UuidDto;
+    schema.id = id;
+    query.schema = id;
   }
 
   {
-    const response = await backend.addQuery({
-      org: organization.id,
-      name: query.name,
-      schema: query.schema,
-      variables: query.variables,
-      pipeline: query.pipeline,
-    });
-    assertSuccessResponse(response);
-    query.id = response.data;
+    const response = await backend
+      .addQuery({
+        org: organization.id!,
+        name: query.name,
+        schema: query.schema,
+        variables: query.variables,
+        pipeline: query.pipeline,
+      })
+      .expect(200);
+
+    if (response.body.errors) {
+      console.error(response.body.errors);
+    }
+
+    query.id = response.body.data as UuidDto;
   }
 
   organization.schema = schema;
   organization.query = query;
+
+  if (!organization.schema.id) {
+    console.error("Test schema setup failed");
+    throw new Error("Test query setup failed");
+  }
+
+  if (!organization.query.id) {
+    console.error("Test query setup failed");
+    throw new Error("Test query setup failed");
+  }
+
   return organization as OrganizationFixture;
 }

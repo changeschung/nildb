@@ -1,6 +1,8 @@
+import type { Db, MongoClient } from "mongodb";
 import { z } from "zod";
+import { initAndCreateDbClients } from "./common/mongo";
 
-const EnvSchema = z.object({
+const ConfigSchema = z.object({
   dbNamePrefix: z.string().min(4),
   dbUri: z.string().startsWith("mongodb"),
   env: z.enum(["test", "dev", "prod"]),
@@ -8,16 +10,22 @@ const EnvSchema = z.object({
   logLevel: z.enum(["debug", "info", "warn", "error"]),
   webPort: z.number().int().positive(),
 });
+export type Config = z.infer<typeof ConfigSchema>;
 
-export type Bindings = z.infer<typeof EnvSchema>;
+export interface Context {
+  config: Config;
+  db: {
+    // Default db is the primary (eg `datablocks`)
+    client: MongoClient;
+    // Holds organizations, users, schemas, queries collections (eg `datablocks`)
+    primary: Db;
+    // Holds schema data (eg `datablocks_data`)~
+    data: Db;
+  };
+}
 
-let env: Bindings;
-export function loadEnv(): Bindings {
-  if (env) {
-    return env;
-  }
-
-  return EnvSchema.parse({
+export async function createContext(): Promise<Context> {
+  const config = ConfigSchema.parse({
     dbNamePrefix: process.env.APP_DB_NAME_PREFIX,
     dbUri: process.env.APP_DB_URI,
     env: process.env.APP_ENV,
@@ -25,4 +33,9 @@ export function loadEnv(): Bindings {
     logLevel: process.env.APP_LOG_LEVEL,
     webPort: Number(process.env.APP_PORT),
   });
+
+  return {
+    config,
+    db: await initAndCreateDbClients(config),
+  };
 }

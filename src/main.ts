@@ -1,30 +1,16 @@
-import { serve } from "@hono/node-server";
 import dotenv from "dotenv";
-import { createLogger } from "#/logging";
-import { initAndCreateDbClients } from "#/models/clients";
 import { buildApp } from "./app";
-import { loadEnv } from "./env";
+import { createLogger } from "./common/logging";
+import { createContext } from "./env";
 
 async function main() {
   dotenv.config();
-  const env = loadEnv();
-  const Log = createLogger();
-  Log.info("✅  Initializing nil-db api");
 
-  const db = await initAndCreateDbClients(env);
-  Log.info("✅  Connected to database");
-
-  const app = buildApp(env, {
-    db,
-    Log,
-  });
-
-  serve({
-    port: env.webPort,
-    fetch: app.fetch,
-  });
-
-  Log.info("✅  Nil-db api ready");
+  const context = await createContext();
+  const Log = createLogger(context.config);
+  const app = buildApp(context);
+  app.listen(context.config.webPort);
+  Log.info(`Api ready on ${context.config.webPort}`);
 }
 
 await main();
