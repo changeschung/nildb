@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
+import { buildApp } from "./app";
 import { createLogger } from "./common/logging";
 import { createContext } from "./env";
-import { buildApp } from "./app";
 
 async function main() {
   dotenv.config();

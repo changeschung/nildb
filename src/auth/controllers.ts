@@ -2,9 +2,9 @@ import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
 import type { EmptyObject } from "type-fest";
 import { z } from "zod";
-import { authenticateUser } from "./service";
 import type { ApiResponse } from "#/common/handler";
 import { type JwtSerialized, createJwt } from "#/middleware/auth";
+import { authenticateUser } from "./service";
 
 export const LoginRequest = z.object({
   email: z.string().email(),

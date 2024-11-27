@@ -1,7 +1,7 @@
 import argon2 from "argon2";
 import { Effect as E, pipe } from "effect";
 import type { DbError } from "#/common/errors";
-import { type UserBase, Repository } from "#/users/repository";
+import { Repository, type UserBase } from "#/users/repository";
 
 export function authenticateUser(
   email: string,
