@@ -4,8 +4,8 @@ import type { JsonArray, JsonObject, JsonValue } from "type-fest";
 import { type DbError, succeedOrMapToDbError } from "#/common/errors";
 import type { QueryBase } from "#/queries/repository";
 import type { SchemaBase } from "#/schemas/repository";
-import { DocumentBase } from "#/common/mongo";
-import { UuidDto } from "#/common/types";
+
+export const TAIL_DATA_LIMIT = 25;
 
 export type QueryRuntimeVariables = Record<string, string | number | boolean>;
 
@@ -189,8 +189,8 @@ export const DataRepository = {
         const result = await db
           .collection(collectionName)
           .find({})
-          .sort({ createdAt: -1 })
-          .limit(25)
+          .sort({ _created: -1 })
+          .limit(TAIL_DATA_LIMIT)
           .project({
             _id: 0,
           })
