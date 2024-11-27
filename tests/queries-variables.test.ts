@@ -10,7 +10,6 @@ import {
   buildFixture,
   setupOrganization,
 } from "./fixture/app-fixture";
-import { assertDefined } from "./fixture/assertions";
 import type { TestClient } from "./fixture/client";
 
 describe("queries.variables.test.ts", () => {
@@ -68,7 +67,6 @@ describe("queries.variables.test.ts", () => {
       totalAmount: number;
       count: number;
     }[];
-    assertDefined(results);
 
     expect(results.length).toBeGreaterThan(0);
 

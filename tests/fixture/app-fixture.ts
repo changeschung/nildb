@@ -1,5 +1,6 @@
 import { faker } from "@faker-js/faker";
 import dotenv from "dotenv";
+import type { Db } from "mongodb";
 import supertest from "supertest";
 import type { JsonObject } from "type-fest";
 import { buildApp } from "#/app";
@@ -52,10 +53,30 @@ export async function buildFixture(): Promise<AppFixture> {
     }),
   };
 
-  await context.db.primary.dropDatabase();
-  await context.db.data.dropDatabase();
+  await dropDatabaseWithRetry(context.db.primary);
+  await dropDatabaseWithRetry(context.db.data);
+  await new Promise((resolve) => setTimeout(resolve, 1000));
 
   return { app, context, users };
+}
+
+async function dropDatabaseWithRetry(db: Db, maxRetries = 3, delay = 1000) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      await db.dropDatabase();
+      return;
+    } catch (error: unknown) {
+      if (
+        error instanceof Error &&
+        error.message.includes("currently being dropped") &&
+        i < maxRetries - 1
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error;
+    }
+  }
 }
 
 export type OrganizationFixture = {
