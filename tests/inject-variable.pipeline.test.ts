@@ -67,7 +67,7 @@ describe("inject.variable.pipeline.test", () => {
       {
         $match: {
           status: "##status",
-          createdAt: { $gt: "##startDate" },
+          _created: { $gt: "##startDate" },
         },
       },
       {
@@ -101,7 +101,7 @@ describe("inject.variable.pipeline.test", () => {
       {
         $match: {
           status: "active",
-          createdAt: { $gt: "2024-01-01" },
+          _created: { $gt: "2024-01-01" },
         },
       },
       {

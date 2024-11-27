@@ -16,29 +16,26 @@ export type QueryBase = DocumentBase & {
   pipeline: JsonArray;
 };
 
-export const QueryDocumentSchema = new mongoose.Schema(
-  {
-    _id: {
-      type: mongoose.Schema.Types.UUID,
-      default: () => randomUUID(),
-      get: (val: Buffer) => new UUID(val),
-    },
-    org: {
-      type: mongoose.Schema.Types.UUID,
-      required: true,
-      get: (val: Buffer) => new UUID(val),
-    },
-    name: { type: String, required: true },
-    schema: {
-      type: mongoose.Schema.Types.UUID,
-      required: true,
-      get: (val: Buffer) => new UUID(val),
-    },
-    variables: { type: Map, required: true },
-    pipeline: { type: [mongoose.Schema.Types.Mixed], required: true },
+export const QueryDocumentSchema = new mongoose.Schema({
+  _id: {
+    type: mongoose.Schema.Types.UUID,
+    default: () => randomUUID(),
+    get: (val: Buffer) => new UUID(val),
   },
-  { timestamps: true },
-);
+  org: {
+    type: mongoose.Schema.Types.UUID,
+    required: true,
+    get: (val: Buffer) => new UUID(val),
+  },
+  name: { type: String, required: true },
+  schema: {
+    type: mongoose.Schema.Types.UUID,
+    required: true,
+    get: (val: Buffer) => new UUID(val),
+  },
+  variables: { type: Map, required: true },
+  pipeline: { type: [mongoose.Schema.Types.Mixed], required: true },
+});
 
 const Model = mongoose.model(CollectionName.Queries, QueryDocumentSchema);
 

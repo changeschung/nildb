@@ -12,19 +12,16 @@ export type UserBase = DocumentBase & {
   type: "root" | "admin";
 };
 
-const UserDocumentSchema = new mongoose.Schema(
-  {
-    _id: {
-      type: mongoose.Schema.Types.UUID,
-      default: () => randomUUID(),
-      get: (val: Buffer) => new UUID(val),
-    },
-    email: { type: String, unique: true, index: true },
-    password: String,
-    type: { type: String, enum: ["root", "admin"] },
+const UserDocumentSchema = new mongoose.Schema({
+  _id: {
+    type: mongoose.Schema.Types.UUID,
+    default: () => randomUUID(),
+    get: (val: Buffer) => new UUID(val),
   },
-  { timestamps: true },
-);
+  email: { type: String, unique: true, index: true },
+  password: String,
+  type: { type: String, enum: ["root", "admin"] },
+});
 
 const Model = mongoose.model(CollectionName.Users, UserDocumentSchema);
 

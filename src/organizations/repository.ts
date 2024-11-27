@@ -11,35 +11,32 @@ export type OrganizationBase = DocumentBase & {
   name: string;
 };
 
-export const OrganizationDocumentSchema = new mongoose.Schema(
-  {
-    _id: {
-      type: mongoose.Schema.Types.UUID,
-      default: () => randomUUID(),
-      get: (val: Buffer) => new UUID(val),
-    },
-    schemas: {
-      type: [
-        {
-          type: mongoose.Schema.Types.UUID,
-          get: (val: Buffer) => new UUID(val),
-        },
-      ],
-      default: [],
-    },
-    queries: {
-      type: [
-        {
-          type: mongoose.Schema.Types.UUID,
-          get: (val: Buffer) => new UUID(val),
-        },
-      ],
-      default: [],
-    },
-    name: { type: String, required: true },
+export const OrganizationDocumentSchema = new mongoose.Schema({
+  _id: {
+    type: mongoose.Schema.Types.UUID,
+    default: () => randomUUID(),
+    get: (val: Buffer) => new UUID(val),
   },
-  { timestamps: true },
-);
+  schemas: {
+    type: [
+      {
+        type: mongoose.Schema.Types.UUID,
+        get: (val: Buffer) => new UUID(val),
+      },
+    ],
+    default: [],
+  },
+  queries: {
+    type: [
+      {
+        type: mongoose.Schema.Types.UUID,
+        get: (val: Buffer) => new UUID(val),
+      },
+    ],
+    default: [],
+  },
+  name: { type: String, required: true },
+});
 
 const Model = mongoose.model(
   CollectionName.Organizations,
