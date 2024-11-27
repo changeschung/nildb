@@ -2,14 +2,14 @@ import Ajv, { ValidationError } from "ajv";
 import addFormats from "ajv-formats";
 import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
-import { Document, UUID } from "mongodb";
+import { type Document, UUID } from "mongodb";
 import type { EmptyObject, JsonArray } from "type-fest";
 import { z } from "zod";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
+import type { DocumentBase } from "#/common/mongo";
 import { Uuid, type UuidDto } from "#/common/types";
 import { SchemasRepository } from "#/schemas/repository";
-import { DataRepository, type CreatedResult } from "./repository";
-import { DocumentBase } from "#/common/mongo";
+import { type CreatedResult, DataRepository } from "./repository";
 
 export const MAX_RECORDS_LENGTH = 10_000;
 
@@ -62,6 +62,40 @@ export const createDataController: RequestHandler<
         }),
       ),
     ),
+
+    foldToApiResponse(req.context),
+    E.runPromise,
+  );
+
+  res.send(response);
+};
+
+export const ReadDataRequest = z.object({
+  schema: Uuid,
+  filter: z.record(z.string(), z.unknown()),
+});
+export type ReadDataRequest = {
+  schema: UuidDto;
+  filter: Record<string, unknown>;
+};
+export type ReadDataResponse = ApiResponse<DocumentBase[]>;
+
+export const readDataController: RequestHandler<
+  EmptyObject,
+  ReadDataResponse,
+  ReadDataRequest
+> = async (req, res) => {
+  const response = await pipe(
+    E.try({
+      try: () => ReadDataRequest.parse(req.body),
+      catch: (error) => error as z.ZodError,
+    }),
+
+    E.flatMap((body) =>
+      DataRepository.find(req.context.db.data, body.schema, body.filter),
+    ),
+
+    E.map((data) => data),
 
     foldToApiResponse(req.context),
     E.runPromise,

@@ -1,7 +1,10 @@
 import { Effect as E, pipe } from "effect";
 import type { Db, Document, UUID } from "mongodb";
+import type { Filter } from "mongodb/lib/beta";
 import type { JsonArray, JsonObject, JsonValue } from "type-fest";
 import { type DbError, succeedOrMapToDbError } from "#/common/errors";
+import type { DocumentBase } from "#/common/mongo";
+import type { UuidDto } from "#/common/types";
 import type { QueryBase } from "#/queries/repository";
 import type { SchemaBase } from "#/schemas/repository";
 
@@ -178,6 +181,28 @@ export const DataRepository = {
         collection: collectionName,
         name: "runPipeline",
         params: { pipeline },
+      }),
+    );
+  },
+
+  find(
+    db: Db,
+    schema: UUID,
+    filter: Filter<DocumentBase>,
+  ): E.Effect<DocumentBase[], DbError> {
+    const collectionName = schema.toJSON();
+    return pipe(
+      E.tryPromise(async () => {
+        return await db
+          .collection<DocumentBase>(collectionName)
+          .find(filter)
+          .sort({ _created: -1 })
+          .toArray();
+      }),
+      succeedOrMapToDbError({
+        collection: collectionName,
+        name: "tail",
+        params: { schema },
       }),
     );
   },

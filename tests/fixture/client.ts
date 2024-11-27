@@ -6,6 +6,7 @@ import type {
   CreateDataRequest,
   DeleteDataRequest,
   FlushDataRequest,
+  ReadDataRequest,
   TailDataRequest,
 } from "#/data/controllers";
 import { DataEndpoint } from "#/data/routes";
@@ -181,6 +182,13 @@ export class TestClient {
   tailData(body: TailDataRequest): Test {
     return this.request
       .post(`${apiv1Base}${DataEndpoint.Tail}`)
+      .set("Authorization", `Bearer ${this.jwt}`)
+      .send(body);
+  }
+
+  readData(body: ReadDataRequest): Test {
+    return this.request
+      .post(`${apiv1Base}${DataEndpoint.Read}`)
       .set("Authorization", `Bearer ${this.jwt}`)
       .send(body);
   }
