@@ -1,98 +1,51 @@
 import { faker } from "@faker-js/faker";
 import { beforeAll, describe, expect, it } from "vitest";
-import type { UuidDto } from "#/types";
+import query from "./data/variables.wallet.query.json";
+import schema from "./data/variables.wallet.schema.json";
 import {
   type AppFixture,
   type OrganizationFixture,
   type QueryFixture,
   type SchemaFixture,
-  buildAppFixture,
+  buildFixture,
   setupOrganization,
 } from "./fixture/app-fixture";
-import {
-  assertDefined,
-  assertFailureResponse,
-  assertSuccessResponse,
-} from "./fixture/assertions";
+import { assertDefined } from "./fixture/assertions";
+import type { TestClient } from "./fixture/client";
 
-describe("queries > variable injection", () => {
+describe("queries.variables.test.ts", () => {
   let fixture: AppFixture;
-
-  const schema: SchemaFixture = {
-    id: "" as UuidDto,
-    name: "test-schema",
-    keys: [],
-    definition: {
-      $schema: "http://json-schema.org/draft-07/schema#",
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          wallet: { type: "string" },
-          amount: { type: "number" },
-          status: { type: "string" },
-          timestamp: { type: "string" },
-        },
-        required: ["wallet", "amount", "status", "timestamp"],
-      },
-    },
-  };
-
-  const query: QueryFixture = {
-    id: "" as UuidDto,
-    name: "test-query-with-variables",
-    schema: "" as UuidDto,
-    variables: {
-      minAmount: { type: "number", description: "Minimum amount filter" },
-      status: { type: "string", description: "Status to filter by" },
-      startDate: { type: "string", description: "Start date filter" },
-    },
-    pipeline: [
-      {
-        $match: {
-          amount: { $gte: "##minAmount" },
-          status: "##status",
-          timestamp: { $gte: "##startDate" },
-        },
-      },
-      {
-        $group: {
-          _id: "$status",
-          totalAmount: { $sum: "$amount" },
-          count: { $sum: 1 },
-        },
-      },
-      {
-        $sort: {
-          totalAmount: -1,
-        },
-      },
-    ],
-  };
-
+  let backend: TestClient;
   let organization: OrganizationFixture;
 
   beforeAll(async () => {
-    fixture = await buildAppFixture();
+    fixture = await buildFixture();
+    backend = fixture.users.backend;
+    organization = await setupOrganization(
+      fixture,
+      schema as SchemaFixture,
+      query as QueryFixture,
+    );
   });
 
-  it("can setup organization and records", async () => {
-    organization = await setupOrganization(fixture, schema, query);
+  it("creates records", async () => {
     const schemaId = organization.schema.id;
 
-    // generate some test data
+    // generate test data
     const data = Array.from({ length: 10 }, () => ({
+      _id: faker.string.uuid(),
       wallet: faker.finance.ethereumAddress(),
       amount: faker.number.int({ min: 100, max: 1000 }),
       status: faker.helpers.arrayElement(["pending", "completed", "failed"]),
       timestamp: faker.date.recent().toISOString(),
     }));
 
-    const response = await fixture.users.backend.uploadData({
-      schema: schemaId,
-      data,
-    });
-    assertSuccessResponse(response);
+    const _response = await backend
+      .uploadData({
+        schema: schemaId,
+        data,
+      })
+      .expect(200);
   });
 
   it("can execute query with variables", async () => {
@@ -103,13 +56,14 @@ describe("queries > variable injection", () => {
       startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     };
 
-    const response = await fixture.users.backend.executeQuery({
-      id,
-      variables,
-    });
-    assertSuccessResponse(response);
+    const response = await backend
+      .executeQuery({
+        id,
+        variables,
+      })
+      .expect(200);
 
-    const results = response.data as unknown as {
+    const results = response.body.data as unknown as {
       _id: string;
       totalAmount: number;
       count: number;
@@ -133,12 +87,13 @@ describe("queries > variable injection", () => {
       startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     };
 
-    const response = await fixture.users.backend.executeQuery({
-      id,
-      variables,
-    });
-    assertFailureResponse(response);
-    expect(response.errors[0]).toMatch(/An unknown error occurred/);
+    const response = await backend
+      .executeQuery({
+        id,
+        variables,
+      })
+      .expect(200);
+    expect(response.body.errors[0]).toMatch(/An unknown error occurred/);
   });
 
   it("rejects object as variable value", async () => {
@@ -149,12 +104,13 @@ describe("queries > variable injection", () => {
       startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     };
 
-    const response = await fixture.users.backend.executeQuery({
-      id,
-      variables,
-    });
-    assertFailureResponse(response);
-    expect(response.errors[0]).toMatch(/An unknown error occurred/);
+    const response = await backend
+      .executeQuery({
+        id,
+        variables,
+      })
+      .expect(200);
+    expect(response.body.errors[0]).toMatch(/An unknown error occurred/);
   });
 
   it("rejects when providing null as variable value", async () => {
@@ -165,12 +121,13 @@ describe("queries > variable injection", () => {
       startDate: null,
     };
 
-    const response = await fixture.users.backend.executeQuery({
-      id,
-      variables,
-    });
-    assertFailureResponse(response);
-    expect(response.errors[0]).toMatch(/An unknown error occurred/);
+    const response = await backend
+      .executeQuery({
+        id,
+        variables,
+      })
+      .expect(200);
+    expect(response.body.errors[0]).toMatch(/An unknown error occurred/);
   });
 
   it("reject undefined as variable value", async () => {
@@ -181,12 +138,13 @@ describe("queries > variable injection", () => {
       startDate: undefined,
     };
 
-    const response = await fixture.users.backend.executeQuery({
-      id,
-      variables,
-    });
-    assertFailureResponse(response);
-    expect(response.errors[0]).toMatch(/An unknown error occurred/);
+    const response = await backend
+      .executeQuery({
+        id,
+        variables,
+      })
+      .expect(200);
+    expect(response.body.errors[0]).toMatch(/An unknown error occurred/);
   });
 
   it("rejects function as variable value", async () => {
@@ -197,11 +155,12 @@ describe("queries > variable injection", () => {
       startDate: () => new Date().toISOString(),
     };
 
-    const response = await fixture.users.backend.executeQuery({
-      id,
-      variables,
-    });
-    assertFailureResponse(response);
-    expect(response.errors[0]).toMatch(/An unknown error occurred/);
+    const response = await backend
+      .executeQuery({
+        id,
+        variables,
+      })
+      .expect(200);
+    expect(response.body.errors[0]).toMatch(/An unknown error occurred/);
   });
 });
