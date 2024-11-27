@@ -12,9 +12,12 @@
         "_id": {
           "type": "string",
           "format": "uuid"
+        },
+        "name": {
+          "type": "string"
         }
       },
-      "required": ["_id"]
+      "required": ["_id", "name"]
     }
   }
 }

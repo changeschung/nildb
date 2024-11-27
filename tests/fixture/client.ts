@@ -2,11 +2,11 @@ import type { Test } from "supertest";
 import type TestAgent from "supertest/lib/agent";
 import type { LoginRequest } from "#/auth/controllers";
 import { AuthEndpoints } from "#/auth/routes";
-import {
-  type DeleteDataResponse,
-  type FlushDataRequest,
-  type TailDataRequest,
-  type CreateDataRequest,
+import type {
+  CreateDataRequest,
+  DeleteDataRequest,
+  FlushDataRequest,
+  TailDataRequest,
 } from "#/data/controllers";
 import { DataEndpoint } from "#/data/routes";
 import type {
@@ -164,7 +164,7 @@ export class TestClient {
       .send(body);
   }
 
-  deleteData(body: DeleteDataResponse): Test {
+  deleteData(body: DeleteDataRequest): Test {
     return this.request
       .post(`${apiv1Base}${DataEndpoint.Delete}`)
       .set("Authorization", `Bearer ${this.jwt}`)

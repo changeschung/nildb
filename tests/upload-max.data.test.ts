@@ -1,5 +1,10 @@
+import { faker } from "@faker-js/faker";
 import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
+import { MAX_RECORDS_LENGTH } from "#/data/controllers";
+import type { Context } from "#/env";
+import query from "./data/simple.query.json";
+import schema from "./data/simple.schema.json";
 import {
   type AppFixture,
   type OrganizationFixture,
@@ -8,11 +13,7 @@ import {
   buildFixture,
   setupOrganization,
 } from "./fixture/app-fixture";
-import type { Context } from "#/env";
 import type { TestClient } from "./fixture/client";
-import schema from "./data/simple.schema.json";
-import query from "./data/simple.query.json";
-import { MAX_RECORDS_LENGTH } from "#/data/controllers";
 
 describe("upload.max.data.test", () => {
   let fixture: AppFixture;
@@ -34,6 +35,7 @@ describe("upload.max.data.test", () => {
   it("rejects payload that exceeds MAX_RECORDS_LENGTH", async () => {
     const data = Array.from({ length: MAX_RECORDS_LENGTH + 1 }, () => ({
       _id: new UUID().toString(),
+      name: faker.person.fullName() + new UUID().toString(), // insufficient names in faker to hit limit without repetition
     }));
 
     const response = await fixture.users.backend
@@ -51,6 +53,7 @@ describe("upload.max.data.test", () => {
   it("accepts payload at MAX_RECORDS_LENGTH", async () => {
     const data = Array.from({ length: MAX_RECORDS_LENGTH }, () => ({
       _id: new UUID().toString(),
+      name: faker.person.fullName() + new UUID().toString(), // insufficient names in faker to hit limit without repetition
     }));
 
     const response = await fixture.users.backend

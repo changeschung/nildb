@@ -1,5 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { beforeAll, describe, expect, it } from "vitest";
+import type { CreatedResult } from "#/data/repository";
 import type { Context } from "#/env";
 import query from "./data/wallet.query.json";
 import schema from "./data/wallet.schema.json";
@@ -12,7 +13,6 @@ import {
   setupOrganization,
 } from "./fixture/app-fixture";
 import type { TestClient } from "./fixture/client";
-import { CreatedResult } from "#/data/repository";
 
 describe("data.test.ts", () => {
   let fixture: AppFixture;
