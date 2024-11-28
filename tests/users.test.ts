@@ -3,7 +3,7 @@ import { decode } from "jsonwebtoken";
 import { beforeAll, describe, expect, it } from "vitest";
 import type { Context } from "#/env";
 import type { JwtPayload } from "#/middleware/auth";
-import type { UserBase } from "#/users/repository";
+import type { UserDocument } from "#/users/repository";
 import { type AppFixture, buildFixture } from "./fixture/app-fixture";
 import { assertDefined } from "./fixture/assertions";
 import type { TestClient } from "./fixture/client";
@@ -45,7 +45,7 @@ describe("users.test.ts", () => {
 
     const document = await db.primary
       .collection("users")
-      .findOne<UserBase>({ email: admin.email });
+      .findOne<UserDocument>({ email: admin.email });
 
     assertDefined(document);
 
@@ -82,7 +82,7 @@ describe("users.test.ts", () => {
 
     const document = await db.primary
       .collection("users")
-      .findOne<UserBase>({ email: admin.email });
+      .findOne<UserDocument>({ email: admin.email });
 
     assertDefined(document);
 
@@ -100,7 +100,7 @@ describe("users.test.ts", () => {
 
     const document = await db.primary
       .collection("users")
-      .findOne<UserBase>({ email: admin.email });
+      .findOne<UserDocument>({ email: admin.email });
 
     expect(document).toBeNull;
   });

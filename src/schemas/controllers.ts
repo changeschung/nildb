@@ -10,7 +10,7 @@ import type { DocumentBase } from "#/common/mongo";
 import { Uuid, type UuidDto } from "#/common/types";
 import { DataRepository } from "#/data/repository";
 import { OrganizationsRepository } from "#/organizations/repository";
-import { type SchemaBase, SchemasRepository } from "#/schemas/repository";
+import { type SchemaDocument, SchemasRepository } from "#/schemas/repository";
 
 export const AddSchemaRequest = z.object({
   org: Uuid,
@@ -80,7 +80,7 @@ export const addSchemaController: RequestHandler<
   res.send(response);
 };
 
-export type ListSchemasResponse = ApiResponse<SchemaBase[]>;
+export type ListSchemasResponse = ApiResponse<SchemaDocument[]>;
 
 export const listSchemasController: RequestHandler<
   EmptyObject,

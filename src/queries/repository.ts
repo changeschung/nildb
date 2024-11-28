@@ -8,7 +8,7 @@ export type QueryVariable = {
   description: string;
 };
 
-export type QueryBase = DocumentBase & {
+export type QueryDocument = DocumentBase & {
   org: UUID;
   name: string;
   // Determines the pipeline's starting collection
@@ -20,11 +20,11 @@ export type QueryBase = DocumentBase & {
 export const QueriesRepository = {
   create(
     db: Db,
-    data: Omit<QueryBase, keyof DocumentBase>,
+    data: Omit<QueryDocument, keyof DocumentBase>,
   ): E.Effect<UUID, DbError> {
-    const collection = db.collection<QueryBase>(CollectionName.Queries);
+    const collection = db.collection<QueryDocument>(CollectionName.Queries);
     const now = new Date();
-    const document: QueryBase = {
+    const document: QueryDocument = {
       ...data,
       _id: new UUID(),
       _created: now,
@@ -43,9 +43,9 @@ export const QueriesRepository = {
     );
   },
 
-  deleteByQueryId(db: Db, _id: UUID): E.Effect<QueryBase, DbError> {
-    const collection = db.collection<QueryBase>(CollectionName.Queries);
-    const filter: StrictFilter<QueryBase> = { _id };
+  deleteByQueryId(db: Db, _id: UUID): E.Effect<QueryDocument, DbError> {
+    const collection = db.collection<QueryDocument>(CollectionName.Queries);
+    const filter: StrictFilter<QueryDocument> = { _id };
 
     return pipe(
       E.tryPromise(async () => {
@@ -59,9 +59,9 @@ export const QueriesRepository = {
     );
   },
 
-  findOrgQueries(db: Db, org: UUID): E.Effect<QueryBase[], DbError> {
-    const collection = db.collection<QueryBase>(CollectionName.Queries);
-    const filter: StrictFilter<QueryBase> = { org };
+  findOrgQueries(db: Db, org: UUID): E.Effect<QueryDocument[], DbError> {
+    const collection = db.collection<QueryDocument>(CollectionName.Queries);
+    const filter: StrictFilter<QueryDocument> = { org };
 
     return pipe(
       E.tryPromise(() => {
@@ -74,9 +74,9 @@ export const QueriesRepository = {
     );
   },
 
-  getQueryById(db: Db, _id: UUID): E.Effect<QueryBase, DbError> {
-    const collection = db.collection<QueryBase>(CollectionName.Queries);
-    const filter: StrictFilter<QueryBase> = { _id };
+  getQueryById(db: Db, _id: UUID): E.Effect<QueryDocument, DbError> {
+    const collection = db.collection<QueryDocument>(CollectionName.Queries);
+    const filter: StrictFilter<QueryDocument> = { _id };
 
     return pipe(
       E.tryPromise(async () => {

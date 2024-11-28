@@ -9,7 +9,10 @@ import {
   type JwtSerialized,
   createJwt,
 } from "#/middleware/auth";
-import { type OrganizationBase, OrganizationsRepository } from "./repository";
+import {
+  type OrganizationDocument,
+  OrganizationsRepository,
+} from "./repository";
 
 export const CreateOrganizationRequest = z.object({
   name: z.string(),
@@ -110,7 +113,7 @@ export const deleteOrganizationController: RequestHandler<
   res.send(response);
 };
 
-export type ListOrganizationsResponse = ApiResponse<OrganizationBase[]>;
+export type ListOrganizationsResponse = ApiResponse<OrganizationDocument[]>;
 
 export const listOrganizationController: RequestHandler<
   EmptyObject,

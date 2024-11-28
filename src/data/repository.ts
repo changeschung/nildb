@@ -5,8 +5,8 @@ import type { JsonArray, JsonObject, JsonValue } from "type-fest";
 import { type DbError, succeedOrMapToDbError } from "#/common/errors";
 import type { DocumentBase } from "#/common/mongo";
 import type { UuidDto } from "#/common/types";
-import type { QueryBase } from "#/queries/repository";
-import type { SchemaBase } from "#/schemas/repository";
+import type { QueryDocument } from "#/queries/repository";
+import type { SchemaDocument } from "#/schemas/repository";
 
 export const TAIL_DATA_LIMIT = 25;
 
@@ -70,7 +70,7 @@ export const DataRepository = {
 
   insert(
     db: Db,
-    schema: SchemaBase,
+    schema: SchemaDocument,
     data: DocumentBase[],
   ): E.Effect<CreatedResult, DbError> {
     const collectionName = schema._id.toString();
@@ -187,7 +187,7 @@ export const DataRepository = {
 
   runPipeline<T extends JsonValue>(
     db: Db,
-    query: QueryBase,
+    query: QueryDocument,
     variables: QueryRuntimeVariables,
   ): E.Effect<T, DbError> {
     const collectionName = query.schema.toJSON();

@@ -4,8 +4,8 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { CollectionName } from "#/common/mongo";
 import type { UuidDto } from "#/common/types";
 import type { Context } from "#/env";
-import type { OrganizationBase } from "#/organizations/repository";
-import type { SchemaBase } from "#/schemas/repository";
+import type { OrganizationDocument } from "#/organizations/repository";
+import type { SchemaDocument } from "#/schemas/repository";
 import query from "./data/wallet.query.json";
 import schema from "./data/wallet.schema.json";
 import {
@@ -108,13 +108,13 @@ describe("query.test.ts", () => {
       .expect(200);
 
     const queryDocument = await db.primary
-      .collection<SchemaBase>(CollectionName.Schemas)
+      .collection<SchemaDocument>(CollectionName.Schemas)
       .findOne({ _id: new UUID(query.id) });
 
     expect(queryDocument).toBeNull();
 
     const record = await db.primary
-      .collection<OrganizationBase>(CollectionName.Organizations)
+      .collection<OrganizationDocument>(CollectionName.Organizations)
       .findOne({ _id: new UUID(organization.id) });
     assertDefined(record);
 

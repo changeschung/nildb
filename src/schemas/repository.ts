@@ -3,7 +3,7 @@ import { type Db, type StrictFilter, UUID } from "mongodb";
 import { type DbError, succeedOrMapToDbError } from "#/common/errors";
 import { CollectionName, type DocumentBase } from "#/common/mongo";
 
-export type SchemaBase = DocumentBase & {
+export type SchemaDocument = DocumentBase & {
   org: UUID;
   name: string;
   keys: string[];
@@ -13,11 +13,11 @@ export type SchemaBase = DocumentBase & {
 export const SchemasRepository = {
   create(
     db: Db,
-    data: Omit<SchemaBase, keyof DocumentBase>,
+    data: Omit<SchemaDocument, keyof DocumentBase>,
   ): E.Effect<UUID, DbError> {
-    const collection = db.collection<SchemaBase>(CollectionName.Schemas);
+    const collection = db.collection<SchemaDocument>(CollectionName.Schemas);
     const now = new Date();
-    const document: SchemaBase = {
+    const document: SchemaDocument = {
       ...data,
       _id: new UUID(),
       _created: now,
@@ -36,9 +36,9 @@ export const SchemasRepository = {
     );
   },
 
-  deleteBySchemaId(db: Db, _id: UUID): E.Effect<SchemaBase, DbError> {
-    const collection = db.collection<SchemaBase>(CollectionName.Schemas);
-    const filter: StrictFilter<SchemaBase> = { _id };
+  deleteBySchemaId(db: Db, _id: UUID): E.Effect<SchemaDocument, DbError> {
+    const collection = db.collection<SchemaDocument>(CollectionName.Schemas);
+    const filter: StrictFilter<SchemaDocument> = { _id };
 
     return pipe(
       E.tryPromise(async () => {
@@ -52,9 +52,12 @@ export const SchemasRepository = {
     );
   },
 
-  listOrganizationSchemas(db: Db, org: UUID): E.Effect<SchemaBase[], DbError> {
-    const collection = db.collection<SchemaBase>(CollectionName.Schemas);
-    const filter: StrictFilter<SchemaBase> = { org };
+  listOrganizationSchemas(
+    db: Db,
+    org: UUID,
+  ): E.Effect<SchemaDocument[], DbError> {
+    const collection = db.collection<SchemaDocument>(CollectionName.Schemas);
+    const filter: StrictFilter<SchemaDocument> = { org };
 
     return pipe(
       E.tryPromise(async () => {
@@ -68,9 +71,9 @@ export const SchemasRepository = {
     );
   },
 
-  find(db: Db, _id: UUID): E.Effect<SchemaBase, DbError> {
-    const collection = db.collection<SchemaBase>(CollectionName.Schemas);
-    const filter: StrictFilter<SchemaBase> = { _id };
+  find(db: Db, _id: UUID): E.Effect<SchemaDocument, DbError> {
+    const collection = db.collection<SchemaDocument>(CollectionName.Schemas);
+    const filter: StrictFilter<SchemaDocument> = { _id };
 
     return pipe(
       E.tryPromise(async () => {

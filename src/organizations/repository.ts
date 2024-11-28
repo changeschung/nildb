@@ -8,7 +8,7 @@ import {
 import { type DbError, succeedOrMapToDbError } from "#/common/errors";
 import { CollectionName, type DocumentBase } from "#/common/mongo";
 
-export type OrganizationBase = DocumentBase & {
+export type OrganizationDocument = DocumentBase & {
   name: string;
   schemas: UUID[];
   queries: UUID[];
@@ -17,13 +17,13 @@ export type OrganizationBase = DocumentBase & {
 export const OrganizationsRepository = {
   create(
     db: Db,
-    data: Pick<OrganizationBase, "name">,
+    data: Pick<OrganizationDocument, "name">,
   ): E.Effect<UUID, DbError> {
-    const collection = db.collection<OrganizationBase>(
+    const collection = db.collection<OrganizationDocument>(
       CollectionName.Organizations,
     );
     const now = new Date();
-    const document: OrganizationBase = {
+    const document: OrganizationDocument = {
       ...data,
       schemas: [],
       queries: [],
@@ -44,35 +44,35 @@ export const OrganizationsRepository = {
     );
   },
 
-  list(db: Db): E.Effect<OrganizationBase[], DbError> {
-    const collection = db.collection<OrganizationBase>(
+  list(db: Db): E.Effect<OrganizationDocument[], DbError> {
+    const collection = db.collection<OrganizationDocument>(
       CollectionName.Organizations,
     );
-    const filter: StrictFilter<OrganizationBase> = {};
+    const filter: StrictFilter<OrganizationDocument> = {};
 
     return pipe(
       E.tryPromise(() => {
         return collection.find(filter).toArray();
       }),
-      succeedOrMapToDbError<OrganizationBase[]>({
+      succeedOrMapToDbError<OrganizationDocument[]>({
         name: "list",
         params: { filter },
       }),
     );
   },
 
-  findById(db: Db, _id: UUID): E.Effect<OrganizationBase, DbError> {
-    const collection = db.collection<OrganizationBase>(
+  findById(db: Db, _id: UUID): E.Effect<OrganizationDocument, DbError> {
+    const collection = db.collection<OrganizationDocument>(
       CollectionName.Organizations,
     );
-    const filter: StrictFilter<OrganizationBase> = { _id };
+    const filter: StrictFilter<OrganizationDocument> = { _id };
 
     return pipe(
       E.tryPromise(async () => {
         const result = await collection.findOne(filter);
         return O.fromNullable(result);
       }),
-      succeedOrMapToDbError<OrganizationBase>({
+      succeedOrMapToDbError<OrganizationDocument>({
         name: "findById",
         params: { filter },
       }),
@@ -80,10 +80,10 @@ export const OrganizationsRepository = {
   },
 
   deleteById(db: Db, _id: UUID): E.Effect<UUID, DbError> {
-    const collection = db.collection<OrganizationBase>(
+    const collection = db.collection<OrganizationDocument>(
       CollectionName.Organizations,
     );
-    const filter: StrictFilter<OrganizationBase> = { _id };
+    const filter: StrictFilter<OrganizationDocument> = { _id };
 
     return pipe(
       E.tryPromise(async () => {
@@ -98,11 +98,11 @@ export const OrganizationsRepository = {
   },
 
   addSchemaId(db: Db, orgId: UUID, schemaId: UUID): E.Effect<boolean, DbError> {
-    const collection = db.collection<OrganizationBase>(
+    const collection = db.collection<OrganizationDocument>(
       CollectionName.Organizations,
     );
-    const filter: StrictFilter<OrganizationBase> = { _id: orgId };
-    const update: StrictUpdateFilter<OrganizationBase> = {
+    const filter: StrictFilter<OrganizationDocument> = { _id: orgId };
+    const update: StrictUpdateFilter<OrganizationDocument> = {
       $addToSet: { schemas: schemaId },
     };
 
@@ -123,11 +123,11 @@ export const OrganizationsRepository = {
     orgId: UUID,
     schemaId: UUID,
   ): E.Effect<boolean, DbError> {
-    const collection = db.collection<OrganizationBase>(
+    const collection = db.collection<OrganizationDocument>(
       CollectionName.Organizations,
     );
-    const filter: StrictFilter<OrganizationBase> = { _id: orgId };
-    const update: StrictUpdateFilter<OrganizationBase> = {
+    const filter: StrictFilter<OrganizationDocument> = { _id: orgId };
+    const update: StrictUpdateFilter<OrganizationDocument> = {
       $pull: { schemas: schemaId },
     };
 
@@ -144,11 +144,11 @@ export const OrganizationsRepository = {
   },
 
   addQueryId(db: Db, orgId: UUID, queryId: UUID): E.Effect<boolean, DbError> {
-    const collection = db.collection<OrganizationBase>(
+    const collection = db.collection<OrganizationDocument>(
       CollectionName.Organizations,
     );
-    const filter: StrictFilter<OrganizationBase> = { _id: orgId };
-    const update: StrictUpdateFilter<OrganizationBase> = {
+    const filter: StrictFilter<OrganizationDocument> = { _id: orgId };
+    const update: StrictUpdateFilter<OrganizationDocument> = {
       $addToSet: { queries: queryId },
     };
 
@@ -169,11 +169,11 @@ export const OrganizationsRepository = {
     orgId: UUID,
     queryId: UUID,
   ): E.Effect<boolean, DbError> {
-    const collection = db.collection<OrganizationBase>(
+    const collection = db.collection<OrganizationDocument>(
       CollectionName.Organizations,
     );
-    const filter: StrictFilter<OrganizationBase> = { _id: orgId };
-    const update: StrictUpdateFilter<OrganizationBase> = {
+    const filter: StrictFilter<OrganizationDocument> = { _id: orgId };
+    const update: StrictUpdateFilter<OrganizationDocument> = {
       $pull: { queries: queryId },
     };
 

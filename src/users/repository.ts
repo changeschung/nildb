@@ -4,16 +4,16 @@ import { type Db, type StrictFilter, UUID } from "mongodb";
 import { type DbError, succeedOrMapToDbError } from "#/common/errors";
 import { CollectionName, type DocumentBase } from "#/common/mongo";
 
-export type UserBase = DocumentBase & {
+export type UserDocument = DocumentBase & {
   email: string;
   password: string;
   type: "root" | "admin";
 };
 
 export const UserRepository = {
-  findByEmail(db: Db, email: string): E.Effect<UserBase, DbError> {
-    const collection = db.collection<UserBase>(CollectionName.Users);
-    const filter: StrictFilter<UserBase> = { email: email.toLowerCase() };
+  findByEmail(db: Db, email: string): E.Effect<UserDocument, DbError> {
+    const collection = db.collection<UserDocument>(CollectionName.Users);
+    const filter: StrictFilter<UserDocument> = { email: email.toLowerCase() };
 
     return pipe(
       E.tryPromise(async () => {
@@ -29,9 +29,9 @@ export const UserRepository = {
 
   create(
     db: Db,
-    data: Omit<UserBase, keyof DocumentBase>,
+    data: Omit<UserDocument, keyof DocumentBase>,
   ): E.Effect<UUID, Error> {
-    const collection = db.collection<UserBase>(CollectionName.Users);
+    const collection = db.collection<UserDocument>(CollectionName.Users);
 
     return pipe(
       E.tryPromise(async () => {
@@ -45,7 +45,7 @@ export const UserRepository = {
       E.flatMap((data) =>
         E.tryPromise(async () => {
           const now = new Date();
-          const document: UserBase = {
+          const document: UserDocument = {
             ...data,
             _id: new UUID(),
             _created: now,
@@ -64,8 +64,8 @@ export const UserRepository = {
   },
 
   delete(db: Db, email: string): E.Effect<string, DbError> {
-    const collection = db.collection<UserBase>(CollectionName.Users);
-    const filter: StrictFilter<UserBase> = { email };
+    const collection = db.collection<UserDocument>(CollectionName.Users);
+    const filter: StrictFilter<UserDocument> = { email };
 
     return pipe(
       E.tryPromise(async () => {

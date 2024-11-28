@@ -10,7 +10,7 @@ import { DataRepository, type QueryRuntimeVariables } from "#/data/repository";
 import { OrganizationsRepository } from "#/organizations/repository";
 import {
   QueriesRepository,
-  type QueryBase,
+  type QueryDocument,
   type QueryVariable,
 } from "#/queries/repository";
 import pipelineSchema from "./mongodb_pipeline.json";
@@ -80,7 +80,7 @@ export const addQueryController: RequestHandler<
   res.send(response);
 };
 
-export type ListQueriesResponse = ApiResponse<QueryBase[]>;
+export type ListQueriesResponse = ApiResponse<QueryDocument[]>;
 
 export const listQueriesController: RequestHandler<
   EmptyObject,
@@ -180,7 +180,7 @@ export const executeQueryController: RequestHandler<
 };
 
 function validateVariables(
-  query: QueryBase,
+  query: QueryDocument,
   request: { variables: Record<string, unknown> },
 ): E.Effect<QueryRuntimeVariables, UnknownException> {
   return E.try(() => {
