@@ -27,7 +27,7 @@ describe("Schemas delete by filter", () => {
     organization = await setupOrganization(
       fixture,
       schema as SchemaFixture,
-      query as QueryFixture,
+      query as unknown as QueryFixture,
     );
 
     const schemaId = organization.schema.id;

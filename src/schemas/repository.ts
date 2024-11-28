@@ -1,100 +1,88 @@
-import { randomUUID } from "node:crypto";
 import { Effect as E, Option as O, pipe } from "effect";
-import { UUID } from "mongodb";
-import mongoose from "mongoose";
-import type { JsonObject } from "type-fest";
+import { type Db, type StrictFilter, UUID } from "mongodb";
 import { type DbError, succeedOrMapToDbError } from "#/common/errors";
 import { CollectionName, type DocumentBase } from "#/common/mongo";
 
-export type SchemaBase = DocumentBase & {
+export type SchemaDocument = DocumentBase & {
   org: UUID;
   name: string;
   keys: string[];
-  schema: JsonObject;
+  schema: Record<string, unknown>;
 };
 
-const SchemaDocumentSchema = new mongoose.Schema({
-  _id: {
-    type: mongoose.Schema.Types.UUID,
-    default: () => randomUUID(),
-    get: (val: Buffer) => new UUID(val),
-  },
-  org: {
-    type: mongoose.Schema.Types.UUID,
-    required: true,
-    get: (val: Buffer) => new UUID(val),
-  },
-  name: { type: String, required: true },
-  keys: { type: [String] },
-  schema: { type: mongoose.Schema.Types.Mixed, required: true },
-});
-
-const Model = mongoose.model(CollectionName.Schemas, SchemaDocumentSchema);
-
 export const SchemasRepository = {
-  create(data: Omit<SchemaBase, "_id">): E.Effect<UUID, DbError> {
+  create(
+    db: Db,
+    data: Omit<SchemaDocument, keyof DocumentBase>,
+  ): E.Effect<UUID, DbError> {
+    const collection = db.collection<SchemaDocument>(CollectionName.Schemas);
+    const now = new Date();
+    const document: SchemaDocument = {
+      ...data,
+      _id: new UUID(),
+      _created: now,
+      _updated: now,
+    };
+
     return pipe(
       E.tryPromise(async () => {
-        const document = await Model.create({
-          ...data,
-          // Mongoose fails if keys is empty; so when no keys then pass `undefined`
-          keys: data.keys.length > 0 ? data.keys : undefined,
-        });
-        return new UUID(document._id);
+        const result = await collection.insertOne(document);
+        return result.insertedId;
       }),
       succeedOrMapToDbError({
-        collection: CollectionName.Schemas,
         name: "create",
-        params: { data },
+        params: { document },
       }),
     );
   },
 
-  deleteBySchemaId(id: UUID): E.Effect<UUID, DbError> {
-    const filter = { _id: id.toJSON() };
+  deleteBySchemaId(db: Db, _id: UUID): E.Effect<SchemaDocument, DbError> {
+    const collection = db.collection<SchemaDocument>(CollectionName.Schemas);
+    const filter: StrictFilter<SchemaDocument> = { _id };
 
     return pipe(
       E.tryPromise(async () => {
-        const document = await Model.findOneAndDelete(filter).lean<SchemaBase>({
-          virtuals: true,
-        });
-        return document ? O.some(document.org) : O.none();
+        const result = await collection.findOneAndDelete(filter);
+        return O.fromNullable(result);
       }),
       succeedOrMapToDbError({
-        collection: CollectionName.Schemas,
         name: "deleteBySchemaId",
         params: { filter },
       }),
     );
   },
 
-  listOrganizationSchemas(org: UUID): E.Effect<SchemaBase[], DbError> {
-    const filter = { org };
+  listOrganizationSchemas(
+    db: Db,
+    org: UUID,
+  ): E.Effect<SchemaDocument[], DbError> {
+    const collection = db.collection<SchemaDocument>(CollectionName.Schemas);
+    const filter: StrictFilter<SchemaDocument> = { org };
 
     return pipe(
-      E.tryPromise(() => {
-        return Model.find(filter).lean<SchemaBase[]>();
+      E.tryPromise(async () => {
+        const results = await collection.find(filter).toArray();
+        return O.fromNullable(results);
       }),
       succeedOrMapToDbError({
-        collection: CollectionName.Schemas,
         name: "listOrganizationSchemas",
         params: { filter },
       }),
     );
   },
 
-  find(id: UUID): E.Effect<SchemaBase, DbError> {
+  find(db: Db, _id: UUID): E.Effect<SchemaDocument, DbError> {
+    const collection = db.collection<SchemaDocument>(CollectionName.Schemas);
+    const filter: StrictFilter<SchemaDocument> = { _id };
+
     return pipe(
       E.tryPromise(async () => {
-        const result = await Model.findById(id).lean<SchemaBase>({
-          virtuals: true,
-        });
+        const result = await collection.findOne(filter);
         return O.fromNullable(result);
       }),
       succeedOrMapToDbError({
-        collection: CollectionName.Schemas,
         name: "find",
-        params: { id },
+        params: { filter },
       }),
     );
   },

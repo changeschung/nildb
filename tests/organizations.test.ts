@@ -6,7 +6,7 @@ import { CollectionName } from "#/common/mongo";
 import type { UuidDto } from "#/common/types";
 import type { Context } from "#/env";
 import type { JwtPayload } from "#/middleware/auth";
-import type { OrganizationBase } from "#/organizations/repository";
+import type { OrganizationDocument } from "#/organizations/repository";
 import {
   type AppFixture,
   QueryFixture,
@@ -49,7 +49,7 @@ describe("organizations.test.ts", () => {
     expect(data).toBeDefined();
 
     const document = await db.primary
-      .collection<OrganizationBase>(CollectionName.Organizations)
+      .collection<OrganizationDocument>(CollectionName.Organizations)
       .findOne({
         _id: new UUID(data),
       });
@@ -66,7 +66,7 @@ describe("organizations.test.ts", () => {
   // skipped because db artefacts conflicting when running entire suite
   it.skip("can list organizations", async () => {
     const response = await admin.listOrganizations().expect(200);
-    const organisations = response.body.data as OrganizationBase[];
+    const organisations = response.body.data as OrganizationDocument[];
     expect(organisations).toHaveLength(1);
     expect(organisations[0]._id).toBe(organization.id);
   });
@@ -92,7 +92,7 @@ describe("organizations.test.ts", () => {
       .expect(200);
 
     const document = await db.primary
-      .collection<OrganizationBase>(CollectionName.Organizations)
+      .collection<OrganizationDocument>(CollectionName.Organizations)
       .findOne({ id: new UUID(organization.id) });
 
     expect(document).toBeNull();

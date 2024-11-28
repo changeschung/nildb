@@ -5,7 +5,6 @@ import type { MongoError } from "mongodb";
 
 export type DbErrorContext = {
   name: string;
-  collection: string;
   params: Record<string, unknown>;
   code?: string | number;
   message?: string;

@@ -5,8 +5,8 @@ import type { JsonArray, JsonObject, JsonValue } from "type-fest";
 import { type DbError, succeedOrMapToDbError } from "#/common/errors";
 import type { DocumentBase } from "#/common/mongo";
 import type { UuidDto } from "#/common/types";
-import type { QueryBase } from "#/queries/repository";
-import type { SchemaBase } from "#/schemas/repository";
+import type { QueryDocument } from "#/queries/repository";
+import type { SchemaDocument } from "#/schemas/repository";
 
 export const TAIL_DATA_LIMIT = 25;
 
@@ -48,7 +48,6 @@ export const DataRepository = {
         return schemaId;
       }),
       succeedOrMapToDbError({
-        collection: collectionName,
         name: "createCollection",
         params: { keys, schemaId },
       }),
@@ -63,7 +62,6 @@ export const DataRepository = {
         return true;
       }),
       succeedOrMapToDbError({
-        collection: collectionName,
         name: "deleteCollection",
         params: { schema },
       }),
@@ -72,7 +70,7 @@ export const DataRepository = {
 
   insert(
     db: Db,
-    schema: SchemaBase,
+    schema: SchemaDocument,
     data: DocumentBase[],
   ): E.Effect<CreatedResult, DbError> {
     const collectionName = schema._id.toString();
@@ -122,7 +120,6 @@ export const DataRepository = {
       }),
 
       succeedOrMapToDbError({
-        collection: collectionName,
         name: "insert",
         params: { collectionName },
       }),
@@ -148,7 +145,6 @@ export const DataRepository = {
         };
       }),
       succeedOrMapToDbError({
-        collection: collectionName,
         name: "update",
         params: { schema },
       }),
@@ -168,7 +164,6 @@ export const DataRepository = {
         return result.deletedCount;
       }),
       succeedOrMapToDbError({
-        collection: collectionName,
         name: "delete",
         params: { collectionName, filter },
       }),
@@ -184,7 +179,6 @@ export const DataRepository = {
         return result.deletedCount;
       }),
       succeedOrMapToDbError({
-        collection: collectionName,
         name: "flush",
         params: { collectionName },
       }),
@@ -193,7 +187,7 @@ export const DataRepository = {
 
   runPipeline<T extends JsonValue>(
     db: Db,
-    query: QueryBase,
+    query: QueryDocument,
     variables: QueryRuntimeVariables,
   ): E.Effect<T, DbError> {
     const collectionName = query.schema.toJSON();
@@ -209,7 +203,6 @@ export const DataRepository = {
         return result as unknown as T;
       }),
       succeedOrMapToDbError({
-        collection: collectionName,
         name: "runPipeline",
         params: { pipeline },
       }),
@@ -231,7 +224,6 @@ export const DataRepository = {
           .toArray();
       }),
       succeedOrMapToDbError({
-        collection: collectionName,
         name: "tail",
         params: { schema },
       }),
@@ -255,7 +247,6 @@ export const DataRepository = {
         return result as unknown as T;
       }),
       succeedOrMapToDbError({
-        collection: collectionName,
         name: "tail",
         params: { schema },
       }),
@@ -264,7 +255,7 @@ export const DataRepository = {
 } as const;
 
 export function injectVariables(
-  pipeline: JsonArray,
+  pipeline: Record<string, unknown>[],
   variables: QueryRuntimeVariables,
 ): Document[] {
   const prefixIdentifier = "##";
@@ -292,5 +283,5 @@ export function injectVariables(
 
     return current;
   };
-  return traverse(pipeline) as Document[];
+  return traverse(pipeline as JsonValue) as Document[];
 }

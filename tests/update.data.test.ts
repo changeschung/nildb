@@ -34,7 +34,7 @@ describe("update.data.test", () => {
     organization = await setupOrganization(
       fixture,
       schema as SchemaFixture,
-      query as QueryFixture,
+      query as unknown as QueryFixture,
     );
 
     const _response = await backend.uploadData({

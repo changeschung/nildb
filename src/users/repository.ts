@@ -1,48 +1,38 @@
-import { randomUUID } from "node:crypto";
 import argon2 from "argon2";
 import { Effect as E, Option as O, pipe } from "effect";
-import { UUID } from "mongodb";
-import mongoose from "mongoose";
+import { type Db, type StrictFilter, UUID } from "mongodb";
 import { type DbError, succeedOrMapToDbError } from "#/common/errors";
 import { CollectionName, type DocumentBase } from "#/common/mongo";
 
-export type UserBase = DocumentBase & {
+export type UserDocument = DocumentBase & {
   email: string;
   password: string;
   type: "root" | "admin";
 };
 
-const UserDocumentSchema = new mongoose.Schema({
-  _id: {
-    type: mongoose.Schema.Types.UUID,
-    default: () => randomUUID(),
-    get: (val: Buffer) => new UUID(val),
-  },
-  email: { type: String, unique: true, index: true },
-  password: String,
-  type: { type: String, enum: ["root", "admin"] },
-});
-
-const Model = mongoose.model(CollectionName.Users, UserDocumentSchema);
-
-export const Repository = {
-  findByEmail(email: string): E.Effect<UserBase, DbError> {
-    const filter = { email: email.toLowerCase() };
+export const UserRepository = {
+  findByEmail(db: Db, email: string): E.Effect<UserDocument, DbError> {
+    const collection = db.collection<UserDocument>(CollectionName.Users);
+    const filter: StrictFilter<UserDocument> = { email: email.toLowerCase() };
 
     return pipe(
       E.tryPromise(async () => {
-        const result = await Model.findOne(filter).lean<UserBase>();
+        const result = await collection.findOne(filter);
         return O.fromNullable(result);
       }),
       succeedOrMapToDbError({
-        collection: CollectionName.Users,
         name: "findByEmail",
         params: { filter },
       }),
     );
   },
 
-  create(data: Omit<UserBase, "_id">): E.Effect<UUID, Error> {
+  create(
+    db: Db,
+    data: Omit<UserDocument, keyof DocumentBase>,
+  ): E.Effect<UUID, Error> {
+    const collection = db.collection<UserDocument>(CollectionName.Users);
+
     return pipe(
       E.tryPromise(async () => {
         const salted = await argon2.hash(data.password);
@@ -54,27 +44,35 @@ export const Repository = {
       }),
       E.flatMap((data) =>
         E.tryPromise(async () => {
-          const document = await Model.create(data);
-          return new UUID(document._id);
+          const now = new Date();
+          const document: UserDocument = {
+            ...data,
+            _id: new UUID(),
+            _created: now,
+            _updated: now,
+          };
+
+          const result = await collection.insertOne(document);
+          return result.insertedId;
         }),
       ),
       succeedOrMapToDbError({
-        collection: CollectionName.Users,
         name: "create",
         params: { data },
       }),
     );
   },
 
-  delete(email: string): E.Effect<boolean, DbError> {
-    const filter = { email };
+  delete(db: Db, email: string): E.Effect<string, DbError> {
+    const collection = db.collection<UserDocument>(CollectionName.Users);
+    const filter: StrictFilter<UserDocument> = { email };
+
     return pipe(
       E.tryPromise(async () => {
-        const result = await Model.deleteOne(filter);
-        return result.deletedCount === 1;
+        const result = await collection.deleteOne(filter);
+        return result.deletedCount === 1 ? O.some(email) : O.none();
       }),
       succeedOrMapToDbError({
-        collection: CollectionName.Users,
         name: "delete",
         params: { filter },
       }),

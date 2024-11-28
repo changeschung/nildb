@@ -27,7 +27,7 @@ describe("data.test.ts", () => {
     organization = await setupOrganization(
       fixture,
       schema as SchemaFixture,
-      query as QueryFixture,
+      query as unknown as QueryFixture,
     );
   });
 

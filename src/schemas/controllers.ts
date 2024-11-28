@@ -2,13 +2,15 @@ import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
-import type { EmptyObject } from "type-fest";
+import { UUID } from "mongodb";
+import type { EmptyObject, JsonObject } from "type-fest";
 import { z } from "zod";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
+import type { DocumentBase } from "#/common/mongo";
 import { Uuid, type UuidDto } from "#/common/types";
 import { DataRepository } from "#/data/repository";
 import { OrganizationsRepository } from "#/organizations/repository";
-import { type SchemaBase, SchemasRepository } from "#/schemas/repository";
+import { type SchemaDocument, SchemasRepository } from "#/schemas/repository";
 
 export const AddSchemaRequest = z.object({
   org: Uuid,
@@ -16,10 +18,12 @@ export const AddSchemaRequest = z.object({
   keys: z.array(z.string()),
   schema: z.record(z.string(), z.unknown()),
 });
-export type AddSchemaRequest = Omit<
-  SchemaBase,
-  "_id" | "_created" | "_updated"
->;
+export type AddSchemaRequest = {
+  org: UuidDto;
+  name: string;
+  keys: string[];
+  schema: JsonObject;
+};
 export type AddSchemaResponse = ApiResponse<UuidDto>;
 
 export const addSchemaController: RequestHandler<
@@ -47,9 +51,9 @@ export const addSchemaController: RequestHandler<
       }
     }),
 
-    E.flatMap((body: AddSchemaRequest) =>
+    E.flatMap((body) =>
       pipe(
-        SchemasRepository.create(body as SchemaBase),
+        SchemasRepository.create(req.context.db.primary, body),
         E.tap((schemaId) => {
           return DataRepository.createCollection(
             req.context.db.data,
@@ -58,7 +62,11 @@ export const addSchemaController: RequestHandler<
           );
         }),
         E.tap((schemaId) => {
-          return OrganizationsRepository.addSchemaId(body.org, schemaId);
+          return OrganizationsRepository.addSchemaId(
+            req.context.db.primary,
+            body.org,
+            schemaId,
+          );
         }),
       ),
     ),
@@ -72,16 +80,19 @@ export const addSchemaController: RequestHandler<
   res.send(response);
 };
 
-export type ListSchemasResponse = ApiResponse<SchemaBase[]>;
+export type ListSchemasResponse = ApiResponse<SchemaDocument[]>;
 
 export const listSchemasController: RequestHandler<
   EmptyObject,
   ListSchemasResponse
 > = async (req, res) => {
   const response = await pipe(
-    E.fromNullable(req.auth.sub),
+    E.fromNullable(req.user.sub), // here !!
     E.flatMap((org) => {
-      return SchemasRepository.listOrganizationSchemas(org);
+      return SchemasRepository.listOrganizationSchemas(
+        req.context.db.primary,
+        org,
+      );
     }),
     foldToApiResponse(req.context),
     E.runPromise,
@@ -109,9 +120,13 @@ export const deleteSchemaController: RequestHandler<
 
     E.flatMap((body) =>
       pipe(
-        SchemasRepository.deleteBySchemaId(body.id),
-        E.tap((orgId) => {
-          return OrganizationsRepository.removeSchemaId(orgId, body.id);
+        SchemasRepository.deleteBySchemaId(req.context.db.primary, body.id),
+        E.tap((schema) => {
+          return OrganizationsRepository.removeSchemaId(
+            req.context.db.primary,
+            schema.org,
+            body.id,
+          );
         }),
         E.tap((_orgId) => {
           return DataRepository.deleteCollection(req.context.db.data, body.id);

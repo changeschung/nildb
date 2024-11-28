@@ -5,8 +5,8 @@ import { CollectionName } from "#/common/mongo";
 import type { UuidDto } from "#/common/types";
 import type { CreatedResult } from "#/data/repository";
 import type { Context } from "#/env";
-import type { OrganizationBase } from "#/organizations/repository";
-import type { SchemaBase } from "#/schemas/repository";
+import type { OrganizationDocument } from "#/organizations/repository";
+import type { SchemaDocument } from "#/schemas/repository";
 import query from "./data/wallet.query.json";
 import schema from "./data/wallet.schema.json";
 import {
@@ -26,7 +26,7 @@ describe("schemas.test.ts", () => {
   const organization = {
     id: "" as UuidDto,
     schema: schema as SchemaFixture,
-    query: query as QueryFixture,
+    query: query as unknown as QueryFixture,
   };
 
   beforeAll(async () => {
@@ -116,13 +116,13 @@ describe("schemas.test.ts", () => {
       .expect(200);
 
     const schemaDocument = await db.primary
-      .collection<SchemaBase>(CollectionName.Schemas)
+      .collection<SchemaDocument>(CollectionName.Schemas)
       .findOne({ _id: new UUID(id) });
 
     expect(schemaDocument).toBeNull();
 
     const organizationDocument = await db.primary
-      .collection<OrganizationBase>(CollectionName.Organizations)
+      .collection<OrganizationDocument>(CollectionName.Organizations)
       .findOne({ _id: new UUID(organization.id) });
     assertDefined(organizationDocument);
 

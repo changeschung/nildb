@@ -9,7 +9,10 @@ import {
   type JwtSerialized,
   createJwt,
 } from "#/middleware/auth";
-import { type OrganizationBase, OrganizationsRepository } from "./repository";
+import {
+  type OrganizationDocument,
+  OrganizationsRepository,
+} from "./repository";
 
 export const CreateOrganizationRequest = z.object({
   name: z.string(),
@@ -29,7 +32,9 @@ export const createOrganizationController: RequestHandler<
       try: () => CreateOrganizationRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-    E.flatMap((request) => OrganizationsRepository.create(request)),
+    E.flatMap((request) =>
+      OrganizationsRepository.create(req.context.db.primary, request),
+    ),
 
     E.map((id) => id.toString() as UuidDto),
 
@@ -57,11 +62,13 @@ export const createOrganizationAccessTokenController: RequestHandler<
       catch: (error) => error as z.ZodError,
     }),
 
-    E.flatMap((request) => OrganizationsRepository.findById(request.id)),
+    E.flatMap((request) =>
+      OrganizationsRepository.findById(req.context.db.primary, request.id),
+    ),
 
     E.map((record) => {
       const payload: Partial<JwtPayload> = {
-        sub: record._id,
+        sub: record._id.toString() as UuidDto,
         type: "access-token",
       };
       return createJwt(payload, req.context.config.jwtSecret);
@@ -80,7 +87,7 @@ export const DeleteOrganizationRequest = z.object({
 export type DeleteOrganizationRequest = {
   id: UuidDto;
 };
-export type DeleteOrganizationResponse = ApiResponse<boolean>;
+export type DeleteOrganizationResponse = ApiResponse<UuidDto>;
 
 export const deleteOrganizationController: RequestHandler<
   EmptyObject,
@@ -93,7 +100,11 @@ export const deleteOrganizationController: RequestHandler<
       catch: (error) => error as z.ZodError,
     }),
 
-    E.flatMap(({ id }) => OrganizationsRepository.deleteById(id)),
+    E.flatMap(({ id }) =>
+      OrganizationsRepository.deleteById(req.context.db.primary, id),
+    ),
+
+    E.map((id) => id.toString() as UuidDto),
 
     foldToApiResponse(req.context),
     E.runPromise,
@@ -102,7 +113,7 @@ export const deleteOrganizationController: RequestHandler<
   res.send(response);
 };
 
-export type ListOrganizationsResponse = ApiResponse<OrganizationBase[]>;
+export type ListOrganizationsResponse = ApiResponse<OrganizationDocument[]>;
 
 export const listOrganizationController: RequestHandler<
   EmptyObject,
@@ -110,7 +121,7 @@ export const listOrganizationController: RequestHandler<
   EmptyObject
 > = async (req, res) => {
   const response = await pipe(
-    OrganizationsRepository.list(),
+    OrganizationsRepository.list(req.context.db.primary),
     foldToApiResponse(req.context),
     E.runPromise,
   );
