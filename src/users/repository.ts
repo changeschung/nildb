@@ -25,7 +25,7 @@ const UserDocumentSchema = new mongoose.Schema({
 
 const Model = mongoose.model(CollectionName.Users, UserDocumentSchema);
 
-export const Repository = {
+export const UserRepository = {
   findByEmail(email: string): E.Effect<UserBase, DbError> {
     const filter = { email: email.toLowerCase() };
 
