@@ -25,7 +25,7 @@ export const createUserController: RequestHandler<
       catch: (error) => error as z.ZodError,
     }),
 
-    E.flatMap((data) => UserRepository.create(data)),
+    E.flatMap((data) => UserRepository.create(req.context.db.primary, data)),
 
     E.map((id) => id.toString() as UuidDto),
 
@@ -40,16 +40,18 @@ export const DeleteUserRequest = z.object({
   email: z.string().email(),
 });
 export type DeleteUserRequest = z.infer<typeof DeleteUserRequest>;
-export type DeleteUserResponse = ApiResponse<boolean>;
+export type DeleteUserResponse = ApiResponse<string>;
 
 export const deleteUserController: RequestHandler = async (req, res) => {
-  const response: DeleteUserResponse = await pipe(
+  const response = await pipe(
     E.try({
       try: () => DeleteUserRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
 
-    E.flatMap(({ email }) => UserRepository.delete(email)),
+    E.flatMap(({ email }) =>
+      UserRepository.delete(req.context.db.primary, email),
+    ),
 
     foldToApiResponse(req.context),
     E.runPromise,

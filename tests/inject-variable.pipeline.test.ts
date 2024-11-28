@@ -1,10 +1,9 @@
-import type { JsonArray } from "type-fest";
 import { describe, expect, it } from "vitest";
 import { injectVariables } from "#/data/repository";
 
 describe("inject.variable.pipeline.test", () => {
   it("replaces simple variables", () => {
-    const pipeline: JsonArray = [
+    const pipeline = [
       {
         $match: { wallet: "##address" },
       },
@@ -21,7 +20,7 @@ describe("inject.variable.pipeline.test", () => {
   });
 
   it("replaces multiple variable types", () => {
-    const pipeline: JsonArray = [
+    const pipeline = [
       {
         $match: {
           wallet: "##address",
@@ -50,7 +49,7 @@ describe("inject.variable.pipeline.test", () => {
   });
 
   it("throws error for missing variables", () => {
-    const pipeline: JsonArray = [
+    const pipeline = [
       {
         $match: { wallet: "##address" },
       },
@@ -63,7 +62,7 @@ describe("inject.variable.pipeline.test", () => {
   });
 
   it("handles complex pipeline with multiple stages", () => {
-    const pipeline: JsonArray = [
+    const pipeline = [
       {
         $match: {
           status: "##status",
@@ -127,7 +126,7 @@ describe("inject.variable.pipeline.test", () => {
   });
 
   it("handles deeply nested structures with arrays and objects", () => {
-    const pipeline: JsonArray = [
+    const pipeline = [
       {
         $match: {
           $or: [

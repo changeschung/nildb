@@ -2,12 +2,12 @@ import { faker } from "@faker-js/faker";
 import dotenv from "dotenv";
 import type { Db } from "mongodb";
 import supertest from "supertest";
-import type { JsonObject } from "type-fest";
+import type { JsonArray, JsonObject } from "type-fest";
 import { buildApp } from "#/app";
 import { Uuid, type UuidDto } from "#/common/types";
 import { type Context, createContext } from "#/env";
 import { createJwt } from "#/middleware/auth";
-import type { QueryVariables } from "#/queries/controllers";
+import type { QueryVariable } from "#/queries/repository";
 import { TestClient } from "./client";
 
 export interface AppFixture {
@@ -32,7 +32,7 @@ export async function buildFixture(): Promise<AppFixture> {
       password: "datablocks-root-password",
       jwt: createJwt(
         {
-          sub: Uuid.parse("00000000-0000-0000-0000-000000000000"),
+          sub: "00000000-0000-0000-0000-000000000000",
           iat: Math.round(Date.now() / 1000),
           type: "root",
         },
@@ -97,8 +97,8 @@ export type QueryFixture = {
   id: UuidDto;
   name: string;
   schema: UuidDto;
-  variables: QueryVariables;
-  pipeline: Record<string, unknown>[];
+  variables: Record<string, QueryVariable>;
+  pipeline: JsonObject[];
 };
 
 export async function setupAdmin(fixture: AppFixture): Promise<void> {

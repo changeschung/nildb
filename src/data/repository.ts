@@ -48,7 +48,6 @@ export const DataRepository = {
         return schemaId;
       }),
       succeedOrMapToDbError({
-        collection: collectionName,
         name: "createCollection",
         params: { keys, schemaId },
       }),
@@ -63,7 +62,6 @@ export const DataRepository = {
         return true;
       }),
       succeedOrMapToDbError({
-        collection: collectionName,
         name: "deleteCollection",
         params: { schema },
       }),
@@ -122,7 +120,6 @@ export const DataRepository = {
       }),
 
       succeedOrMapToDbError({
-        collection: collectionName,
         name: "insert",
         params: { collectionName },
       }),
@@ -148,7 +145,6 @@ export const DataRepository = {
         };
       }),
       succeedOrMapToDbError({
-        collection: collectionName,
         name: "update",
         params: { schema },
       }),
@@ -168,7 +164,6 @@ export const DataRepository = {
         return result.deletedCount;
       }),
       succeedOrMapToDbError({
-        collection: collectionName,
         name: "delete",
         params: { collectionName, filter },
       }),
@@ -184,7 +179,6 @@ export const DataRepository = {
         return result.deletedCount;
       }),
       succeedOrMapToDbError({
-        collection: collectionName,
         name: "flush",
         params: { collectionName },
       }),
@@ -209,7 +203,6 @@ export const DataRepository = {
         return result as unknown as T;
       }),
       succeedOrMapToDbError({
-        collection: collectionName,
         name: "runPipeline",
         params: { pipeline },
       }),
@@ -231,7 +224,6 @@ export const DataRepository = {
           .toArray();
       }),
       succeedOrMapToDbError({
-        collection: collectionName,
         name: "tail",
         params: { schema },
       }),
@@ -255,7 +247,6 @@ export const DataRepository = {
         return result as unknown as T;
       }),
       succeedOrMapToDbError({
-        collection: collectionName,
         name: "tail",
         params: { schema },
       }),
@@ -264,7 +255,7 @@ export const DataRepository = {
 } as const;
 
 export function injectVariables(
-  pipeline: JsonArray,
+  pipeline: Record<string, unknown>[],
   variables: QueryRuntimeVariables,
 ): Document[] {
   const prefixIdentifier = "##";
@@ -292,5 +283,5 @@ export function injectVariables(
 
     return current;
   };
-  return traverse(pipeline) as Document[];
+  return traverse(pipeline as JsonValue) as Document[];
 }

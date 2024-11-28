@@ -1,174 +1,188 @@
-import { randomUUID } from "node:crypto";
 import { Effect as E, Option as O, pipe } from "effect";
-import { UUID } from "mongodb";
-import mongoose, { type FilterQuery } from "mongoose";
+import {
+  type Db,
+  type StrictFilter,
+  type StrictUpdateFilter,
+  UUID,
+} from "mongodb";
 import { type DbError, succeedOrMapToDbError } from "#/common/errors";
 import { CollectionName, type DocumentBase } from "#/common/mongo";
 
 export type OrganizationBase = DocumentBase & {
+  name: string;
   schemas: UUID[];
   queries: UUID[];
-  name: string;
 };
 
-export const OrganizationDocumentSchema = new mongoose.Schema({
-  _id: {
-    type: mongoose.Schema.Types.UUID,
-    default: () => randomUUID(),
-    get: (val: Buffer) => new UUID(val),
-  },
-  schemas: {
-    type: [
-      {
-        type: mongoose.Schema.Types.UUID,
-        get: (val: Buffer) => new UUID(val),
-      },
-    ],
-    default: [],
-  },
-  queries: {
-    type: [
-      {
-        type: mongoose.Schema.Types.UUID,
-        get: (val: Buffer) => new UUID(val),
-      },
-    ],
-    default: [],
-  },
-  name: { type: String, required: true },
-});
-
-const Model = mongoose.model(
-  CollectionName.Organizations,
-  OrganizationDocumentSchema,
-);
-
 export const OrganizationsRepository = {
-  create(data: Pick<OrganizationBase, "name">): E.Effect<UUID, DbError> {
+  create(
+    db: Db,
+    data: Pick<OrganizationBase, "name">,
+  ): E.Effect<UUID, DbError> {
+    const collection = db.collection<OrganizationBase>(
+      CollectionName.Organizations,
+    );
+    const now = new Date();
+    const document: OrganizationBase = {
+      ...data,
+      schemas: [],
+      queries: [],
+      _id: new UUID(),
+      _created: now,
+      _updated: now,
+    };
+
     return pipe(
       E.tryPromise(async () => {
-        const document = await Model.create({
-          name: data.name,
-        });
-        return new UUID(document.id);
+        const result = await collection.insertOne(document);
+        return result.insertedId;
       }),
       succeedOrMapToDbError({
-        collection: CollectionName.Organizations,
         name: "create",
-        params: { data },
+        params: { document },
       }),
     );
   },
 
-  list(): E.Effect<OrganizationBase[], DbError> {
-    const filter: FilterQuery<OrganizationBase> = {};
+  list(db: Db): E.Effect<OrganizationBase[], DbError> {
+    const collection = db.collection<OrganizationBase>(
+      CollectionName.Organizations,
+    );
+    const filter: StrictFilter<OrganizationBase> = {};
 
     return pipe(
       E.tryPromise(() => {
-        return Model.find(filter).lean<OrganizationBase[]>();
+        return collection.find(filter).toArray();
       }),
       succeedOrMapToDbError<OrganizationBase[]>({
-        collection: CollectionName.Organizations,
         name: "list",
         params: { filter },
       }),
     );
   },
 
-  findById(_id: UUID): E.Effect<OrganizationBase, DbError> {
+  findById(db: Db, _id: UUID): E.Effect<OrganizationBase, DbError> {
+    const collection = db.collection<OrganizationBase>(
+      CollectionName.Organizations,
+    );
+    const filter: StrictFilter<OrganizationBase> = { _id };
+
     return pipe(
       E.tryPromise(async () => {
-        const result = await Model.findById(_id).lean<OrganizationBase>();
+        const result = await collection.findOne(filter);
         return O.fromNullable(result);
       }),
       succeedOrMapToDbError<OrganizationBase>({
-        collection: CollectionName.Organizations,
         name: "findById",
-        params: { _id },
+        params: { filter },
       }),
     );
   },
 
-  deleteById(_id: UUID): E.Effect<boolean, DbError> {
-    const filter = { _id };
+  deleteById(db: Db, _id: UUID): E.Effect<UUID, DbError> {
+    const collection = db.collection<OrganizationBase>(
+      CollectionName.Organizations,
+    );
+    const filter: StrictFilter<OrganizationBase> = { _id };
 
     return pipe(
       E.tryPromise(async () => {
-        const result = await Model.deleteOne(filter);
-        return result.deletedCount === 1 ? O.some(true) : O.none();
+        const result = await collection.deleteOne(filter);
+        return result.deletedCount === 1 ? O.some(_id) : O.none();
       }),
       succeedOrMapToDbError({
-        collection: CollectionName.Organizations,
         name: "deleteById",
         params: { filter },
       }),
     );
   },
 
-  addSchemaId(orgId: UUID, schemaId: UUID): E.Effect<boolean, DbError> {
-    const filter = { _id: orgId };
-    // For this to be serialised as a binary UUID it needs to be passed as a string
-    const update = { $addToSet: { schemas: schemaId.toString() } };
+  addSchemaId(db: Db, orgId: UUID, schemaId: UUID): E.Effect<boolean, DbError> {
+    const collection = db.collection<OrganizationBase>(
+      CollectionName.Organizations,
+    );
+    const filter: StrictFilter<OrganizationBase> = { _id: orgId };
+    const update: StrictUpdateFilter<OrganizationBase> = {
+      $addToSet: { schemas: schemaId },
+    };
 
     return pipe(
       E.tryPromise(async () => {
-        const result = await Model.updateOne(filter, update);
+        const result = await collection.updateOne(filter, update);
         return result.modifiedCount === 1 ? O.some(true) : O.none();
       }),
       succeedOrMapToDbError({
-        collection: CollectionName.Organizations,
         name: "addSchemaId",
         params: { filter, update },
       }),
     );
   },
 
-  removeSchemaId(orgId: UUID, schemaId: UUID): E.Effect<boolean, DbError> {
-    const filter = { _id: orgId };
-    const update = { $pull: { schemas: schemaId } };
+  removeSchemaId(
+    db: Db,
+    orgId: UUID,
+    schemaId: UUID,
+  ): E.Effect<boolean, DbError> {
+    const collection = db.collection<OrganizationBase>(
+      CollectionName.Organizations,
+    );
+    const filter: StrictFilter<OrganizationBase> = { _id: orgId };
+    const update: StrictUpdateFilter<OrganizationBase> = {
+      $pull: { schemas: schemaId },
+    };
 
     return pipe(
       E.tryPromise(async () => {
-        const result = await Model.updateOne(filter, update);
+        const result = await collection.updateOne(filter, update);
         return result.modifiedCount === 1 ? O.some(true) : O.none();
       }),
       succeedOrMapToDbError({
-        collection: CollectionName.Organizations,
         name: "removeSchemaId",
         params: { filter, update },
       }),
     );
   },
 
-  addQueryId(orgId: UUID, queryId: UUID): E.Effect<boolean, DbError> {
-    const filter = { _id: orgId };
-    // For this to be serialised as a binary UUID it needs to be passed as a string
-    const update = { $addToSet: { queries: queryId.toString() } };
+  addQueryId(db: Db, orgId: UUID, queryId: UUID): E.Effect<boolean, DbError> {
+    const collection = db.collection<OrganizationBase>(
+      CollectionName.Organizations,
+    );
+    const filter: StrictFilter<OrganizationBase> = { _id: orgId };
+    const update: StrictUpdateFilter<OrganizationBase> = {
+      $addToSet: { queries: queryId },
+    };
 
     return pipe(
       E.tryPromise(async () => {
-        const result = await Model.updateOne(filter, update);
+        const result = await collection.updateOne(filter, update);
         return result.modifiedCount === 1 ? O.some(true) : O.none();
       }),
       succeedOrMapToDbError({
-        collection: CollectionName.Organizations,
         name: "addQueryId",
         params: { filter, update },
       }),
     );
   },
 
-  removeQueryId(orgId: UUID, queryId: UUID): E.Effect<boolean, DbError> {
-    const filter = { _id: orgId };
-    const update = { $pull: { queries: queryId } };
+  removeQueryId(
+    db: Db,
+    orgId: UUID,
+    queryId: UUID,
+  ): E.Effect<boolean, DbError> {
+    const collection = db.collection<OrganizationBase>(
+      CollectionName.Organizations,
+    );
+    const filter: StrictFilter<OrganizationBase> = { _id: orgId };
+    const update: StrictUpdateFilter<OrganizationBase> = {
+      $pull: { queries: queryId },
+    };
 
     return pipe(
       E.tryPromise(async () => {
-        const result = await Model.updateOne(filter, update);
+        const result = await collection.updateOne(filter, update);
         return result.modifiedCount === 1 ? O.some(true) : O.none();
       }),
       succeedOrMapToDbError({
-        collection: CollectionName.Organizations,
         name: "removeQueryId",
         params: { filter, update },
       }),

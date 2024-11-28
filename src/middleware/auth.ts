@@ -1,19 +1,19 @@
 import type { RequestHandler } from "express";
 import { expressjwt } from "express-jwt";
 import jwt from "jsonwebtoken";
-import { z } from "zod";
+import type { UUID } from "mongodb";
+import type { z } from "zod";
 import { AuthEndpoints } from "#/auth/routes";
-import { Uuid } from "#/common/types";
+import { Uuid, type UuidDto } from "#/common/types";
 import { ApiDocsEndpoint } from "#/docs/routes";
 import type { Context } from "#/env";
 import { SystemEndpoint } from "#/system/routes";
 
-export const JwtPayload = z.object({
-  sub: Uuid,
-  iat: z.number().int(),
-  type: z.enum(["root", "admin", "access-token"]),
-});
-export type JwtPayload = z.infer<typeof JwtPayload>;
+export type JwtPayload = {
+  sub: UuidDto;
+  iat: number;
+  type: "root" | "admin" | "access-token";
+};
 export type JwtSerialized = string;
 
 // Uses global interface merging so Request is aware of auth on request
@@ -21,11 +21,14 @@ declare global {
   namespace Express {
     interface Request {
       auth: JwtPayload;
+      user: {
+        sub: UUID;
+      };
     }
   }
 }
 
-export function useAuthMiddleware(context: Context): RequestHandler {
+export function useAuthMiddleware(context: Context): RequestHandler[] {
   const publicPaths = [
     SystemEndpoint.Health,
     SystemEndpoint.Version,
@@ -34,10 +37,22 @@ export function useAuthMiddleware(context: Context): RequestHandler {
     `/api/v1${AuthEndpoints.Login}`,
   ];
 
-  return expressjwt({
-    secret: context.config.jwtSecret,
-    algorithms: ["HS256"],
-  }).unless({ path: publicPaths }) as RequestHandler;
+  const deserializeUser: RequestHandler = (req, res, next) => {
+    if (req.auth) {
+      req.user = {
+        sub: Uuid.parse(req.auth.sub),
+      };
+    }
+    next();
+  };
+
+  return [
+    expressjwt({
+      secret: context.config.jwtSecret,
+      algorithms: ["HS256"],
+    }).unless({ path: publicPaths }),
+    deserializeUser,
+  ] as RequestHandler[];
 }
 
 export function createJwt(

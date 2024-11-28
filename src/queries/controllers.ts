@@ -8,30 +8,30 @@ import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { Uuid, type UuidDto } from "#/common/types";
 import { DataRepository, type QueryRuntimeVariables } from "#/data/repository";
 import { OrganizationsRepository } from "#/organizations/repository";
-import { QueriesRepository, type QueryBase } from "#/queries/repository";
+import {
+  QueriesRepository,
+  type QueryBase,
+  type QueryVariable,
+} from "#/queries/repository";
 import pipelineSchema from "./mongodb_pipeline.json";
 
-export const QueryVariable = z.object({
+export const QueryVariableValidator = z.object({
   type: z.enum(["string", "number", "boolean"]),
   description: z.string(),
 });
-export type QueryVariable = z.infer<typeof QueryVariable>;
-
-export const QueryVariables = z.record(z.string(), QueryVariable);
-export type QueryVariables = z.infer<typeof QueryVariables>;
-
 export const AddQueryRequest = z.object({
   org: Uuid,
   name: z.string(),
   schema: Uuid,
-  variables: QueryVariables,
+  variables: z.record(z.string(), QueryVariableValidator),
   pipeline: z.array(z.record(z.string(), z.unknown())),
 });
+
 export type AddQueryRequest = {
   org: UuidDto;
   name: string;
   schema: UuidDto;
-  variables: QueryVariables;
+  variables: Record<string, QueryVariable>;
   pipeline: Record<string, unknown>[];
 };
 
@@ -60,9 +60,13 @@ export const addQueryController: RequestHandler<
 
     E.flatMap((request) =>
       pipe(
-        QueriesRepository.create(request as Omit<QueryBase, "_id">),
+        QueriesRepository.create(req.context.db.primary, request),
         E.tap((queryId) => {
-          return OrganizationsRepository.addQueryId(request.org, queryId);
+          return OrganizationsRepository.addQueryId(
+            req.context.db.primary,
+            request.org,
+            queryId,
+          );
         }),
       ),
     ),
@@ -84,9 +88,9 @@ export const listQueriesController: RequestHandler<
   EmptyObject
 > = async (req, res) => {
   const response = await pipe(
-    E.fromNullable(req.auth.sub),
+    E.fromNullable(req.user.sub),
     E.flatMap((org) => {
-      return QueriesRepository.findOrgQueries(org);
+      return QueriesRepository.findOrgQueries(req.context.db.primary, org);
     }),
     foldToApiResponse(req.context),
     E.runPromise,
@@ -116,9 +120,13 @@ export const deleteQueryController: RequestHandler<
 
     E.flatMap((request) =>
       pipe(
-        QueriesRepository.deleteByQueryId(request.id),
-        E.flatMap((orgId) => {
-          return OrganizationsRepository.removeQueryId(orgId, request.id);
+        QueriesRepository.deleteByQueryId(req.context.db.primary, request.id),
+        E.flatMap((query) => {
+          return OrganizationsRepository.removeQueryId(
+            req.context.db.primary,
+            query.org,
+            request.id,
+          );
         }),
       ),
     ),
@@ -153,7 +161,9 @@ export const executeQueryController: RequestHandler<
 
     E.flatMap((request) =>
       E.gen(function* (_) {
-        const query = yield* _(QueriesRepository.getQueryById(request.id));
+        const query = yield* _(
+          QueriesRepository.getQueryById(req.context.db.primary, request.id),
+        );
         const variables = yield* _(validateVariables(query, request));
         const result = yield* _(
           DataRepository.runPipeline(req.context.db.data, query, variables),

@@ -23,7 +23,7 @@ export const CreateDataRequest = z.object({
 });
 export type CreateDataRequest = {
   schema: UuidDto;
-  data: (Document & Omit<DocumentBase, "_created" | "_updated">)[];
+  data: JsonArray;
 };
 export type CreateDataResponse = ApiResponse<CreatedResult>;
 
@@ -49,7 +49,9 @@ export const createDataController: RequestHandler<
     E.flatMap((body) =>
       pipe(
         E.Do,
-        E.bind("schema", () => SchemasRepository.find(new UUID(body.schema))),
+        E.bind("schema", () =>
+          SchemasRepository.find(req.context.db.primary, new UUID(body.schema)),
+        ),
         E.bind("data", ({ schema }) => {
           const ajv = new Ajv({ strict: "log" });
           addFormats(ajv);

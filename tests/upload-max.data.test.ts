@@ -28,7 +28,7 @@ describe("upload.max.data.test", () => {
     organization = await setupOrganization(
       fixture,
       schema as SchemaFixture,
-      query as QueryFixture,
+      query as unknown as QueryFixture,
     );
   });
 
@@ -38,7 +38,7 @@ describe("upload.max.data.test", () => {
       name: faker.person.fullName() + new UUID().toString(), // insufficient names in faker to hit limit without repetition
     }));
 
-    const response = await fixture.users.backend
+    const response = await backend
       .uploadData({
         schema: organization.schema.id,
         data,
@@ -56,7 +56,7 @@ describe("upload.max.data.test", () => {
       name: faker.person.fullName() + new UUID().toString(), // insufficient names in faker to hit limit without repetition
     }));
 
-    const response = await fixture.users.backend
+    const response = await backend
       .uploadData({
         schema: organization.schema.id,
         data,

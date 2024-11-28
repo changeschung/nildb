@@ -26,7 +26,7 @@ describe("schemas.test.ts", () => {
   const organization = {
     id: "" as UuidDto,
     schema: schema as SchemaFixture,
-    query: query as QueryFixture,
+    query: query as unknown as QueryFixture,
   };
 
   beforeAll(async () => {
