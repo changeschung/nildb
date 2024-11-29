@@ -1,5 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { beforeAll, describe, expect, it } from "vitest";
+import { createUuidDto } from "#/common/types";
 import type { Context } from "#/env";
 import query from "./data/simple.query.json";
 import schema from "./data/simple.schema.json";
@@ -31,7 +32,7 @@ describe("flush.data.test", () => {
     );
 
     const data = Array.from({ length: collectionSize }, () => ({
-      _id: faker.string.uuid(),
+      _id: createUuidDto(),
       name: faker.person.fullName(),
     }));
 

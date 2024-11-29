@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker";
 import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
 import { CollectionName } from "#/common/mongo";
-import type { UuidDto } from "#/common/types";
+import { type UuidDto, createUuidDto } from "#/common/types";
 import type { CreatedResult } from "#/data/repository";
 import type { Context } from "#/env";
 import type { OrganizationDocument } from "#/organizations/repository";
@@ -84,7 +84,7 @@ describe("schemas.test.ts", () => {
         schema: organization.schema.id,
         data: [
           {
-            _id: faker.string.uuid(),
+            _id: createUuidDto(),
             wallet: "0x1",
             country: "GBR",
             age: 42,

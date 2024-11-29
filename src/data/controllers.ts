@@ -2,28 +2,36 @@ import Ajv, { ValidationError } from "ajv";
 import addFormats from "ajv-formats";
 import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
-import { type Document, UUID } from "mongodb";
+import { UUID } from "mongodb";
 import type { EmptyObject, JsonArray } from "type-fest";
 import { z } from "zod";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import type { DocumentBase } from "#/common/mongo";
 import { Uuid, type UuidDto } from "#/common/types";
-import { SchemasRepository } from "#/schemas/repository";
+import { schemasFindOne } from "#/schemas/repository";
 import {
   type CreatedResult,
-  DataRepository,
+  type PartialDataDocument,
   type UpdateResult,
+  dataDeleteMany,
+  dataFindMany,
+  dataFlushCollection,
+  dataInsert,
+  dataTailCollection,
+  dataUpdateMany,
 } from "./repository";
 
 export const MAX_RECORDS_LENGTH = 10_000;
 
 export const CreateDataRequest = z.object({
   schema: Uuid,
-  data: z.array(z.record(z.unknown())),
+  data: z.array(z.record(z.string(), z.unknown())),
 });
+export type PartialDataDocumentDto = Record<string, unknown> & { _id: UuidDto };
+
 export type CreateDataRequest = {
   schema: UuidDto;
-  data: JsonArray;
+  data: PartialDataDocumentDto[];
 };
 export type CreateDataResponse = ApiResponse<CreatedResult>;
 
@@ -50,7 +58,9 @@ export const createDataController: RequestHandler<
       pipe(
         E.Do,
         E.bind("schema", () =>
-          SchemasRepository.find(req.context.db.primary, new UUID(body.schema)),
+          schemasFindOne(req.context.db.primary, {
+            _id: new UUID(body.schema),
+          }),
         ),
         E.bind("data", ({ schema }) => {
           const ajv = new Ajv({ strict: "log" });
@@ -60,48 +70,14 @@ export const createDataController: RequestHandler<
           const valid = validator(body.data);
 
           return valid
-            ? E.succeed(body.data as DocumentBase[])
+            ? E.succeed(body.data as PartialDataDocumentDto[])
             : E.fail(new ValidationError(validator.errors ?? []));
         }),
         E.flatMap(({ schema, data }) => {
-          return DataRepository.insert(req.context.db.data, schema, data);
+          return dataInsert(req.context.db.data, schema, data);
         }),
       ),
     ),
-
-    foldToApiResponse(req.context),
-    E.runPromise,
-  );
-
-  res.send(response);
-};
-
-export const ReadDataRequest = z.object({
-  schema: Uuid,
-  filter: z.record(z.string(), z.unknown()),
-});
-export type ReadDataRequest = {
-  schema: UuidDto;
-  filter: Record<string, unknown>;
-};
-export type ReadDataResponse = ApiResponse<DocumentBase[]>;
-
-export const readDataController: RequestHandler<
-  EmptyObject,
-  ReadDataResponse,
-  ReadDataRequest
-> = async (req, res) => {
-  const response = await pipe(
-    E.try({
-      try: () => ReadDataRequest.parse(req.body),
-      catch: (error) => error as z.ZodError,
-    }),
-
-    E.flatMap((body) =>
-      DataRepository.find(req.context.db.data, body.schema, body.filter),
-    ),
-
-    E.map((data) => data),
 
     foldToApiResponse(req.context),
     E.runPromise,
@@ -134,12 +110,46 @@ export const updateDataController: RequestHandler<
     }),
 
     E.flatMap((body) =>
-      DataRepository.update(
+      dataUpdateMany(
         req.context.db.data,
         body.schema,
         body.filter,
         body.update,
       ),
+    ),
+
+    E.map((data) => data),
+
+    foldToApiResponse(req.context),
+    E.runPromise,
+  );
+
+  res.send(response);
+};
+
+export const ReadDataRequest = z.object({
+  schema: Uuid,
+  filter: z.record(z.string(), z.unknown()),
+});
+export type ReadDataRequest = {
+  schema: UuidDto;
+  filter: Record<string, unknown>;
+};
+export type ReadDataResponse = ApiResponse<DocumentBase[]>;
+
+export const readDataController: RequestHandler<
+  EmptyObject,
+  ReadDataResponse,
+  ReadDataRequest
+> = async (req, res) => {
+  const response = await pipe(
+    E.try({
+      try: () => ReadDataRequest.parse(req.body),
+      catch: (error) => error as z.ZodError,
+    }),
+
+    E.flatMap((body) =>
+      dataFindMany(req.context.db.data, body.schema, body.filter),
     ),
 
     E.map((data) => data),
@@ -184,11 +194,7 @@ export const deleteDataController: RequestHandler<
     }),
 
     E.flatMap((request) =>
-      DataRepository.delete(
-        req.context.db.data,
-        request.schema,
-        request.filter,
-      ),
+      dataDeleteMany(req.context.db.data, request.schema, request.filter),
     ),
 
     foldToApiResponse(req.context),
@@ -219,7 +225,7 @@ export const flushDataController: RequestHandler<
     }),
 
     E.flatMap((request) =>
-      DataRepository.flush(req.context.db.data, request.schema),
+      dataFlushCollection(req.context.db.data, request.schema),
     ),
 
     foldToApiResponse(req.context),
@@ -249,7 +255,7 @@ export const tailDataController: RequestHandler<
       catch: (error) => error as z.ZodError,
     }),
 
-    E.flatMap((body) => DataRepository.tail(req.context.db.data, body.schema)),
+    E.flatMap((body) => dataTailCollection(req.context.db.data, body.schema)),
 
     E.map((data) => data as JsonArray),
 

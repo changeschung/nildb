@@ -101,7 +101,7 @@ describe("query.test.ts", () => {
   });
 
   it("can delete a query", async () => {
-    const response = await backend
+    const _response = await backend
       .deleteQuery({
         id: organization.query.id,
       })

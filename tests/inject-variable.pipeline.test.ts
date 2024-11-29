@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { injectVariables } from "#/data/repository";
+import { injectVariablesIntoAggregation } from "#/data/repository";
 
 describe("inject.variable.pipeline.test", () => {
   it("replaces simple variables", () => {
@@ -9,7 +9,7 @@ describe("inject.variable.pipeline.test", () => {
       },
     ];
     const variables = { address: "abc123" };
-    const actual = injectVariables(pipeline, variables);
+    const actual = injectVariablesIntoAggregation(pipeline, variables);
     const expected = [
       {
         $match: { wallet: "abc123" },
@@ -34,7 +34,7 @@ describe("inject.variable.pipeline.test", () => {
       value: 1000,
       isActive: false,
     };
-    const actual = injectVariables(pipeline, variables);
+    const actual = injectVariablesIntoAggregation(pipeline, variables);
     const expected = [
       {
         $match: {
@@ -56,7 +56,7 @@ describe("inject.variable.pipeline.test", () => {
     ];
     const variables = {};
 
-    expect(() => injectVariables(pipeline, variables)).toThrow(
+    expect(() => injectVariablesIntoAggregation(pipeline, variables)).toThrow(
       "Missing pipeline variable: ##address",
     );
   });
@@ -95,7 +95,7 @@ describe("inject.variable.pipeline.test", () => {
       groupField: "category",
       valueField: 1,
     };
-    const actual = injectVariables(pipeline, variables);
+    const actual = injectVariablesIntoAggregation(pipeline, variables);
     const expected = [
       {
         $match: {
@@ -155,7 +155,7 @@ describe("inject.variable.pipeline.test", () => {
       status: "active",
       deepValue: "nested-value",
     };
-    const actual = injectVariables(pipeline, variables);
+    const actual = injectVariablesIntoAggregation(pipeline, variables);
     const expected = [
       {
         $match: {

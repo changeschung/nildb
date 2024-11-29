@@ -1,5 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { beforeAll, describe, expect, it } from "vitest";
+import { createUuidDto } from "#/common/types";
 import type { CreatedResult } from "#/data/repository";
 import type { Context } from "#/env";
 import query from "./data/wallet.query.json";
@@ -35,19 +36,19 @@ describe("data.test.ts", () => {
     const schema = organization.schema.id;
     const data = [
       {
-        _id: faker.string.uuid(),
+        _id: createUuidDto(),
         wallet: "0x1",
         country: "GBR",
         age: 20,
       },
       {
-        _id: faker.string.uuid(),
+        _id: createUuidDto(),
         wallet: "0x2",
         country: "CAN",
         age: 30,
       },
       {
-        _id: faker.string.uuid(),
+        _id: createUuidDto(),
         wallet: "0x3",
         country: "GBR",
         age: 40,
@@ -71,7 +72,7 @@ describe("data.test.ts", () => {
     const schema = organization.schema.id;
     const data = [
       {
-        _id: faker.string.uuid(),
+        _id: createUuidDto(),
         wallet: "0x1",
         country: "GBR",
         age: 30,
@@ -94,13 +95,13 @@ describe("data.test.ts", () => {
     const schema = organization.schema.id;
     const data = [
       {
-        _id: faker.string.uuid(),
+        _id: createUuidDto(),
         wallet: "0x1", // collides expect failure
         country: "GBR",
         age: 30,
       },
       {
-        _id: faker.string.uuid(),
+        _id: createUuidDto(),
         wallet: "0x4", // unique expect success
         country: "GBR",
         age: 30,
@@ -121,11 +122,13 @@ describe("data.test.ts", () => {
     const schema = organization.schema.id;
     const data = [
       {
+        _id: createUuidDto(),
         wallet: "0x4",
         country: "GBR",
         age: 30,
       },
       {
+        _id: createUuidDto(),
         wallet: "0x4",
         country: "GBR",
         age: 30,
@@ -148,6 +151,7 @@ describe("data.test.ts", () => {
     const schema = organization.schema.id;
     const data = [
       {
+        _id: createUuidDto(),
         wallet: true,
         country: "GBR",
         age: 30,

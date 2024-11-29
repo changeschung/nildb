@@ -1,8 +1,9 @@
-import { faker } from "@faker-js/faker";
-import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
-import { MAX_RECORDS_LENGTH } from "#/data/controllers";
-import type { Context } from "#/env";
+import { createUuidDto } from "#/common/types";
+import {
+  MAX_RECORDS_LENGTH,
+  type PartialDataDocumentDto,
+} from "#/data/controllers";
 import query from "./data/simple.query.json";
 import schema from "./data/simple.schema.json";
 import {
@@ -17,13 +18,11 @@ import type { TestClient } from "./fixture/client";
 
 describe("upload.max.data.test", () => {
   let fixture: AppFixture;
-  let db: Context["db"];
   let backend: TestClient;
   let organization: OrganizationFixture;
 
   beforeAll(async () => {
     fixture = await buildFixture();
-    db = fixture.context.db;
     backend = fixture.users.backend;
     organization = await setupOrganization(
       fixture,
@@ -32,11 +31,17 @@ describe("upload.max.data.test", () => {
     );
   });
 
+  const nextDocument = () => ({
+    _id: createUuidDto(),
+    // insufficient unique full names in faker so use uuids for testing limit
+    name: createUuidDto(),
+  });
+
   it("rejects payload that exceeds MAX_RECORDS_LENGTH", async () => {
-    const data = Array.from({ length: MAX_RECORDS_LENGTH + 1 }, () => ({
-      _id: new UUID().toString(),
-      name: faker.person.fullName() + new UUID().toString(), // insufficient names in faker to hit limit without repetition
-    }));
+    const data: PartialDataDocumentDto[] = Array.from(
+      { length: MAX_RECORDS_LENGTH + 1 },
+      () => nextDocument(),
+    );
 
     const response = await backend
       .uploadData({
@@ -51,10 +56,10 @@ describe("upload.max.data.test", () => {
   });
 
   it("accepts payload at MAX_RECORDS_LENGTH", async () => {
-    const data = Array.from({ length: MAX_RECORDS_LENGTH }, () => ({
-      _id: new UUID().toString(),
-      name: faker.person.fullName() + new UUID().toString(), // insufficient names in faker to hit limit without repetition
-    }));
+    const data: PartialDataDocumentDto[] = Array.from(
+      { length: MAX_RECORDS_LENGTH },
+      () => nextDocument(),
+    );
 
     const response = await backend
       .uploadData({

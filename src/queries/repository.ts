@@ -11,82 +11,100 @@ export type QueryVariable = {
 export type QueryDocument = DocumentBase & {
   org: UUID;
   name: string;
-  // Determines the pipeline's starting collection
+  // Defines the pipeline's starting collection
   schema: UUID;
   variables: Record<string, QueryVariable>;
   pipeline: Record<string, unknown>[];
 };
 
-export const QueriesRepository = {
-  create(
-    db: Db,
-    data: Omit<QueryDocument, keyof DocumentBase>,
-  ): E.Effect<UUID, DbError> {
-    const collection = db.collection<QueryDocument>(CollectionName.Queries);
-    const now = new Date();
-    const document: QueryDocument = {
-      ...data,
-      _id: new UUID(),
-      _created: now,
-      _updated: now,
-    };
+export function queriesInsert(
+  db: Db,
+  data: Omit<QueryDocument, keyof DocumentBase>,
+): E.Effect<UUID, DbError> {
+  const now = new Date();
+  const document: QueryDocument = {
+    ...data,
+    _id: new UUID(),
+    _created: now,
+    _updated: now,
+  };
 
-    return pipe(
-      E.tryPromise(async () => {
-        const result = await collection.insertOne(document);
-        return result.insertedId;
-      }),
-      succeedOrMapToDbError({
-        name: "create",
-        params: { document },
-      }),
-    );
-  },
+  return pipe(
+    E.tryPromise(async () => {
+      const collection = db.collection<QueryDocument>(CollectionName.Queries);
+      const result = await collection.insertOne(document);
+      return result.insertedId;
+    }),
+    succeedOrMapToDbError({
+      name: "queriesInsert",
+      params: { document },
+    }),
+  );
+}
 
-  deleteByQueryId(db: Db, _id: UUID): E.Effect<QueryDocument, DbError> {
-    const collection = db.collection<QueryDocument>(CollectionName.Queries);
-    const filter: StrictFilter<QueryDocument> = { _id };
+export function queriesFindMany(
+  db: Db,
+  filter: StrictFilter<QueryDocument>,
+): E.Effect<QueryDocument[], DbError> {
+  return pipe(
+    E.tryPromise(() => {
+      const collection = db.collection<QueryDocument>(CollectionName.Queries);
+      return collection.find(filter).toArray();
+    }),
+    succeedOrMapToDbError({
+      name: "queriesFindMany",
+      params: { filter },
+    }),
+  );
+}
 
-    return pipe(
-      E.tryPromise(async () => {
-        const result = await collection.findOneAndDelete(filter);
-        return O.fromNullable(result);
-      }),
-      succeedOrMapToDbError({
-        name: "deleteByQueryId",
-        params: { filter },
-      }),
-    );
-  },
+export function queriesFindOne(
+  db: Db,
+  filter: StrictFilter<QueryDocument>,
+): E.Effect<QueryDocument, DbError> {
+  return pipe(
+    E.tryPromise(async () => {
+      const collection = db.collection<QueryDocument>(CollectionName.Queries);
+      const result = await collection.findOne(filter);
+      return O.fromNullable(result);
+    }),
+    succeedOrMapToDbError({
+      name: "queriesFindOne",
+      params: { filter },
+    }),
+  );
+}
 
-  findOrgQueries(db: Db, org: UUID): E.Effect<QueryDocument[], DbError> {
-    const collection = db.collection<QueryDocument>(CollectionName.Queries);
-    const filter: StrictFilter<QueryDocument> = { org };
+export function queriesDeleteMany(
+  db: Db,
+  filter: StrictFilter<QueryDocument>,
+): E.Effect<number, DbError> {
+  return pipe(
+    E.tryPromise(async () => {
+      const collection = db.collection<QueryDocument>(CollectionName.Queries);
+      const result = await collection.deleteMany(filter);
+      return result.deletedCount;
+    }),
+    succeedOrMapToDbError({
+      name: "queriesDelete",
+      params: { filter },
+    }),
+  );
+}
 
-    return pipe(
-      E.tryPromise(() => {
-        return collection.find(filter).toArray();
-      }),
-      succeedOrMapToDbError({
-        name: "findOrgQueries",
-        params: { filter },
-      }),
-    );
-  },
-
-  getQueryById(db: Db, _id: UUID): E.Effect<QueryDocument, DbError> {
-    const collection = db.collection<QueryDocument>(CollectionName.Queries);
-    const filter: StrictFilter<QueryDocument> = { _id };
-
-    return pipe(
-      E.tryPromise(async () => {
-        const document = await collection.findOne(filter);
-        return O.fromNullable(document);
-      }),
-      succeedOrMapToDbError({
-        name: "getQueryById",
-        params: { filter },
-      }),
-    );
-  },
-} as const;
+export function queriesDeleteOne(
+  db: Db,
+  filter: StrictFilter<QueryDocument>,
+): E.Effect<QueryDocument, DbError> {
+  return pipe(
+    E.tryPromise(async () => {
+      const collection = db.collection<QueryDocument>(CollectionName.Queries);
+      const result = await collection.findOneAndDelete(filter);
+      return O.fromNullable(result);
+    }),
+    succeedOrMapToDbError({
+      name: "queriesDelete",
+      params: { filter },
+    }),
+  );
+}

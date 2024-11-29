@@ -8,3 +8,7 @@ export const Uuid = z
   .string()
   .uuid()
   .transform((val) => new UUID(val));
+
+export function createUuidDto(): UuidDto {
+  return new UUID().toString() as UuidDto;
+}
