@@ -1,5 +1,6 @@
 import { ValidationError } from "ajv";
 import { Effect as E, pipe } from "effect";
+import { UnknownException } from "effect/Cause";
 import type { JsonArray } from "type-fest";
 import { ZodError } from "zod";
 import type { Context } from "#/env";
@@ -13,6 +14,7 @@ export type ApiSuccessResponse<T> = {
 
 export type ApiErrorResponse = {
   errors: JsonArray;
+  ts: Date;
 };
 
 export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
@@ -29,28 +31,18 @@ export type Handler<T extends HandlerParams> = {
   response: ApiResponse<T["response"]>;
 };
 
-export function foldToApiResponse<T>(_c: Context) {
+export function foldToApiResponse<T>(c: Context) {
   return (effect: E.Effect<T, Error>): E.Effect<ApiResponse<T>> =>
     pipe(
       effect,
       E.match({
         onFailure: (e) => {
-          console.error(e);
-
-          const errors = [];
-
-          if (e instanceof ZodError) {
-            errors.push(e.flatten());
-          } else if (e instanceof DbError) {
-            errors.push(e.sanitizedMessage());
-          } else if (e instanceof ValidationError) {
-            errors.push(...e.errors);
-          } else {
-            errors.push(e.message);
-          }
+          c.log.debug("foldToApiResponse failure: %O", e);
+          const errors = transformError(e) as JsonArray;
 
           return {
-            errors: errors as JsonArray,
+            errors,
+            ts: new Date(),
           };
         },
         onSuccess: (data) => {
@@ -61,3 +53,24 @@ export function foldToApiResponse<T>(_c: Context) {
       }),
     );
 }
+
+const transformError = (error: unknown): unknown[] => {
+  if (error instanceof ZodError) {
+    return [error.flatten()];
+  }
+  if (error instanceof DbError) {
+    return [error.sanitizedMessage()];
+  }
+  if (error instanceof ValidationError) {
+    return error.errors;
+  }
+  if (error instanceof UnknownException) {
+    const cause = error.cause;
+    if (typeof cause === "object" && cause && "message" in cause) {
+      return [cause.message];
+    }
+  } else if (error instanceof Error) {
+    return [error.message];
+  }
+  return ["An unknown error occurred"];
+};

@@ -196,7 +196,9 @@ function validateVariables(
     const permitted = Object.keys(query.variables);
 
     if (provided.length !== permitted.length) {
-      throw new Error("Invalid query execute variables");
+      throw new Error(
+        `Invalid query execution variables, expected: ${JSON.stringify(query.variables)}`,
+      );
     }
 
     const variables: QueryRuntimeVariables = {};
