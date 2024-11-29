@@ -1,7 +1,7 @@
 import pino, { type Logger } from "pino";
 import type { Config } from "#/env";
 
-export function createLogger(config: Config): Logger<never, boolean> {
+export function createLogger(config: Config): Logger {
   const { logLevel, env } = config;
 
   const options: Record<string, unknown> = {
