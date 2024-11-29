@@ -1,4 +1,3 @@
-import { faker } from "@faker-js/faker";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createUuidDto } from "#/common/types";
 import type { CreatedResult } from "#/data/repository";
@@ -61,6 +60,7 @@ describe("data.test.ts", () => {
         data,
       })
       .expect(200);
+
     expect(response.body.data.created).toHaveLength(3);
 
     const cursor = db.data.collection(schema).find({});

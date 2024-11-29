@@ -1,6 +1,10 @@
 import { Effect as E, pipe } from "effect";
 import { type Db, type Document, type StrictFilter, UUID } from "mongodb";
-import type { Filter, UpdateFilter } from "mongodb/lib/beta";
+import {
+  type Filter,
+  MongoBulkWriteError,
+  type UpdateFilter,
+} from "mongodb/lib/beta";
 import type { JsonObject, JsonValue } from "type-fest";
 import { type DbError, succeedOrMapToDbError } from "#/common/errors";
 import type { DocumentBase } from "#/common/mongo";
@@ -100,7 +104,7 @@ export type PartialDataDocument<
 
 export type CreateFailure = {
   error: string;
-  data: unknown;
+  document: unknown;
 };
 
 export type CreatedResult = {
@@ -118,41 +122,52 @@ export function dataInsert(
       const created = new Set<UuidDto>();
       const errors: CreateFailure[] = [];
 
-      // TODO using a bulk write or concurrently is trickier than anticipated
-      //  going for simple solution until I have time to come back to this
+      const batchSize = 1000;
+      const batches: DataDocument[][] = [];
       const now = new Date();
 
-      const promises = data.map(async (d) => {
-        const _id = new UUID(d._id);
+      for (let i = 0; i < data.length; i += batchSize) {
+        const batch = data.slice(i, i + batchSize).map((partial) => ({
+          ...partial,
+          _id: new UUID(partial._id),
+          _created: now,
+          _updated: now,
+        }));
+        batches.push(batch);
+      }
+
+      const collection = db.collection<DataDocument>(schema._id.toString());
+
+      for (const batch of batches) {
         try {
-          const doc: Document = {
-            ...d,
-            _id,
-            _created: now,
-            _updated: now,
-          };
-
-          const result = await db
-            .collection(schema._id.toString())
-            .insertOne(doc);
-
-          if (result.acknowledged) {
-            created.add(_id.toString() as UuidDto);
-          } else {
-            errors.push({
-              error: "Failed to insert document",
-              data: doc,
-            });
-          }
-        } catch (error) {
-          console.error(error);
-          errors.push({
-            error: "Unhandled error occurred",
-            data: d,
+          const result = await collection.insertMany(batch, {
+            ordered: false,
           });
+          for (const id of Object.values(result.insertedIds)) {
+            created.add(id.toString() as UuidDto);
+          }
+        } catch (e) {
+          if (e instanceof MongoBulkWriteError) {
+            const result = e.result;
+
+            for (const id of Object.values(result.insertedIds)) {
+              created.add(id.toString() as UuidDto);
+            }
+
+            result.getWriteErrors().map((writeError) => {
+              const document = batch[writeError.index];
+              created.delete(document._id.toString() as UuidDto);
+              errors.push({
+                error: writeError.errmsg ?? "Unknown bulk operation error",
+                document,
+              });
+            });
+          } else {
+            console.error("An unhandled error occurred: %O", e);
+            throw e;
+          }
         }
-      });
-      await Promise.all(promises);
+      }
 
       return {
         created: Array.from(created),
