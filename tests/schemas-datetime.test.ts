@@ -1,5 +1,5 @@
-import { faker } from "@faker-js/faker";
 import { beforeAll, describe, expect, it } from "vitest";
+import { createUuidDto } from "#/common/types";
 import type { Context } from "#/env";
 import query from "./data/datetime.query.json";
 import schema from "./data/datetime.schema.json";
@@ -34,9 +34,9 @@ describe("schemas.datetime.test", async () => {
     const schema = organization.schema.id;
 
     const data = [
-      { _id: faker.string.uuid(), datetime: "2024-03-19T14:30:00Z" },
-      { _id: faker.string.uuid(), datetime: "2024-03-19T14:30:00.123Z" },
-      { _id: faker.string.uuid(), datetime: "2024-03-19T14:30:00+01:00" },
+      { _id: createUuidDto(), datetime: "2024-03-19T14:30:00Z" },
+      { _id: createUuidDto(), datetime: "2024-03-19T14:30:00.123Z" },
+      { _id: createUuidDto(), datetime: "2024-03-19T14:30:00+01:00" },
     ];
 
     const response = await backend
@@ -55,11 +55,11 @@ describe("schemas.datetime.test", async () => {
   it("rejects invalid date-times", async () => {
     const schema = organization.schema.id;
     const data = [
-      { datetime: "2024-03-19" }, // missing time
-      { datetime: "14:30:00" }, // missing date
-      { datetime: "2024-13-19T14:30:00Z" }, // invalid month
-      { datetime: "not a date" }, // completely invalid
-      { datetime: 12345 }, // wrong type
+      { _id: createUuidDto(), datetime: "2024-03-19" },
+      { _id: createUuidDto(), datetime: "14:30:00" },
+      { _id: createUuidDto(), datetime: "2024-13-19T14:30:00Z" },
+      { _id: createUuidDto(), datetime: "not a date" },
+      { _id: createUuidDto(), datetime: 12345 },
     ];
 
     for (const invalid of data) {

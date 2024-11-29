@@ -1,5 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { beforeAll, describe, expect, it } from "vitest";
+import { createUuidDto } from "#/common/types";
 import type { Context } from "#/env";
 import query from "./data/simple.query.json";
 import schema from "./data/simple.schema.json";
@@ -33,21 +34,20 @@ describe("Schemas delete by filter", () => {
     const schemaId = organization.schema.id;
 
     const data = Array.from({ length: collectionSize - 3 }, () => ({
-      _id: faker.string.uuid(),
+      _id: createUuidDto(),
       name: faker.person.fullName(),
     }));
 
-    data.push({ _id: faker.string.uuid(), name: "foo" });
-    data.push({ _id: faker.string.uuid(), name: "bar" });
-    data.push({ _id: faker.string.uuid(), name: "bar" });
+    data.push({ _id: createUuidDto(), name: "foo" });
+    data.push({ _id: createUuidDto(), name: "bar" });
+    data.push({ _id: createUuidDto(), name: "bar" });
 
     const shuffledData = [...data].sort(() => Math.random() - 0.5);
 
-    const response = await backend.uploadData({
+    const _response = await backend.uploadData({
       schema: schemaId,
       data: shuffledData,
     });
-    console.log(response.body);
   });
 
   it("rejects empty filter", async () => {

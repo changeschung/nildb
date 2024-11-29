@@ -1,20 +1,110 @@
 import { Effect as E, pipe } from "effect";
-import type { Db, Document, UUID } from "mongodb";
-import type { Filter, UpdateFilter } from "mongodb/lib/beta";
-import type { JsonArray, JsonObject, JsonValue } from "type-fest";
+import { type Db, type Document, type StrictFilter, UUID } from "mongodb";
+import {
+  type Filter,
+  MongoBulkWriteError,
+  type UpdateFilter,
+} from "mongodb/lib/beta";
+import type { JsonObject, JsonValue } from "type-fest";
 import { type DbError, succeedOrMapToDbError } from "#/common/errors";
 import type { DocumentBase } from "#/common/mongo";
 import type { UuidDto } from "#/common/types";
+import type { PartialDataDocumentDto } from "#/data/controllers";
 import type { QueryDocument } from "#/queries/repository";
 import type { SchemaDocument } from "#/schemas/repository";
 
+export function dataCreateCollection(
+  db: Db,
+  schemaId: UUID,
+  keys: string[],
+): E.Effect<UUID, DbError> {
+  const collectionName = schemaId.toJSON();
+
+  return pipe(
+    E.tryPromise(async () => {
+      const collection = await db.createCollection(collectionName);
+
+      // _id is a key by default so we remove to avoid the collision
+      const keysWithOutId = keys.filter((key) => key !== "_id");
+      if (keysWithOutId.length > 0) {
+        await collection.createIndex(keysWithOutId, { unique: true });
+      }
+
+      return schemaId;
+    }),
+    succeedOrMapToDbError({
+      name: "dataCreateCollection",
+      params: { keys, schemaId },
+    }),
+  );
+}
+
 export const TAIL_DATA_LIMIT = 25;
 
-export type QueryRuntimeVariables = Record<string, string | number | boolean>;
+export function dataTailCollection(
+  db: Db,
+  schema: UUID,
+): E.Effect<DataDocument[], DbError> {
+  const collection = db.collection<DataDocument>(schema.toString());
+  return pipe(
+    E.tryPromise(() => {
+      return collection
+        .find()
+        .sort({ _created: -1 })
+        .limit(TAIL_DATA_LIMIT)
+        .toArray();
+    }),
+    succeedOrMapToDbError({
+      name: "dataTailCollection",
+      params: { schema },
+    }),
+  );
+}
 
-export type UpdateResult = {
-  matched: number;
-  updated: number;
+export function dataDeleteCollection(
+  db: Db,
+  schema: UUID,
+): E.Effect<boolean, DbError> {
+  return pipe(
+    E.tryPromise(() => {
+      return db.dropCollection(schema.toString());
+    }),
+    succeedOrMapToDbError({
+      name: "dataDeleteCollection",
+      params: { schema },
+    }),
+  );
+}
+
+export function dataFlushCollection(
+  db: Db,
+  schema: UUID,
+): E.Effect<number, DbError> {
+  const collection = db.collection<DataDocument>(schema.toString());
+
+  return pipe(
+    E.tryPromise(async () => {
+      const result = await collection.deleteMany();
+      return result.deletedCount;
+    }),
+    succeedOrMapToDbError({
+      name: "dataFlushCollection",
+      params: { schema },
+    }),
+  );
+}
+
+export type DataDocument<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> = DocumentBase & T;
+
+export type PartialDataDocument<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> = Pick<DocumentBase, "_id"> & T;
+
+export type CreateFailure = {
+  error: string;
+  document: unknown;
 };
 
 export type CreatedResult = {
@@ -22,240 +112,164 @@ export type CreatedResult = {
   errors: CreateFailure[];
 };
 
-export type CreateFailure = {
-  error: string;
-  data: unknown;
+export function dataInsert(
+  db: Db,
+  schema: SchemaDocument,
+  data: PartialDataDocumentDto[],
+): E.Effect<CreatedResult, DbError> {
+  return pipe(
+    E.tryPromise(async () => {
+      const created = new Set<UuidDto>();
+      const errors: CreateFailure[] = [];
+
+      const batchSize = 1000;
+      const batches: DataDocument[][] = [];
+      const now = new Date();
+
+      for (let i = 0; i < data.length; i += batchSize) {
+        const batch = data.slice(i, i + batchSize).map((partial) => ({
+          ...partial,
+          _id: new UUID(partial._id),
+          _created: now,
+          _updated: now,
+        }));
+        batches.push(batch);
+      }
+
+      const collection = db.collection<DataDocument>(schema._id.toString());
+
+      for (const batch of batches) {
+        try {
+          const result = await collection.insertMany(batch, {
+            ordered: false,
+          });
+          for (const id of Object.values(result.insertedIds)) {
+            created.add(id.toString() as UuidDto);
+          }
+        } catch (e) {
+          if (e instanceof MongoBulkWriteError) {
+            const result = e.result;
+
+            for (const id of Object.values(result.insertedIds)) {
+              created.add(id.toString() as UuidDto);
+            }
+
+            result.getWriteErrors().map((writeError) => {
+              const document = batch[writeError.index];
+              created.delete(document._id.toString() as UuidDto);
+              errors.push({
+                error: writeError.errmsg ?? "Unknown bulk operation error",
+                document,
+              });
+            });
+          } else {
+            console.error("An unhandled error occurred: %O", e);
+            throw e;
+          }
+        }
+      }
+
+      return {
+        created: Array.from(created),
+        errors,
+      };
+    }),
+
+    succeedOrMapToDbError({
+      name: "dataInsert",
+      params: { schema: schema._id },
+    }),
+  );
+}
+
+export type UpdateResult = {
+  matched: number;
+  updated: number;
 };
 
-export const DataRepository = {
-  createCollection(
-    db: Db,
-    schemaId: UUID,
-    keys: string[],
-  ): E.Effect<UUID, DbError> {
-    const collectionName = schemaId.toJSON();
+export function dataUpdateMany(
+  db: Db,
+  schema: UUID,
+  filter: Filter<DocumentBase>,
+  update: UpdateFilter<DocumentBase>,
+): E.Effect<UpdateResult, DbError> {
+  return pipe(
+    E.tryPromise(async () => {
+      const collection = db.collection<DocumentBase>(schema.toString());
+      const result = await collection.updateMany(filter, update);
 
-    return pipe(
-      E.tryPromise(async () => {
-        const collection = await db.createCollection(collectionName);
+      return {
+        matched: result.matchedCount,
+        updated: result.modifiedCount,
+      };
+    }),
+    succeedOrMapToDbError({
+      name: "dataUpdateMany",
+      params: { schema },
+    }),
+  );
+}
 
-        // _id is a key by default so we remove to avoid the collision
-        const keysWithOutId = keys.filter((key) => key !== "_id");
-        if (keysWithOutId.length > 0) {
-          await collection.createIndex(keysWithOutId, { unique: true });
-        }
+export function dataDeleteMany(
+  db: Db,
+  schema: UUID,
+  filter: StrictFilter<DocumentBase>,
+): E.Effect<number, DbError> {
+  return pipe(
+    E.tryPromise(async () => {
+      const collection = db.collection<DocumentBase>(schema.toString());
+      const result = await collection.deleteMany(filter);
+      return result.deletedCount;
+    }),
+    succeedOrMapToDbError({
+      name: "dataDeleteMany",
+      params: { schema, filter },
+    }),
+  );
+}
 
-        return schemaId;
-      }),
-      succeedOrMapToDbError({
-        name: "createCollection",
-        params: { keys, schemaId },
-      }),
-    );
-  },
+export function dataRunAggregation(
+  db: Db,
+  query: QueryDocument,
+  variables: QueryRuntimeVariables,
+): E.Effect<JsonObject[], DbError> {
+  return pipe(
+    E.tryPromise(() => {
+      const pipeline = injectVariablesIntoAggregation(
+        query.pipeline,
+        variables,
+      );
+      const collection = db.collection<DocumentBase>(query.schema.toString());
+      return collection.aggregate(pipeline).toArray();
+    }),
+    succeedOrMapToDbError({
+      name: "dataRunAggregation",
+      params: { query: query._id },
+    }),
+  );
+}
 
-  deleteCollection(db: Db, schema: UUID): E.Effect<boolean, DbError> {
-    const collectionName = schema.toJSON();
-    return pipe(
-      E.tryPromise(async () => {
-        await db.dropCollection(collectionName);
-        return true;
-      }),
-      succeedOrMapToDbError({
-        name: "deleteCollection",
-        params: { schema },
-      }),
-    );
-  },
+export function dataFindMany(
+  db: Db,
+  schema: UUID,
+  filter: Filter<DocumentBase>,
+): E.Effect<DataDocument[], DbError> {
+  return pipe(
+    E.tryPromise(() => {
+      const collection = db.collection<DataDocument>(schema.toString());
+      return collection.find(filter).sort({ _created: -1 }).toArray();
+    }),
+    succeedOrMapToDbError({
+      name: "dataFindMany",
+      params: { schema },
+    }),
+  );
+}
 
-  insert(
-    db: Db,
-    schema: SchemaDocument,
-    data: DocumentBase[],
-  ): E.Effect<CreatedResult, DbError> {
-    const collectionName = schema._id.toString();
+export type QueryRuntimeVariables = Record<string, string | number | boolean>;
 
-    return pipe(
-      E.tryPromise(async () => {
-        const created = new Set<UuidDto>();
-        const errors: CreateFailure[] = [];
-
-        // TODO using a bulk write or concurrently is trickier than anticipated
-        //  going for simple solution until I have time to come back to this
-        const now = new Date();
-
-        const promises = data.map(async (d) => {
-          const id = d._id.toString() as UuidDto;
-          try {
-            const doc: Document = {
-              ...d,
-              _created: now,
-              _updated: now,
-            };
-
-            const result = await db.collection(collectionName).insertOne(doc);
-
-            if (result.acknowledged) {
-              created.add(id);
-            } else {
-              errors.push({
-                error: "Failed to insert document",
-                data: doc,
-              });
-            }
-          } catch (error) {
-            console.error(error);
-            errors.push({
-              error: "Unhandled error occurred",
-              data: d,
-            });
-          }
-        });
-        await Promise.all(promises);
-
-        return {
-          created: Array.from(created),
-          errors,
-        };
-      }),
-
-      succeedOrMapToDbError({
-        name: "insert",
-        params: { collectionName },
-      }),
-    );
-  },
-
-  update(
-    db: Db,
-    schema: UUID,
-    filter: Filter<DocumentBase>,
-    update: UpdateFilter<DocumentBase>,
-  ): E.Effect<UpdateResult, DbError> {
-    const collectionName = schema.toJSON();
-    return pipe(
-      E.tryPromise(async () => {
-        const result = await db
-          .collection<DocumentBase>(collectionName)
-          .updateMany(filter, update);
-
-        return {
-          matched: result.matchedCount,
-          updated: result.modifiedCount,
-        };
-      }),
-      succeedOrMapToDbError({
-        name: "update",
-        params: { schema },
-      }),
-    );
-  },
-
-  delete(
-    db: Db,
-    schema: UUID,
-    filter: Record<string, unknown>,
-  ): E.Effect<number, DbError> {
-    const collectionName = schema.toJSON();
-
-    return pipe(
-      E.tryPromise(async () => {
-        const result = await db.collection(collectionName).deleteMany(filter);
-        return result.deletedCount;
-      }),
-      succeedOrMapToDbError({
-        name: "delete",
-        params: { collectionName, filter },
-      }),
-    );
-  },
-
-  flush(db: Db, schema: UUID): E.Effect<number, DbError> {
-    const collectionName = schema.toJSON();
-
-    return pipe(
-      E.tryPromise(async () => {
-        const result = await db.collection(collectionName).deleteMany({});
-        return result.deletedCount;
-      }),
-      succeedOrMapToDbError({
-        name: "flush",
-        params: { collectionName },
-      }),
-    );
-  },
-
-  runPipeline<T extends JsonValue>(
-    db: Db,
-    query: QueryDocument,
-    variables: QueryRuntimeVariables,
-  ): E.Effect<T, DbError> {
-    const collectionName = query.schema.toJSON();
-    const pipeline = injectVariables(query.pipeline, variables);
-
-    return pipe(
-      E.tryPromise(async () => {
-        const result = await db
-          .collection(collectionName)
-          .aggregate(pipeline)
-          .toArray();
-
-        return result as unknown as T;
-      }),
-      succeedOrMapToDbError({
-        name: "runPipeline",
-        params: { pipeline },
-      }),
-    );
-  },
-
-  find(
-    db: Db,
-    schema: UUID,
-    filter: Filter<DocumentBase>,
-  ): E.Effect<DocumentBase[], DbError> {
-    const collectionName = schema.toJSON();
-    return pipe(
-      E.tryPromise(async () => {
-        return await db
-          .collection<DocumentBase>(collectionName)
-          .find(filter)
-          .sort({ _created: -1 })
-          .toArray();
-      }),
-      succeedOrMapToDbError({
-        name: "tail",
-        params: { schema },
-      }),
-    );
-  },
-
-  tail<T extends JsonValue>(db: Db, schema: UUID): E.Effect<T, DbError> {
-    const collectionName = schema.toJSON();
-    return pipe(
-      E.tryPromise(async () => {
-        const result = await db
-          .collection(collectionName)
-          .find({})
-          .sort({ _created: -1 })
-          .limit(TAIL_DATA_LIMIT)
-          .project({
-            _id: 0,
-          })
-          .toArray();
-
-        return result as unknown as T;
-      }),
-      succeedOrMapToDbError({
-        name: "tail",
-        params: { schema },
-      }),
-    );
-  },
-} as const;
-
-export function injectVariables(
-  pipeline: Record<string, unknown>[],
+export function injectVariablesIntoAggregation(
+  aggregation: Record<string, unknown>[],
   variables: QueryRuntimeVariables,
 ): Document[] {
   const prefixIdentifier = "##";
@@ -283,5 +297,5 @@ export function injectVariables(
 
     return current;
   };
-  return traverse(pipeline as JsonValue) as Document[];
+  return traverse(aggregation as JsonValue) as Document[];
 }

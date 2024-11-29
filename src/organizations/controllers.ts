@@ -11,7 +11,10 @@ import {
 } from "#/middleware/auth";
 import {
   type OrganizationDocument,
-  OrganizationsRepository,
+  organizationsDeleteOne,
+  organizationsFindMany,
+  organizationsFindOne,
+  organizationsInsert,
 } from "./repository";
 
 export const CreateOrganizationRequest = z.object({
@@ -33,7 +36,7 @@ export const createOrganizationController: RequestHandler<
       catch: (error) => error as z.ZodError,
     }),
     E.flatMap((request) =>
-      OrganizationsRepository.create(req.context.db.primary, request),
+      organizationsInsert(req.context.db.primary, request),
     ),
 
     E.map((id) => id.toString() as UuidDto),
@@ -62,9 +65,11 @@ export const createOrganizationAccessTokenController: RequestHandler<
       catch: (error) => error as z.ZodError,
     }),
 
-    E.flatMap((request) =>
-      OrganizationsRepository.findById(req.context.db.primary, request.id),
-    ),
+    E.flatMap((request) => {
+      return organizationsFindOne(req.context.db.primary, {
+        _id: request.id,
+      });
+    }),
 
     E.map((record) => {
       const payload: Partial<JwtPayload> = {
@@ -101,7 +106,7 @@ export const deleteOrganizationController: RequestHandler<
     }),
 
     E.flatMap(({ id }) =>
-      OrganizationsRepository.deleteById(req.context.db.primary, id),
+      organizationsDeleteOne(req.context.db.primary, { _id: id }),
     ),
 
     E.map((id) => id.toString() as UuidDto),
@@ -121,7 +126,7 @@ export const listOrganizationController: RequestHandler<
   EmptyObject
 > = async (req, res) => {
   const response = await pipe(
-    OrganizationsRepository.list(req.context.db.primary),
+    organizationsFindMany(req.context.db.primary, {}),
     foldToApiResponse(req.context),
     E.runPromise,
   );

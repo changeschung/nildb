@@ -6,12 +6,21 @@ import type { EmptyObject, JsonValue } from "type-fest";
 import { z } from "zod";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { Uuid, type UuidDto } from "#/common/types";
-import { DataRepository, type QueryRuntimeVariables } from "#/data/repository";
-import { OrganizationsRepository } from "#/organizations/repository";
 import {
-  QueriesRepository,
+  type QueryRuntimeVariables,
+  dataRunAggregation,
+} from "#/data/repository";
+import {
+  organizationsAddQuery,
+  organizationsRemoveQuery,
+} from "#/organizations/repository";
+import {
   type QueryDocument,
   type QueryVariable,
+  queriesDeleteOne,
+  queriesFindMany,
+  queriesFindOne,
+  queriesInsert,
 } from "#/queries/repository";
 import pipelineSchema from "./mongodb_pipeline.json";
 
@@ -60,9 +69,9 @@ export const addQueryController: RequestHandler<
 
     E.flatMap((request) =>
       pipe(
-        QueriesRepository.create(req.context.db.primary, request),
+        queriesInsert(req.context.db.primary, request),
         E.tap((queryId) => {
-          return OrganizationsRepository.addQueryId(
+          return organizationsAddQuery(
             req.context.db.primary,
             request.org,
             queryId,
@@ -90,7 +99,7 @@ export const listQueriesController: RequestHandler<
   const response = await pipe(
     E.fromNullable(req.user.sub),
     E.flatMap((org) => {
-      return QueriesRepository.findOrgQueries(req.context.db.primary, org);
+      return queriesFindMany(req.context.db.primary, { org });
     }),
     foldToApiResponse(req.context),
     E.runPromise,
@@ -120,9 +129,9 @@ export const deleteQueryController: RequestHandler<
 
     E.flatMap((request) =>
       pipe(
-        QueriesRepository.deleteByQueryId(req.context.db.primary, request.id),
+        queriesDeleteOne(req.context.db.primary, { _id: request.id }),
         E.flatMap((query) => {
-          return OrganizationsRepository.removeQueryId(
+          return organizationsRemoveQuery(
             req.context.db.primary,
             query.org,
             request.id,
@@ -162,13 +171,12 @@ export const executeQueryController: RequestHandler<
     E.flatMap((request) =>
       E.gen(function* (_) {
         const query = yield* _(
-          QueriesRepository.getQueryById(req.context.db.primary, request.id),
+          queriesFindOne(req.context.db.primary, { _id: request.id }),
         );
         const variables = yield* _(validateVariables(query, request));
-        const result = yield* _(
-          DataRepository.runPipeline(req.context.db.data, query, variables),
+        return yield* _(
+          dataRunAggregation(req.context.db.data, query, variables),
         );
-        return result;
       }),
     ),
 
@@ -188,7 +196,9 @@ function validateVariables(
     const permitted = Object.keys(query.variables);
 
     if (provided.length !== permitted.length) {
-      throw new Error("Invalid query execute variables");
+      throw new Error(
+        `Invalid query execution variables, expected: ${JSON.stringify(query.variables)}`,
+      );
     }
 
     const variables: QueryRuntimeVariables = {};

@@ -1,5 +1,7 @@
 import type { Db, MongoClient } from "mongodb";
+import type { Logger } from "pino";
 import { z } from "zod";
+import { createLogger } from "#/common/logging";
 import { initAndCreateDbClients } from "./common/mongo";
 
 const ConfigSchema = z.object({
@@ -22,6 +24,7 @@ export interface Context {
     // Holds schema data (eg `datablocks_data`)~
     data: Db;
   };
+  log: Logger;
 }
 
 export async function createContext(): Promise<Context> {
@@ -37,5 +40,6 @@ export async function createContext(): Promise<Context> {
   return {
     config,
     db: await initAndCreateDbClients(config),
+    log: createLogger(config),
   };
 }

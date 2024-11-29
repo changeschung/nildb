@@ -1,8 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { beforeAll, describe, expect, it } from "vitest";
-import type { UuidDto } from "#/common/types";
+import { type UuidDto, createUuidDto } from "#/common/types";
 import { TAIL_DATA_LIMIT } from "#/data/repository";
-import type { Context } from "#/env";
 import query from "./data/simple.query.json";
 import schema from "./data/simple.schema.json";
 import {
@@ -17,19 +16,17 @@ import type { TestClient } from "./fixture/client";
 
 describe("read.data.test", () => {
   let fixture: AppFixture;
-  let db: Context["db"];
   let backend: TestClient;
   let organization: OrganizationFixture;
 
   const collectionSize = 100;
   const data = Array.from({ length: collectionSize }, () => ({
-    _id: faker.string.uuid(),
+    _id: createUuidDto(),
     name: faker.person.fullName(),
   }));
 
   beforeAll(async () => {
     fixture = await buildFixture();
-    db = fixture.context.db;
     backend = fixture.users.backend;
     organization = await setupOrganization(
       fixture,

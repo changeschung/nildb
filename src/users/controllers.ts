@@ -4,7 +4,7 @@ import type { EmptyObject } from "type-fest";
 import { z } from "zod";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import type { UuidDto } from "#/common/types";
-import { UserRepository } from "./repository";
+import { usersDeleteOne, usersInsert } from "./repository";
 
 export const CreateUserRequest = z.object({
   email: z.string().email(),
@@ -25,7 +25,7 @@ export const createUserController: RequestHandler<
       catch: (error) => error as z.ZodError,
     }),
 
-    E.flatMap((data) => UserRepository.create(req.context.db.primary, data)),
+    E.flatMap((data) => usersInsert(req.context.db.primary, data)),
 
     E.map((id) => id.toString() as UuidDto),
 
@@ -49,9 +49,7 @@ export const deleteUserController: RequestHandler = async (req, res) => {
       catch: (error) => error as z.ZodError,
     }),
 
-    E.flatMap(({ email }) =>
-      UserRepository.delete(req.context.db.primary, email),
-    ),
+    E.flatMap(({ email }) => usersDeleteOne(req.context.db.primary, { email })),
 
     foldToApiResponse(req.context),
     E.runPromise,

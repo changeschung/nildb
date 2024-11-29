@@ -2,15 +2,21 @@ import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
-import { UUID } from "mongodb";
 import type { EmptyObject, JsonObject } from "type-fest";
 import { z } from "zod";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
-import type { DocumentBase } from "#/common/mongo";
 import { Uuid, type UuidDto } from "#/common/types";
-import { DataRepository } from "#/data/repository";
-import { OrganizationsRepository } from "#/organizations/repository";
-import { type SchemaDocument, SchemasRepository } from "#/schemas/repository";
+import { dataCreateCollection, dataDeleteCollection } from "#/data/repository";
+import {
+  organizationsAddSchema,
+  organizationsRemoveSchema,
+} from "#/organizations/repository";
+import {
+  type SchemaDocument,
+  schemasDeleteOne,
+  schemasFindMany,
+  schemasInsert,
+} from "#/schemas/repository";
 
 export const AddSchemaRequest = z.object({
   org: Uuid,
@@ -53,16 +59,12 @@ export const addSchemaController: RequestHandler<
 
     E.flatMap((body) =>
       pipe(
-        SchemasRepository.create(req.context.db.primary, body),
+        schemasInsert(req.context.db.primary, body),
         E.tap((schemaId) => {
-          return DataRepository.createCollection(
-            req.context.db.data,
-            schemaId,
-            body.keys,
-          );
+          return dataCreateCollection(req.context.db.data, schemaId, body.keys);
         }),
         E.tap((schemaId) => {
-          return OrganizationsRepository.addSchemaId(
+          return organizationsAddSchema(
             req.context.db.primary,
             body.org,
             schemaId,
@@ -87,12 +89,9 @@ export const listSchemasController: RequestHandler<
   ListSchemasResponse
 > = async (req, res) => {
   const response = await pipe(
-    E.fromNullable(req.user.sub), // here !!
+    E.fromNullable(req.user.sub),
     E.flatMap((org) => {
-      return SchemasRepository.listOrganizationSchemas(
-        req.context.db.primary,
-        org,
-      );
+      return schemasFindMany(req.context.db.primary, { org });
     }),
     foldToApiResponse(req.context),
     E.runPromise,
@@ -120,16 +119,16 @@ export const deleteSchemaController: RequestHandler<
 
     E.flatMap((body) =>
       pipe(
-        SchemasRepository.deleteBySchemaId(req.context.db.primary, body.id),
+        schemasDeleteOne(req.context.db.primary, { _id: body.id }),
         E.tap((schema) => {
-          return OrganizationsRepository.removeSchemaId(
+          return organizationsRemoveSchema(
             req.context.db.primary,
             schema.org,
             body.id,
           );
         }),
         E.tap((_orgId) => {
-          return DataRepository.deleteCollection(req.context.db.data, body.id);
+          return dataDeleteCollection(req.context.db.data, body.id);
         }),
       ),
     ),

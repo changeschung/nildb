@@ -10,80 +10,94 @@ export type SchemaDocument = DocumentBase & {
   schema: Record<string, unknown>;
 };
 
-export const SchemasRepository = {
-  create(
-    db: Db,
-    data: Omit<SchemaDocument, keyof DocumentBase>,
-  ): E.Effect<UUID, DbError> {
-    const collection = db.collection<SchemaDocument>(CollectionName.Schemas);
-    const now = new Date();
-    const document: SchemaDocument = {
-      ...data,
-      _id: new UUID(),
-      _created: now,
-      _updated: now,
-    };
+export function schemasInsert(
+  db: Db,
+  data: Omit<SchemaDocument, keyof DocumentBase>,
+): E.Effect<UUID, DbError> {
+  const now = new Date();
+  const document: SchemaDocument = {
+    ...data,
+    _id: new UUID(),
+    _created: now,
+    _updated: now,
+  };
 
-    return pipe(
-      E.tryPromise(async () => {
-        const result = await collection.insertOne(document);
-        return result.insertedId;
-      }),
-      succeedOrMapToDbError({
-        name: "create",
-        params: { document },
-      }),
-    );
-  },
+  return pipe(
+    E.tryPromise(async () => {
+      const collection = db.collection<SchemaDocument>(CollectionName.Schemas);
+      const result = await collection.insertOne(document);
+      return result.insertedId;
+    }),
+    succeedOrMapToDbError({
+      name: "schemasInsert",
+      params: { document },
+    }),
+  );
+}
 
-  deleteBySchemaId(db: Db, _id: UUID): E.Effect<SchemaDocument, DbError> {
-    const collection = db.collection<SchemaDocument>(CollectionName.Schemas);
-    const filter: StrictFilter<SchemaDocument> = { _id };
+export function schemasFindMany(
+  db: Db,
+  filter: StrictFilter<SchemaDocument>,
+): E.Effect<SchemaDocument[], DbError> {
+  return pipe(
+    E.tryPromise(() => {
+      const collection = db.collection<SchemaDocument>(CollectionName.Schemas);
+      return collection.find(filter).toArray();
+    }),
+    succeedOrMapToDbError({
+      name: "schemasFindMany",
+      params: { filter },
+    }),
+  );
+}
 
-    return pipe(
-      E.tryPromise(async () => {
-        const result = await collection.findOneAndDelete(filter);
-        return O.fromNullable(result);
-      }),
-      succeedOrMapToDbError({
-        name: "deleteBySchemaId",
-        params: { filter },
-      }),
-    );
-  },
+export function schemasFindOne(
+  db: Db,
+  filter: StrictFilter<SchemaDocument>,
+): E.Effect<SchemaDocument, DbError> {
+  return pipe(
+    E.tryPromise(async () => {
+      const collection = db.collection<SchemaDocument>(CollectionName.Schemas);
+      const result = await collection.findOne(filter);
+      return O.fromNullable(result);
+    }),
+    succeedOrMapToDbError({
+      name: "schemasFindOne",
+      params: { filter },
+    }),
+  );
+}
 
-  listOrganizationSchemas(
-    db: Db,
-    org: UUID,
-  ): E.Effect<SchemaDocument[], DbError> {
-    const collection = db.collection<SchemaDocument>(CollectionName.Schemas);
-    const filter: StrictFilter<SchemaDocument> = { org };
+export function schemasDeleteMany(
+  db: Db,
+  filter: StrictFilter<SchemaDocument>,
+): E.Effect<number, DbError> {
+  return pipe(
+    E.tryPromise(async () => {
+      const collection = db.collection<SchemaDocument>(CollectionName.Schemas);
+      const result = await collection.deleteMany(filter);
+      return result.deletedCount;
+    }),
+    succeedOrMapToDbError({
+      name: "schemasDeleteMany",
+      params: { filter },
+    }),
+  );
+}
 
-    return pipe(
-      E.tryPromise(async () => {
-        const results = await collection.find(filter).toArray();
-        return O.fromNullable(results);
-      }),
-      succeedOrMapToDbError({
-        name: "listOrganizationSchemas",
-        params: { filter },
-      }),
-    );
-  },
-
-  find(db: Db, _id: UUID): E.Effect<SchemaDocument, DbError> {
-    const collection = db.collection<SchemaDocument>(CollectionName.Schemas);
-    const filter: StrictFilter<SchemaDocument> = { _id };
-
-    return pipe(
-      E.tryPromise(async () => {
-        const result = await collection.findOne(filter);
-        return O.fromNullable(result);
-      }),
-      succeedOrMapToDbError({
-        name: "find",
-        params: { filter },
-      }),
-    );
-  },
-} as const;
+export function schemasDeleteOne(
+  db: Db,
+  filter: StrictFilter<SchemaDocument>,
+): E.Effect<SchemaDocument, DbError> {
+  return pipe(
+    E.tryPromise(async () => {
+      const collection = db.collection<SchemaDocument>(CollectionName.Schemas);
+      const result = await collection.findOneAndDelete(filter);
+      return O.fromNullable(result);
+    }),
+    succeedOrMapToDbError({
+      name: "schemasDeleteOne",
+      params: { filter },
+    }),
+  );
+}

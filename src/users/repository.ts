@@ -10,72 +10,72 @@ export type UserDocument = DocumentBase & {
   type: "root" | "admin";
 };
 
-export const UserRepository = {
-  findByEmail(db: Db, email: string): E.Effect<UserDocument, DbError> {
-    const collection = db.collection<UserDocument>(CollectionName.Users);
-    const filter: StrictFilter<UserDocument> = { email: email.toLowerCase() };
+export function usersInsert(
+  db: Db,
+  data: Omit<UserDocument, keyof DocumentBase>,
+): E.Effect<UUID, Error> {
+  const collection = db.collection<UserDocument>(CollectionName.Users);
 
-    return pipe(
+  return pipe(
+    E.tryPromise(async () => {
+      const salted = await argon2.hash(data.password);
+      return {
+        email: data.email.toLowerCase(),
+        password: salted,
+        type: data.type,
+      };
+    }),
+    E.flatMap((data) =>
       E.tryPromise(async () => {
-        const result = await collection.findOne(filter);
-        return O.fromNullable(result);
-      }),
-      succeedOrMapToDbError({
-        name: "findByEmail",
-        params: { filter },
-      }),
-    );
-  },
-
-  create(
-    db: Db,
-    data: Omit<UserDocument, keyof DocumentBase>,
-  ): E.Effect<UUID, Error> {
-    const collection = db.collection<UserDocument>(CollectionName.Users);
-
-    return pipe(
-      E.tryPromise(async () => {
-        const salted = await argon2.hash(data.password);
-        return {
-          email: data.email.toLowerCase(),
-          password: salted,
-          type: data.type,
+        const now = new Date();
+        const document: UserDocument = {
+          ...data,
+          _id: new UUID(),
+          _created: now,
+          _updated: now,
         };
-      }),
-      E.flatMap((data) =>
-        E.tryPromise(async () => {
-          const now = new Date();
-          const document: UserDocument = {
-            ...data,
-            _id: new UUID(),
-            _created: now,
-            _updated: now,
-          };
 
-          const result = await collection.insertOne(document);
-          return result.insertedId;
-        }),
-      ),
-      succeedOrMapToDbError({
-        name: "create",
-        params: { data },
+        const result = await collection.insertOne(document);
+        return result.insertedId;
       }),
-    );
-  },
+    ),
+    succeedOrMapToDbError({
+      name: "usersInsert",
+      params: { data },
+    }),
+  );
+}
 
-  delete(db: Db, email: string): E.Effect<string, DbError> {
-    const collection = db.collection<UserDocument>(CollectionName.Users);
-    const filter: StrictFilter<UserDocument> = { email };
+export function usersFindOne(
+  db: Db,
+  filter: StrictFilter<UserDocument>,
+): E.Effect<UserDocument, DbError> {
+  return pipe(
+    E.tryPromise(async () => {
+      const collection = db.collection<UserDocument>(CollectionName.Users);
+      const result = await collection.findOne(filter);
+      return O.fromNullable(result);
+    }),
+    succeedOrMapToDbError({
+      name: "usersFindOne",
+      params: { filter },
+    }),
+  );
+}
 
-    return pipe(
-      E.tryPromise(async () => {
-        const result = await collection.deleteOne(filter);
-        return result.deletedCount === 1 ? O.some(email) : O.none();
-      }),
-      succeedOrMapToDbError({
-        name: "delete",
-        params: { filter },
-      }),
-    );
-  },
-} as const;
+export function usersDeleteOne(
+  db: Db,
+  filter: StrictFilter<UserDocument>,
+): E.Effect<UserDocument, DbError> {
+  return pipe(
+    E.tryPromise(async () => {
+      const collection = db.collection<UserDocument>(CollectionName.Users);
+      const result = await collection.findOneAndDelete(filter);
+      return O.fromNullable(result);
+    }),
+    succeedOrMapToDbError({
+      name: "usersDeleteOne",
+      params: { filter },
+    }),
+  );
+}

@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { beforeAll, describe, expect, it } from "vitest";
-import type { UuidDto } from "#/common/types";
-import { TAIL_DATA_LIMIT } from "#/data/repository";
+import { type UuidDto, createUuidDto } from "#/common/types";
+import { type DataDocument, TAIL_DATA_LIMIT } from "#/data/repository";
 import type { Context } from "#/env";
 import query from "./data/simple.query.json";
 import schema from "./data/simple.schema.json";
@@ -23,7 +23,7 @@ describe("update.data.test", () => {
 
   const collectionSize = 100;
   const data = Array.from({ length: collectionSize }, () => ({
-    _id: faker.string.uuid(),
+    _id: createUuidDto(),
     name: faker.person.fullName(),
   }));
 
@@ -57,7 +57,9 @@ describe("update.data.test", () => {
       updated: 1,
     });
 
-    const actual = await db.data.collection(schema).findOne({ name: "foo" });
-    expect(actual?._id).toBe(record._id);
+    const actual = await db.data
+      .collection<DataDocument>(schema)
+      .findOne({ name: "foo" });
+    expect(actual?._id.toString()).toBe(record._id);
   });
 });

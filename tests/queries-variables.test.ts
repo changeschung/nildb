@@ -1,5 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { beforeAll, describe, expect, it } from "vitest";
+import { createUuidDto } from "#/common/types";
 import query from "./data/variables.wallet.query.json";
 import schema from "./data/variables.wallet.schema.json";
 import {
@@ -32,7 +33,7 @@ describe("queries.variables.test.ts", () => {
 
     // generate test data
     const data = Array.from({ length: 10 }, () => ({
-      _id: faker.string.uuid(),
+      _id: createUuidDto(),
       wallet: faker.finance.ethereumAddress(),
       amount: faker.number.int({ min: 100, max: 1000 }),
       status: faker.helpers.arrayElement(["pending", "completed", "failed"]),
@@ -91,7 +92,7 @@ describe("queries.variables.test.ts", () => {
         variables,
       })
       .expect(200);
-    expect(response.body.errors[0]).toMatch(/An unknown error occurred/);
+    expect(response.body.errors[0]).toMatch(/invalid_type/);
   });
 
   it("rejects object as variable value", async () => {
@@ -108,7 +109,7 @@ describe("queries.variables.test.ts", () => {
         variables,
       })
       .expect(200);
-    expect(response.body.errors[0]).toMatch(/An unknown error occurred/);
+    expect(response.body.errors[0]).toMatch(/Expected string, received object/);
   });
 
   it("rejects when providing null as variable value", async () => {
@@ -125,7 +126,7 @@ describe("queries.variables.test.ts", () => {
         variables,
       })
       .expect(200);
-    expect(response.body.errors[0]).toMatch(/An unknown error occurred/);
+    expect(response.body.errors[0]).toMatch(/invalid_type/);
   });
 
   it("reject undefined as variable value", async () => {
@@ -142,7 +143,9 @@ describe("queries.variables.test.ts", () => {
         variables,
       })
       .expect(200);
-    expect(response.body.errors[0]).toMatch(/An unknown error occurred/);
+    expect(response.body.errors[0]).toMatch(
+      /Invalid query execution variables/,
+    );
   });
 
   it("rejects function as variable value", async () => {
@@ -159,6 +162,8 @@ describe("queries.variables.test.ts", () => {
         variables,
       })
       .expect(200);
-    expect(response.body.errors[0]).toMatch(/An unknown error occurred/);
+    expect(response.body.errors[0]).toMatch(
+      /Invalid query execution variables/,
+    );
   });
 });
