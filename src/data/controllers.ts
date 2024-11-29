@@ -11,7 +11,6 @@ import { Uuid, type UuidDto } from "#/common/types";
 import { schemasFindOne } from "#/schemas/repository";
 import {
   type CreatedResult,
-  type PartialDataDocument,
   type UpdateResult,
   dataDeleteMany,
   dataFindMany,

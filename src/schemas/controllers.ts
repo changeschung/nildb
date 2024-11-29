@@ -89,7 +89,7 @@ export const listSchemasController: RequestHandler<
   ListSchemasResponse
 > = async (req, res) => {
   const response = await pipe(
-    E.fromNullable(req.user.sub), // here !!
+    E.fromNullable(req.user.sub),
     E.flatMap((org) => {
       return schemasFindMany(req.context.db.primary, { org });
     }),
