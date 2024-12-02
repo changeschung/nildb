@@ -31,7 +31,7 @@ declare global {
 export function useAuthMiddleware(context: Context): RequestHandler[] {
   const publicPaths = [
     SystemEndpoint.Health,
-    SystemEndpoint.Version,
+    SystemEndpoint.About,
     // swagger ui serves assets at nested paths
     new RegExp(`^${ApiDocsEndpoint.Docs}(?:\/.*)?`),
     `/api/v1${AuthEndpoints.Login}`,

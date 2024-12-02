@@ -16,9 +16,15 @@ describe("system.test.ts", () => {
     return admin.health().expect(200);
   });
 
-  it("reports app version", () => {
-    return admin.version().expect(200).expect({
-      version: packageJson.version,
-    });
+  it("reports app version", async () => {
+    const response = await admin.about().expect(200);
+
+    const body = response.body;
+
+    expect(body.version).toBe(packageJson.version);
+    expect(body.address).toBe(
+      "nillion11q073p3a4wjhw3kffnev3c675mnf0j5rk86tr6s",
+    );
+    expect(body.publicKey).toBe("A0wcqQiz1QW1jOiqXVgD8qilY2RB3IB6qTyMKiym0ATZ");
   });
 });
