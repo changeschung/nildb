@@ -18,3 +18,6 @@ pre-push:
     tsc-check:
       glob: "*.{ts}"
       run: pnpm exec tsc
+    test:
+      glob: "*.{ts}"
+      run: pnpm test

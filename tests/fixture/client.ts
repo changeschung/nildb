@@ -68,8 +68,8 @@ export class TestClient {
     return this.request.get(SystemEndpoint.Health);
   }
 
-  version(): Test {
-    return this.request.get(SystemEndpoint.Version);
+  about(): Test {
+    return this.request.get(SystemEndpoint.About);
   }
 
   login(body: LoginRequest): Test {
