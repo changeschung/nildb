@@ -15,6 +15,7 @@ import { buildUsersRouter } from "./users/routes";
 
 export function buildApp(context: Context): express.Application {
   const app = express.default();
+  app.disable("x-powered-by");
 
   app.use(useContextMiddleware(context));
   app.use(loggerMiddleware(context.config));
