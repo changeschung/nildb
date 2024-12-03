@@ -2,6 +2,7 @@ import compression from "compression";
 import * as express from "express";
 import { Router } from "express";
 import promBundle from "express-prom-bundle";
+import { apiRequestsCounter } from "#/middleware/request-counter";
 import { buildAuthRouter } from "./auth/routes";
 import { buildDataRouter } from "./data/routes";
 import { buildApiDocsRoutes } from "./docs/routes";
@@ -31,9 +32,10 @@ export function buildApp(context: Context): express.Application {
       includePath: true,
     }),
   );
-
   app.use(buildApiDocsRoutes());
   app.use(express.json({ limit: "10mb" }));
+
+  app.use(apiRequestsCounter(context));
 
   const v1Router = Router();
 
