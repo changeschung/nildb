@@ -9,8 +9,6 @@ import type { JwtPayload } from "#/middleware/auth";
 import type { OrganizationDocument } from "#/organizations/repository";
 import {
   type AppFixture,
-  QueryFixture,
-  SchemaFixture,
   buildFixture,
   setupAdmin,
 } from "./fixture/app-fixture";
@@ -20,7 +18,6 @@ import type { TestClient } from "./fixture/client";
 describe("organizations.test.ts", () => {
   let fixture: AppFixture;
   let db: Context["db"];
-  let root: TestClient;
   let admin: TestClient;
   let backend: TestClient;
 
@@ -33,7 +30,6 @@ describe("organizations.test.ts", () => {
     fixture = await buildFixture();
     await setupAdmin(fixture);
     db = fixture.context.db;
-    root = fixture.users.root;
     admin = fixture.users.admin;
     backend = fixture.users.backend;
   });
@@ -85,7 +81,7 @@ describe("organizations.test.ts", () => {
   });
 
   it("can delete an organization", async () => {
-    const response = await admin
+    const _response = await admin
       .deleteOrganization({
         id: organization.id,
       })

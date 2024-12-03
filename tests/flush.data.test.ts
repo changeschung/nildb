@@ -36,7 +36,7 @@ describe("flush.data.test", () => {
       name: faker.person.fullName(),
     }));
 
-    const response = await backend.uploadData({
+    const _response = await backend.uploadData({
       schema: organization.schema.id,
       data,
     });

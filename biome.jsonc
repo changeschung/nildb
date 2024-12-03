@@ -23,10 +23,9 @@
     "rules": {
       "recommended": true,
       "correctness": {
-        "useExhaustiveDependencies": "off"
-      },
-      "style": {
-        "noNonNullAssertion": "warn"
+        "recommended": true,
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error"
       }
     }
   },

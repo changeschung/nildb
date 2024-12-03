@@ -97,7 +97,7 @@ export const listQueriesController: RequestHandler<
   EmptyObject
 > = async (req, res) => {
   const response = await pipe(
-    E.fromNullable(req.user.sub),
+    E.fromNullable(req.user.id),
     E.flatMap((org) => {
       return queriesFindMany(req.context.db.primary, { org });
     }),
