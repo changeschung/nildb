@@ -5,7 +5,7 @@ import { bech32 } from "bech32";
 import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
 import { z } from "zod";
-import { createLogger } from "#/common/logging";
+import { createLogger } from "#/middleware/logger";
 import { initAndCreateDbClients } from "./common/mongo";
 
 const ConfigSchema = z.object({

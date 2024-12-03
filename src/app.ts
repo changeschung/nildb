@@ -1,5 +1,7 @@
+import compression from "compression";
 import * as express from "express";
 import { Router } from "express";
+import promBundle from "express-prom-bundle";
 import { buildAuthRouter } from "./auth/routes";
 import { buildDataRouter } from "./data/routes";
 import { buildApiDocsRoutes } from "./docs/routes";
@@ -15,12 +17,21 @@ import { buildUsersRouter } from "./users/routes";
 
 export function buildApp(context: Context): express.Application {
   const app = express.default();
+  app.disable("x-powered-by");
+  app.use(compression());
 
   app.use(useContextMiddleware(context));
+  app.use(createSystemRouter());
+
   app.use(loggerMiddleware(context.config));
   app.use(useAuthMiddleware(context));
+  app.use(
+    promBundle({
+      includeMethod: true,
+      includePath: true,
+    }),
+  );
 
-  app.use(createSystemRouter());
   app.use(buildApiDocsRoutes());
   app.use(express.json({ limit: "10mb" }));
 
