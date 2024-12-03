@@ -1,9 +1,8 @@
 import type { RequestHandler } from "express";
-import { expressjwt } from "express-jwt";
 import jwt from "jsonwebtoken";
-import type { UUID } from "mongodb";
+import { UUID } from "mongodb";
 import { AuthEndpoints } from "#/auth/routes";
-import { Uuid, type UuidDto } from "#/common/types";
+import type { UuidDto } from "#/common/types";
 import { ApiDocsEndpoint } from "#/docs/routes";
 import type { Context } from "#/env";
 import { SystemEndpoint } from "#/system/routes";
@@ -14,6 +13,7 @@ export type JwtPayload = {
   type: "root" | "admin" | "access-token";
 };
 export type JwtSerialized = string;
+type Role = JwtPayload["type"];
 
 // Uses global interface merging so Request is aware of auth on request
 declare global {
@@ -21,37 +21,73 @@ declare global {
     interface Request {
       auth: JwtPayload;
       user: {
-        sub: UUID;
+        id: UUID;
+        role: Role;
       };
     }
   }
 }
 
-export function useAuthMiddleware(context: Context): RequestHandler[] {
-  const publicPaths = [
+type Routes = string[];
+
+export function useAuthMiddleware(context: Context): RequestHandler {
+  const publicPaths: Routes = [
     SystemEndpoint.Health,
     SystemEndpoint.About,
-    // swagger ui serves assets at nested paths
-    new RegExp(`^${ApiDocsEndpoint.Docs}(?:\/.*)?`),
+    ApiDocsEndpoint.Docs,
     `/api/v1${AuthEndpoints.Login}`,
   ];
 
-  const deserializeUser: RequestHandler = (req, _res, next) => {
-    if (req.auth) {
-      req.user = {
-        sub: Uuid.parse(req.auth.sub),
-      };
-    }
-    next();
+  const acl: Record<Role, Routes> = {
+    root: ["/api/v1/users"],
+    admin: ["/api/v1/users", "/api/v1/organizations"],
+    "access-token": ["/api/v1/schemas", "/api/v1/queries", "/api/v1/data"],
   };
 
-  return [
-    expressjwt({
-      secret: context.config.jwtSecret,
-      algorithms: ["HS256"],
-    }).unless({ path: publicPaths }),
-    deserializeUser,
-  ] as RequestHandler[];
+  return (req, res, next) => {
+    try {
+      const path = req.path;
+      const isPublic = publicPaths.some((p) => path.startsWith(p));
+      if (isPublic) {
+        next();
+        return;
+      }
+
+      const header = req.headers.authorization ?? "";
+      const [scheme, token] = header.split(" ");
+      if (scheme.toLowerCase() !== "bearer") {
+        res.sendStatus(401);
+        return;
+      }
+
+      const payload = jwt.verify(token, context.config.jwtSecret) as JwtPayload;
+      if (!payload) {
+        res.sendStatus(401);
+        return;
+      }
+
+      const authorized = acl[payload.type]?.some((p) => path.startsWith(p));
+
+      if (!authorized) {
+        res.sendStatus(401);
+        return;
+      }
+
+      req.auth = payload;
+      req.user = {
+        id: new UUID(payload.sub),
+        role: payload.type,
+      };
+
+      context.log.debug(
+        `Authorised: path=${path} type=${payload.type} id=${payload.sub}`,
+      );
+
+      next();
+    } catch (_error) {
+      res.sendStatus(401);
+    }
+  };
 }
 
 export function createJwt(
