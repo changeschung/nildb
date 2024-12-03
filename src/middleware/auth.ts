@@ -39,8 +39,8 @@ export function useAuthMiddleware(context: Context): RequestHandler {
   ];
 
   const acl: Record<Role, Routes> = {
-    root: ["/api/v1/users"],
-    admin: ["/api/v1/users", "/api/v1/organizations"],
+    root: ["/metrics", "/api/v1/users"],
+    admin: ["/metrics", "/api/v1/users", "/api/v1/organizations"],
     "access-token": ["/api/v1/schemas", "/api/v1/queries", "/api/v1/data"],
   };
 
