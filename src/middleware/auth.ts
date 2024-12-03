@@ -2,7 +2,6 @@ import type { RequestHandler } from "express";
 import { expressjwt } from "express-jwt";
 import jwt from "jsonwebtoken";
 import type { UUID } from "mongodb";
-import type { z } from "zod";
 import { AuthEndpoints } from "#/auth/routes";
 import { Uuid, type UuidDto } from "#/common/types";
 import { ApiDocsEndpoint } from "#/docs/routes";
@@ -37,7 +36,7 @@ export function useAuthMiddleware(context: Context): RequestHandler[] {
     `/api/v1${AuthEndpoints.Login}`,
   ];
 
-  const deserializeUser: RequestHandler = (req, res, next) => {
+  const deserializeUser: RequestHandler = (req, _res, next) => {
     if (req.auth) {
       req.user = {
         sub: Uuid.parse(req.auth.sub),

@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { beforeAll, describe, expect, it } from "vitest";
 import { type UuidDto, createUuidDto } from "#/common/types";
-import { type DataDocument, TAIL_DATA_LIMIT } from "#/data/repository";
+import type { DataDocument } from "#/data/repository";
 import type { Context } from "#/env";
 import query from "./data/simple.query.json";
 import schema from "./data/simple.schema.json";

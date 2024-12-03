@@ -11,7 +11,7 @@ declare global {
 }
 
 export function useContextMiddleware(context: Context): RequestHandler {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, _res: Response, next: NextFunction) => {
     req.context = context;
     next();
   };
