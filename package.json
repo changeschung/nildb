@@ -1,7 +1,7 @@
 {
   "name": "@nillion/api",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "repository": "https://github.com/NillionNetwork/nil-db",
   "type": "module",
   "scripts": {
