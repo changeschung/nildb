@@ -1,4 +1,3 @@
-import packageJson from "package.json";
 import { beforeAll, describe, expect, it } from "vitest";
 import { type AppFixture, buildFixture } from "./fixture/app-fixture";
 import type { TestClient } from "./fixture/client";
@@ -21,7 +20,7 @@ describe("system.test.ts", () => {
 
     const body = response.body;
 
-    expect(body.version).toBe(packageJson.version);
+    expect(body.build.version).toBe("0.0.0");
     expect(body.address).toBe(
       "nillion11q073p3a4wjhw3kffnev3c675mnf0j5rk86tr6s",
     );
