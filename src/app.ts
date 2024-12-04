@@ -17,8 +17,13 @@ import { buildSchemasRouter } from "./schemas/routes";
 import { createSystemRouter } from "./system/routes";
 import { buildUsersRouter } from "./users/routes";
 
-export function buildApp(context: Context): express.Application {
-  // Definition order impacts behaviour so be thoughtful if reordering this function
+type App = {
+  app: express.Application;
+  metrics: express.Application;
+};
+
+export function buildApp(context: Context): App {
+  // Order impacts behaviour so be thoughtful if reordering this function
   const app = express.default();
   app.disable("x-powered-by");
   app.use(compression());
@@ -32,12 +37,12 @@ export function buildApp(context: Context): express.Application {
   prometheus.register.setDefaultLabels({
     node: context.node.address,
   });
-  app.use(
-    promBundle({
-      includeMethod: true,
-      includePath: true,
-    }),
-  );
+  const metrics = promBundle({
+    autoregister: false,
+    includeMethod: true,
+    includePath: true,
+  });
+  app.use(metrics);
   app.use(apiRequestsCounter(context));
 
   app.use(buildApiDocsRoutes());
@@ -54,5 +59,8 @@ export function buildApp(context: Context): express.Application {
 
   app.use("/api/v1", v1Router);
 
-  return app;
+  const metricsApp = express.default();
+  metricsApp.use("/metrics", metrics.metricsMiddleware);
+
+  return { app, metrics: metricsApp };
 }

@@ -23,7 +23,7 @@ export interface AppFixture {
 export async function buildFixture(): Promise<AppFixture> {
   dotenv.config({ path: ".env.test" });
   const context = await createContext();
-  const app = buildApp(context);
+  const { app } = buildApp(context);
 
   const users = {
     root: new TestClient({
