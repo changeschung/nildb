@@ -41,7 +41,7 @@ function getBuildInfo(context: Context): BuildInfo {
     const buildInfoPath = path.join(__dirname, "../../buildinfo.json");
     const content = fs.readFileSync(buildInfoPath, "utf-8");
     return JSON.parse(content) as BuildInfo;
-  } catch (error) {
+  } catch (_error) {
     context.log.info("No buildinfo.json found using fallback values");
     buildInfo = {
       time: "1970-01-01T00:00:00Z",

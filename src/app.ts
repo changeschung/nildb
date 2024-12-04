@@ -2,6 +2,7 @@ import compression from "compression";
 import * as express from "express";
 import { Router } from "express";
 import promBundle from "express-prom-bundle";
+import prometheus from "prom-client";
 import { apiRequestsCounter } from "#/middleware/request-counter";
 import { buildAuthRouter } from "./auth/routes";
 import { buildDataRouter } from "./data/routes";
@@ -17,6 +18,7 @@ import { createSystemRouter } from "./system/routes";
 import { buildUsersRouter } from "./users/routes";
 
 export function buildApp(context: Context): express.Application {
+  // Definition order impacts behaviour so be thoughtful if reordering this function
   const app = express.default();
   app.disable("x-powered-by");
   app.use(compression());
@@ -26,16 +28,20 @@ export function buildApp(context: Context): express.Application {
 
   app.use(loggerMiddleware(context.config));
   app.use(useAuthMiddleware(context));
+
+  prometheus.register.setDefaultLabels({
+    node: context.node.address,
+  });
   app.use(
     promBundle({
       includeMethod: true,
       includePath: true,
     }),
   );
+  app.use(apiRequestsCounter(context));
+
   app.use(buildApiDocsRoutes());
   app.use(express.json({ limit: "10mb" }));
-
-  app.use(apiRequestsCounter(context));
 
   const v1Router = Router();
 
