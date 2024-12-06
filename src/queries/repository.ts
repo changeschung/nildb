@@ -4,7 +4,7 @@ import { type DbError, succeedOrMapToDbError } from "#/common/errors";
 import { CollectionName, type DocumentBase } from "#/common/mongo";
 
 export type QueryVariable = {
-  type: "string" | "number" | "boolean";
+  type: "string" | "number" | "boolean" | "date";
   description: string;
 };
 

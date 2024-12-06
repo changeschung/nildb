@@ -12,7 +12,7 @@
       "description": "Status to filter by"
     },
     "startDate": {
-      "type": "string",
+      "type": "date",
       "description": "Start date filter"
     }
   },

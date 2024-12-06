@@ -12,7 +12,11 @@
         "wallet": { "type": "string" },
         "amount": { "type": "number" },
         "status": { "type": "string" },
-        "timestamp": { "type": "string" }
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "coerce": true
+        }
       },
       "required": ["wallet", "amount", "status", "timestamp"]
     }
