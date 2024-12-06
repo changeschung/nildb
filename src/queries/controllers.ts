@@ -1,4 +1,3 @@
-import Ajv, { ValidationError } from "ajv";
 import { Effect as E, pipe } from "effect";
 import type { UnknownException } from "effect/Cause";
 import type { RequestHandler } from "express";
@@ -10,22 +9,17 @@ import {
   type QueryRuntimeVariables,
   dataRunAggregation,
 } from "#/data/repository";
-import {
-  organizationsAddQuery,
-  organizationsRemoveQuery,
-} from "#/organizations/repository";
+import { organizationsRemoveQuery } from "#/organizations/repository";
 import {
   type QueryDocument,
-  type QueryVariable,
   queriesDeleteOne,
   queriesFindMany,
   queriesFindOne,
-  queriesInsert,
 } from "#/queries/repository";
-import pipelineSchema from "./mongodb_pipeline.json";
+import { addQueryToOrganization } from "#/queries/service";
 
 export const QueryVariableValidator = z.object({
-  type: z.enum(["string", "number", "boolean"]),
+  type: z.enum(["string", "number", "boolean", "date"]),
   description: z.string(),
 });
 export const AddQueryRequest = z.object({
@@ -35,15 +29,7 @@ export const AddQueryRequest = z.object({
   variables: z.record(z.string(), QueryVariableValidator),
   pipeline: z.array(z.record(z.string(), z.unknown())),
 });
-
-export type AddQueryRequest = {
-  org: UuidDto;
-  name: string;
-  schema: UuidDto;
-  variables: Record<string, QueryVariable>;
-  pipeline: Record<string, unknown>[];
-};
-
+export type AddQueryRequest = z.infer<typeof AddQueryRequest>;
 export type AddQueryResponse = ApiResponse<UuidDto>;
 
 export const addQueryController: RequestHandler<
@@ -56,32 +42,8 @@ export const addQueryController: RequestHandler<
       try: () => AddQueryRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-
-    E.flatMap((request) => {
-      const ajv = new Ajv({ strict: "log" });
-      const validator = ajv.compile(pipelineSchema);
-      const valid = validator(request.pipeline);
-
-      return valid
-        ? E.succeed(request)
-        : E.fail(new ValidationError(validator.errors ?? []));
-    }),
-
-    E.flatMap((request) =>
-      pipe(
-        queriesInsert(req.context.db.primary, request),
-        E.tap((queryId) => {
-          return organizationsAddQuery(
-            req.context.db.primary,
-            request.org,
-            queryId,
-          );
-        }),
-      ),
-    ),
-
+    E.flatMap((body) => addQueryToOrganization(req.context, body)),
     E.map((id) => id.toString() as UuidDto),
-
     foldToApiResponse(req.context),
     E.runPromise,
   );
@@ -218,6 +180,10 @@ function validateVariables(
         }
         case "boolean": {
           variables[key] = z.boolean().parse(value, { path: [key] });
+          break;
+        }
+        case "date": {
+          variables[key] = z.coerce.date().parse(value, { path: [key] });
           break;
         }
         default: {

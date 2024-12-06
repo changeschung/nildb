@@ -239,6 +239,7 @@ export function dataRunAggregation(
         query.pipeline,
         variables,
       );
+      console.log(pipeline[0]);
       const collection = db.collection<DocumentBase>(query.schema.toString());
       return collection.aggregate(pipeline).toArray();
     }),
@@ -266,7 +267,10 @@ export function dataFindMany(
   );
 }
 
-export type QueryRuntimeVariables = Record<string, string | number | boolean>;
+export type QueryRuntimeVariables = Record<
+  string,
+  string | number | boolean | Date
+>;
 
 export function injectVariablesIntoAggregation(
   aggregation: Record<string, unknown>[],

@@ -1,5 +1,3 @@
-import Ajv, { ValidationError } from "ajv";
-import addFormats from "ajv-formats";
 import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
 import { UUID } from "mongodb";
@@ -8,6 +6,7 @@ import { z } from "zod";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import type { DocumentBase } from "#/common/mongo";
 import { Uuid, type UuidDto } from "#/common/types";
+import { validateData } from "#/common/validator";
 import { schemasFindOne } from "#/schemas/repository";
 import {
   type CreatedResult,
@@ -56,24 +55,16 @@ export const createDataController: RequestHandler<
     E.flatMap((body) =>
       pipe(
         E.Do,
-        E.bind("schema", () =>
+        E.bind("document", () =>
           schemasFindOne(req.context.db.primary, {
             _id: new UUID(body.schema),
           }),
         ),
-        E.bind("data", ({ schema }) => {
-          const ajv = new Ajv({ strict: "log" });
-          addFormats(ajv);
-
-          const validator = ajv.compile(schema.schema);
-          const valid = validator(body.data);
-
-          return valid
-            ? E.succeed(body.data as PartialDataDocumentDto[])
-            : E.fail(new ValidationError(validator.errors ?? []));
-        }),
-        E.flatMap(({ schema, data }) => {
-          return dataInsert(req.context.db.data, schema, data);
+        E.bind("data", ({ document }) =>
+          validateData<PartialDataDocumentDto[]>(document.schema, body.data),
+        ),
+        E.flatMap(({ document, data }) => {
+          return dataInsert(req.context.db.data, document, data);
         }),
       ),
     ),
