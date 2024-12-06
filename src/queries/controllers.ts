@@ -183,7 +183,14 @@ function validateVariables(
           break;
         }
         case "date": {
-          variables[key] = z.coerce.date().parse(value, { path: [key] });
+          variables[key] = z
+            .preprocess((arg) => {
+              if (arg === null || arg === undefined) return undefined;
+              if (typeof arg !== "string") return undefined;
+              return new Date(arg);
+            }, z.date())
+            .parse(value, { path: [key] });
+
           break;
         }
         default: {

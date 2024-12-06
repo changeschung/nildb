@@ -51,7 +51,14 @@ function registerCoercions(ajv: Ajv): void {
     SupportedCoercions,
     (data: string) => SafeParseReturnType<unknown, unknown>
   > = {
-    "date-time": (data) => z.coerce.date().safeParse(data),
+    "date-time": (data) =>
+      z
+        .preprocess((arg) => {
+          if (arg === null || arg === undefined) return undefined;
+          if (typeof arg !== "string") return undefined;
+          return new Date(arg);
+        }, z.date())
+        .safeParse(data),
     uuid: (data) => Uuid.safeParse(data),
   };
 
