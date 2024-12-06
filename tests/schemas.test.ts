@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker";
 import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
 import { CollectionName } from "#/common/mongo";
-import { type UuidDto, createUuidDto } from "#/common/types";
+import { createUuidDto } from "#/common/types";
 import type { CreatedResult } from "#/data/repository";
 import type { Context } from "#/env";
 import type { OrganizationDocument } from "#/organizations/repository";
@@ -24,9 +24,15 @@ describe("schemas.test.ts", () => {
   let db: Context["db"];
   let backend: TestClient;
   const organization = {
-    id: "" as UuidDto,
-    schema: schema as SchemaFixture,
-    query: query as unknown as QueryFixture,
+    id: new UUID(),
+    schema: {
+      ...schema,
+      id: new UUID(),
+    } as SchemaFixture,
+    query: {
+      ...query,
+      id: new UUID(),
+    } as unknown as QueryFixture,
   };
 
   beforeAll(async () => {
@@ -43,13 +49,13 @@ describe("schemas.test.ts", () => {
           name: faker.company.name(),
         })
         .expect(200);
-      organization.id = response.body.data;
+      organization.id = new UUID(response.body.data);
     }
 
     {
       const response = await admin
         .createOrganizationAccessToken({
-          id: organization.id!,
+          id: organization.id,
         })
         .expect(200);
 
@@ -75,7 +81,7 @@ describe("schemas.test.ts", () => {
     const uuid = new UUID(response.body.data);
     expect(uuid).toBeTruthy;
 
-    schema.id = response.body.data;
+    organization.schema.id = new UUID(response.body.data);
   });
 
   it("can upload data", async () => {
@@ -96,7 +102,10 @@ describe("schemas.test.ts", () => {
     const result = response.body.data as CreatedResult;
     expect(result.created).toHaveLength(1);
 
-    const data = await db.data.collection(schema.id).find().toArray();
+    const data = await db.data
+      .collection(organization.schema.id.toString())
+      .find()
+      .toArray();
 
     expect(data).toHaveLength(1);
     expect(data[0]?.age).toBe(42);
@@ -128,7 +137,9 @@ describe("schemas.test.ts", () => {
 
     expect(organizationDocument.schemas).toHaveLength(0);
 
-    const dataCount = await db.data.collection(id).countDocuments({});
+    const dataCount = await db.data
+      .collection(id.toString())
+      .countDocuments({});
 
     expect(dataCount).toBe(0);
   });

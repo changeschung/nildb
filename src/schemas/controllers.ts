@@ -62,7 +62,7 @@ export const listSchemasController: RequestHandler<
 export const DeleteSchemaRequest = z.object({
   id: Uuid,
 });
-export type DeleteSchemaRequest = { id: UuidDto };
+export type DeleteSchemaRequest = z.infer<typeof DeleteSchemaRequest>;
 export type DeleteSchemaResponse = ApiResponse<UuidDto>;
 
 export const deleteSchemaController: RequestHandler<

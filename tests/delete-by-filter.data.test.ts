@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createUuidDto } from "#/common/types";
 import type { Context } from "#/env";
@@ -27,8 +28,8 @@ describe("Schemas delete by filter", () => {
     backend = fixture.users.backend;
     organization = await setupOrganization(
       fixture,
-      schema as SchemaFixture,
-      query as unknown as QueryFixture,
+      { ...schema, id: new UUID() } as SchemaFixture,
+      { ...query, id: new UUID() } as unknown as QueryFixture,
     );
 
     const schemaId = organization.schema.id;
@@ -61,7 +62,7 @@ describe("Schemas delete by filter", () => {
     const schema = organization.schema.id;
     const filter = { name: "foo" };
     const response = await backend.deleteData({ schema, filter }).expect(200);
-    const count = await db.data.collection(schema).countDocuments();
+    const count = await db.data.collection(schema.toString()).countDocuments();
     expect(response.body.data).toBe(1);
     expect(count).toBe(collectionSize - 1);
   });
@@ -72,7 +73,7 @@ describe("Schemas delete by filter", () => {
 
     const response = await backend.deleteData({ schema, filter }).expect(200);
 
-    const count = await db.data.collection(schema).countDocuments();
+    const count = await db.data.collection(schema.toString()).countDocuments();
     expect(response.body.data).toBe(2);
     expect(count).toBe(collectionSize - 3);
   });

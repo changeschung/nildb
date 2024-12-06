@@ -1,9 +1,7 @@
+import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createUuidDto } from "#/common/types";
-import {
-  MAX_RECORDS_LENGTH,
-  type PartialDataDocumentDto,
-} from "#/data/controllers";
+import { MAX_RECORDS_LENGTH } from "#/data/controllers";
 import query from "./data/simple.query.json";
 import schema from "./data/simple.schema.json";
 import {
@@ -26,8 +24,8 @@ describe("upload.max.data.test", () => {
     backend = fixture.users.backend;
     organization = await setupOrganization(
       fixture,
-      schema as SchemaFixture,
-      query as unknown as QueryFixture,
+      { ...schema, id: new UUID() } as SchemaFixture,
+      { ...query, id: new UUID() } as unknown as QueryFixture,
     );
   });
 
@@ -38,9 +36,8 @@ describe("upload.max.data.test", () => {
   });
 
   it("rejects payload that exceeds MAX_RECORDS_LENGTH", async () => {
-    const data: PartialDataDocumentDto[] = Array.from(
-      { length: MAX_RECORDS_LENGTH + 1 },
-      () => nextDocument(),
+    const data = Array.from({ length: MAX_RECORDS_LENGTH + 1 }, () =>
+      nextDocument(),
     );
 
     const response = await backend
@@ -56,9 +53,8 @@ describe("upload.max.data.test", () => {
   });
 
   it("accepts payload at MAX_RECORDS_LENGTH", async () => {
-    const data: PartialDataDocumentDto[] = Array.from(
-      { length: MAX_RECORDS_LENGTH },
-      () => nextDocument(),
+    const data = Array.from({ length: MAX_RECORDS_LENGTH }, () =>
+      nextDocument(),
     );
 
     const response = await backend

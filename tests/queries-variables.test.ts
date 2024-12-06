@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createUuidDto } from "#/common/types";
 import query from "./data/variables.wallet.query.json";
@@ -23,8 +24,8 @@ describe("queries.variables.test.ts", () => {
     backend = fixture.users.backend;
     organization = await setupOrganization(
       fixture,
-      schema as SchemaFixture,
-      query as unknown as QueryFixture,
+      { ...schema, id: new UUID() } as SchemaFixture,
+      { ...query, id: new UUID() } as unknown as QueryFixture,
     );
   });
 

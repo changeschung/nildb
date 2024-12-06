@@ -1,3 +1,4 @@
+import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createUuidDto } from "#/common/types";
 import type { Context } from "#/env";
@@ -25,8 +26,8 @@ describe("schemas.datetime.test", async () => {
     backend = fixture.users.backend;
     organization = await setupOrganization(
       fixture,
-      schema as SchemaFixture,
-      query as unknown as QueryFixture,
+      { ...schema, id: new UUID() } as SchemaFixture,
+      { ...query, id: new UUID() } as unknown as QueryFixture,
     );
   });
 
@@ -47,7 +48,7 @@ describe("schemas.datetime.test", async () => {
       .expect(200);
     expect(response.body.data.created).toHaveLength(3);
 
-    const cursor = db.data.collection(schema).find({});
+    const cursor = db.data.collection(schema.toString()).find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(3);
   });

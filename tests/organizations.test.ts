@@ -23,7 +23,7 @@ describe("organizations.test.ts", () => {
 
   const organization = {
     name: faker.company.name(),
-    id: "" as UuidDto,
+    id: new UUID(),
   };
 
   beforeAll(async () => {
@@ -56,7 +56,7 @@ describe("organizations.test.ts", () => {
     expect(document.schemas).toEqual([]);
     expect(document.queries).toEqual([]);
 
-    organization.id = data;
+    organization.id = new UUID(data);
   });
 
   // skipped because db artefacts conflicting when running entire suite
@@ -76,7 +76,7 @@ describe("organizations.test.ts", () => {
 
     backend.jwt = response.body.data;
     const payload = decode(backend.jwt) as unknown as JwtPayload;
-    expect(payload.sub).toMatch(organization.id);
+    expect(payload.sub).toMatch(organization.id.toString());
     expect(payload.type).toMatch("access-token");
   });
 

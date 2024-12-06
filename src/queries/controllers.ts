@@ -73,9 +73,7 @@ export const listQueriesController: RequestHandler<
 export const DeleteQueryRequest = z.object({
   id: Uuid,
 });
-export type DeleteQueryRequest = {
-  id: UuidDto;
-};
+export type DeleteQueryRequest = z.infer<typeof DeleteQueryRequest>;
 export type DeleteQueryResponse = ApiResponse<boolean>;
 
 export const deleteQueryController: RequestHandler<
@@ -113,10 +111,7 @@ export const ExecuteQueryRequest = z.object({
   id: Uuid,
   variables: z.record(z.string(), z.unknown()),
 });
-export type ExecuteQueryRequest = {
-  id: UuidDto;
-  variables: Record<string, unknown>;
-};
+export type ExecuteQueryRequest = z.infer<typeof ExecuteQueryRequest>;
 export type ExecuteQueryResponse = ApiResponse<JsonValue>;
 
 export const executeQueryController: RequestHandler<

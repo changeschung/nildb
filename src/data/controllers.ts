@@ -1,6 +1,5 @@
 import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
-import { UUID } from "mongodb";
 import type { EmptyObject, JsonArray } from "type-fest";
 import { z } from "zod";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
@@ -25,11 +24,9 @@ export const CreateDataRequest = z.object({
   schema: Uuid,
   data: z.array(z.record(z.string(), z.unknown())),
 });
-export type PartialDataDocumentDto = Record<string, unknown> & { _id: UuidDto };
-
-export type CreateDataRequest = {
-  schema: UuidDto;
-  data: PartialDataDocumentDto[];
+export type CreateDataRequest = z.infer<typeof CreateDataRequest>;
+export type PartialDataDocumentDto = CreateDataRequest["data"] & {
+  _id: UuidDto;
 };
 export type CreateDataResponse = ApiResponse<CreatedResult>;
 
@@ -55,14 +52,17 @@ export const createDataController: RequestHandler<
     E.flatMap((body) =>
       pipe(
         E.Do,
-        E.bind("document", () =>
-          schemasFindOne(req.context.db.primary, {
-            _id: new UUID(body.schema),
-          }),
-        ),
-        E.bind("data", ({ document }) =>
-          validateData<PartialDataDocumentDto[]>(document.schema, body.data),
-        ),
+        E.bind("document", () => {
+          return schemasFindOne(req.context.db.primary, {
+            _id: body.schema,
+          });
+        }),
+        E.bind("data", ({ document }) => {
+          return validateData<PartialDataDocumentDto[]>(
+            document.schema,
+            body.data,
+          );
+        }),
         E.flatMap(({ document, data }) => {
           return dataInsert(req.context.db.data, document, data);
         }),
@@ -81,11 +81,7 @@ export const UpdateDataRequest = z.object({
   filter: z.record(z.string(), z.unknown()),
   update: z.record(z.string(), z.unknown()),
 });
-export type UpdateDataRequest = {
-  schema: UuidDto;
-  filter: Record<string, unknown>;
-  update: Record<string, unknown>;
-};
+export type UpdateDataRequest = z.infer<typeof UpdateDataRequest>;
 export type UpdateDataResponse = ApiResponse<UpdateResult>;
 
 export const updateDataController: RequestHandler<
@@ -121,10 +117,7 @@ export const ReadDataRequest = z.object({
   schema: Uuid,
   filter: z.record(z.string(), z.unknown()),
 });
-export type ReadDataRequest = {
-  schema: UuidDto;
-  filter: Record<string, unknown>;
-};
+export type ReadDataRequest = z.infer<typeof ReadDataRequest>;
 export type ReadDataResponse = ApiResponse<DocumentBase[]>;
 
 export const readDataController: RequestHandler<
@@ -155,10 +148,7 @@ export const DeleteDataRequest = z.object({
   schema: Uuid,
   filter: z.record(z.string(), z.unknown()),
 });
-export type DeleteDataRequest = {
-  schema: UuidDto;
-  filter: Record<string, unknown>;
-};
+export type DeleteDataRequest = z.infer<typeof DeleteDataRequest>;
 export type DeleteDataResponse = ApiResponse<number>;
 
 export const deleteDataController: RequestHandler<
@@ -197,10 +187,7 @@ export const deleteDataController: RequestHandler<
 export const FlushDataRequest = z.object({
   schema: Uuid,
 });
-export type FlushDataRequest = {
-  schema: UuidDto;
-};
-
+export type FlushDataRequest = z.infer<typeof FlushDataRequest>;
 export type FlushDataResponse = ApiResponse<number>;
 
 export const flushDataController: RequestHandler<
@@ -228,10 +215,7 @@ export const flushDataController: RequestHandler<
 export const TailDataRequest = z.object({
   schema: Uuid,
 });
-export type TailDataRequest = {
-  schema: UuidDto;
-};
-
+export type TailDataRequest = z.infer<typeof TailDataRequest>;
 export type TailDataResponse = ApiResponse<JsonArray>;
 
 export const tailDataController: RequestHandler<

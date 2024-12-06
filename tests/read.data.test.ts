@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
 import { type UuidDto, createUuidDto } from "#/common/types";
 import { TAIL_DATA_LIMIT } from "#/data/repository";
@@ -30,8 +31,8 @@ describe("read.data.test", () => {
     backend = fixture.users.backend;
     organization = await setupOrganization(
       fixture,
-      schema as SchemaFixture,
-      query as unknown as QueryFixture,
+      { ...schema, id: new UUID() } as SchemaFixture,
+      { ...query, id: new UUID() } as unknown as QueryFixture,
     );
 
     const _response = await backend.uploadData({
