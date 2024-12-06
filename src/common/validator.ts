@@ -32,7 +32,10 @@ export function validateData<T>(
       addFormats.default(ajv);
       registerCoercions(ajv);
       const validator = ajv.compile<T>(schema);
-      validator(data);
+      if (!validator(data)) {
+        throw validator.errors;
+      }
+
       return data as T;
     },
     catch: (cause) => {
