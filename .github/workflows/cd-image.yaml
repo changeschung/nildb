@@ -10,19 +10,34 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  id-token: write # Required for OIDC
+  contents: read  # Required for checkout
+
 jobs:
   publish-image-to-ecr:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      - name: Provision ECR Repository
+        uses: NillionNetwork/devops/actions/terraform/frameworks@master
+        env:
+          TF_VAR_name: nildb-api
+        with:
+          framework: ecr_repo
+          deploy_env: sandbox
+          deploy_roles: |
+            { "sandbox": "arn:aws:iam::767397865113:role/nildb-github" }
+          gha_app_id: ${{ secrets.NILLION_GITHUB_ACTIONS_APP_ID }}
+          gha_app_private_key: ${{ secrets.NILLION_GITHUB_ACTIONS_APP_PRIVATE_KEY }}
+          tf_secrets_master_password: ${{ secrets.SECRETS_MASTER_PASSWORD }}
+          tg_command: ${{ github.ref == 'refs/heads/main' && 'apply -auto-approve' || 'plan' }}
+
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          role-to-assume: "arn:aws:iam::592920173613:role/DevOps"
+          role-to-assume: "arn:aws:iam::767397865113:role/nildb-github"
           aws-region: "eu-west-1"
-          role-skip-session-tagging: true
 
       - uses: aws-actions/amazon-ecr-login@v2
         id: login-ecr
@@ -43,7 +58,7 @@ jobs:
       - name: Build and push images
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: datablocks-api
+          ECR_REPOSITORY: nildb-api
           IMAGE_TAG_SHA: ${{ github.sha }}
         run: |
           # Always tag with commit sha
