@@ -1,3 +1,4 @@
+import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createUuidDto } from "#/common/types";
 import type { CreatedResult } from "#/data/repository";
@@ -26,8 +27,8 @@ describe("data.test.ts", () => {
     backend = fixture.users.backend;
     organization = await setupOrganization(
       fixture,
-      schema as SchemaFixture,
-      query as unknown as QueryFixture,
+      { ...schema, id: new UUID() } as SchemaFixture,
+      { ...query, id: new UUID() } as unknown as QueryFixture,
     );
   });
 
@@ -63,7 +64,7 @@ describe("data.test.ts", () => {
 
     expect(response.body.data.created).toHaveLength(3);
 
-    const cursor = db.data.collection(schema).find({});
+    const cursor = db.data.collection(schema.toString()).find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(3);
   });
@@ -86,7 +87,7 @@ describe("data.test.ts", () => {
     const result = response.body.data as CreatedResult;
     expect(result.errors).toHaveLength(1);
 
-    const cursor = db.data.collection(schema).find({});
+    const cursor = db.data.collection(schema.toString()).find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(3);
   });
@@ -142,7 +143,7 @@ describe("data.test.ts", () => {
       })
       .expect(200);
 
-    const cursor = db.data.collection(schema).find({});
+    const cursor = db.data.collection(schema.toString()).find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(4);
   });
@@ -152,7 +153,7 @@ describe("data.test.ts", () => {
     const data = [
       {
         _id: createUuidDto(),
-        wallet: true,
+        wallet: true, // should be string
         country: "GBR",
         age: 30,
       },

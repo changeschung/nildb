@@ -4,8 +4,16 @@ import { type DbError, succeedOrMapToDbError } from "#/common/errors";
 import { CollectionName, type DocumentBase } from "#/common/mongo";
 
 export type QueryVariable = {
-  type: "string" | "number" | "boolean";
+  type: "string" | "number" | "boolean" | "date";
   description: string;
+};
+
+export type QueryArrayVariable = {
+  type: "array";
+  description: string;
+  items: {
+    type: "string" | "number" | "boolean" | "date";
+  };
 };
 
 export type QueryDocument = DocumentBase & {
@@ -13,7 +21,7 @@ export type QueryDocument = DocumentBase & {
   name: string;
   // Defines the pipeline's starting collection
   schema: UUID;
-  variables: Record<string, QueryVariable>;
+  variables: Record<string, QueryVariable | QueryArrayVariable>;
   pipeline: Record<string, unknown>[];
 };
 

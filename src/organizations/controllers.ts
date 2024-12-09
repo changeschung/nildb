@@ -51,7 +51,9 @@ export const createOrganizationController: RequestHandler<
 export const CreateOrganizationAccessTokenRequest = z.object({
   id: Uuid,
 });
-export type CreateOrganizationAccessTokenRequest = { id: UuidDto };
+export type CreateOrganizationAccessTokenRequest = z.infer<
+  typeof CreateOrganizationAccessTokenRequest
+>;
 export type CreateOrganizationAccessTokenResponse = ApiResponse<JwtSerialized>;
 
 export const createOrganizationAccessTokenController: RequestHandler<
@@ -89,9 +91,9 @@ export const createOrganizationAccessTokenController: RequestHandler<
 export const DeleteOrganizationRequest = z.object({
   id: Uuid,
 });
-export type DeleteOrganizationRequest = {
-  id: UuidDto;
-};
+export type DeleteOrganizationRequest = z.infer<
+  typeof DeleteOrganizationRequest
+>;
 export type DeleteOrganizationResponse = ApiResponse<UuidDto>;
 
 export const deleteOrganizationController: RequestHandler<

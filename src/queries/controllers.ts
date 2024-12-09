@@ -1,33 +1,31 @@
-import Ajv, { ValidationError } from "ajv";
 import { Effect as E, pipe } from "effect";
-import type { UnknownException } from "effect/Cause";
 import type { RequestHandler } from "express";
 import type { EmptyObject, JsonValue } from "type-fest";
 import { z } from "zod";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { Uuid, type UuidDto } from "#/common/types";
-import {
-  type QueryRuntimeVariables,
-  dataRunAggregation,
-} from "#/data/repository";
-import {
-  organizationsAddQuery,
-  organizationsRemoveQuery,
-} from "#/organizations/repository";
+import { organizationsRemoveQuery } from "#/organizations/repository";
 import {
   type QueryDocument,
-  type QueryVariable,
   queriesDeleteOne,
   queriesFindMany,
-  queriesFindOne,
-  queriesInsert,
 } from "#/queries/repository";
-import pipelineSchema from "./mongodb_pipeline.json";
+import { addQueryToOrganization, executeQuery } from "#/queries/service";
 
-export const QueryVariableValidator = z.object({
-  type: z.enum(["string", "number", "boolean"]),
-  description: z.string(),
-});
+const VariablePrimitive = z.enum(["string", "number", "boolean", "date"]);
+export const QueryVariableValidator = z.union([
+  z.object({
+    type: VariablePrimitive,
+    description: z.string(),
+  }),
+  z.object({
+    type: z.enum(["array"]),
+    description: z.string(),
+    items: z.object({
+      type: VariablePrimitive,
+    }),
+  }),
+]);
 export const AddQueryRequest = z.object({
   org: Uuid,
   name: z.string(),
@@ -35,15 +33,7 @@ export const AddQueryRequest = z.object({
   variables: z.record(z.string(), QueryVariableValidator),
   pipeline: z.array(z.record(z.string(), z.unknown())),
 });
-
-export type AddQueryRequest = {
-  org: UuidDto;
-  name: string;
-  schema: UuidDto;
-  variables: Record<string, QueryVariable>;
-  pipeline: Record<string, unknown>[];
-};
-
+export type AddQueryRequest = z.infer<typeof AddQueryRequest>;
 export type AddQueryResponse = ApiResponse<UuidDto>;
 
 export const addQueryController: RequestHandler<
@@ -56,32 +46,8 @@ export const addQueryController: RequestHandler<
       try: () => AddQueryRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-
-    E.flatMap((request) => {
-      const ajv = new Ajv({ strict: "log" });
-      const validator = ajv.compile(pipelineSchema);
-      const valid = validator(request.pipeline);
-
-      return valid
-        ? E.succeed(request)
-        : E.fail(new ValidationError(validator.errors ?? []));
-    }),
-
-    E.flatMap((request) =>
-      pipe(
-        queriesInsert(req.context.db.primary, request),
-        E.tap((queryId) => {
-          return organizationsAddQuery(
-            req.context.db.primary,
-            request.org,
-            queryId,
-          );
-        }),
-      ),
-    ),
-
+    E.flatMap((body) => addQueryToOrganization(req.context, body)),
     E.map((id) => id.toString() as UuidDto),
-
     foldToApiResponse(req.context),
     E.runPromise,
   );
@@ -111,9 +77,7 @@ export const listQueriesController: RequestHandler<
 export const DeleteQueryRequest = z.object({
   id: Uuid,
 });
-export type DeleteQueryRequest = {
-  id: UuidDto;
-};
+export type DeleteQueryRequest = z.infer<typeof DeleteQueryRequest>;
 export type DeleteQueryResponse = ApiResponse<boolean>;
 
 export const deleteQueryController: RequestHandler<
@@ -151,10 +115,7 @@ export const ExecuteQueryRequest = z.object({
   id: Uuid,
   variables: z.record(z.string(), z.unknown()),
 });
-export type ExecuteQueryRequest = {
-  id: UuidDto;
-  variables: Record<string, unknown>;
-};
+export type ExecuteQueryRequest = z.infer<typeof ExecuteQueryRequest>;
 export type ExecuteQueryResponse = ApiResponse<JsonValue>;
 
 export const executeQueryController: RequestHandler<
@@ -167,64 +128,10 @@ export const executeQueryController: RequestHandler<
       try: () => ExecuteQueryRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-
-    E.flatMap((request) =>
-      E.gen(function* (_) {
-        const query = yield* _(
-          queriesFindOne(req.context.db.primary, { _id: request.id }),
-        );
-        const variables = yield* _(validateVariables(query, request));
-        return yield* _(
-          dataRunAggregation(req.context.db.data, query, variables),
-        );
-      }),
-    ),
-
+    E.flatMap((request) => executeQuery(req.context, request)),
     foldToApiResponse(req.context),
     E.runPromise,
   );
 
   res.send(response);
 };
-
-function validateVariables(
-  query: QueryDocument,
-  request: { variables: Record<string, unknown> },
-): E.Effect<QueryRuntimeVariables, UnknownException> {
-  return E.try(() => {
-    const provided = Object.keys(request.variables);
-    const permitted = Object.keys(query.variables);
-
-    if (provided.length !== permitted.length) {
-      throw new Error(
-        `Invalid query execution variables, expected: ${JSON.stringify(query.variables)}`,
-      );
-    }
-
-    const variables: QueryRuntimeVariables = {};
-
-    for (const key of provided) {
-      const { type } = query.variables[key];
-      const value = request.variables[key];
-
-      switch (type) {
-        case "string": {
-          variables[key] = z.string().parse(value, { path: [key] });
-          break;
-        }
-        case "number": {
-          variables[key] = z.number().parse(value, { path: [key] });
-          break;
-        }
-        case "boolean": {
-          variables[key] = z.boolean().parse(value, { path: [key] });
-          break;
-        }
-        default: {
-          throw new Error("Invalid query execute variables");
-        }
-      }
-    }
-    return variables;
-  });
-}

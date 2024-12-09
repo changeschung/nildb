@@ -2,7 +2,6 @@ import { faker } from "@faker-js/faker";
 import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
 import { CollectionName } from "#/common/mongo";
-import type { UuidDto } from "#/common/types";
 import type { Context } from "#/env";
 import type { OrganizationDocument } from "#/organizations/repository";
 import type { SchemaDocument } from "#/schemas/repository";
@@ -24,9 +23,9 @@ describe("query.test.ts", () => {
   let admin: TestClient;
   let backend: TestClient;
   const organization = {
-    id: "" as UuidDto,
-    schema: schema as SchemaFixture,
-    query: query as unknown as QueryFixture,
+    id: new UUID(),
+    schema: { ...schema, id: new UUID() } as SchemaFixture,
+    query: { ...query, id: new UUID() } as unknown as QueryFixture,
   };
 
   beforeAll(async () => {
@@ -43,7 +42,7 @@ describe("query.test.ts", () => {
           name: faker.company.name(),
         })
         .expect(200);
-      organization.id = response.body.data;
+      organization.id = new UUID(response.body.data);
     }
 
     {
@@ -66,10 +65,10 @@ describe("query.test.ts", () => {
         })
         .expect(200);
 
-      const uuid = new UUID(response.body.data);
-      expect(uuid).toBeTruthy;
+      const id = new UUID(response.body.data);
+      expect(id).toBeTruthy;
 
-      organization.schema.id = response.body.data as UuidDto;
+      organization.schema.id = id;
       organization.query.schema = organization.schema.id;
     }
   });
@@ -92,7 +91,7 @@ describe("query.test.ts", () => {
 
     const uuid = new UUID(response.body.data);
     expect(uuid).toBeTruthy;
-    query.id = response.body.data;
+    organization.query.id = new UUID(response.body.data);
   });
 
   it("can list queries (expect 1)", async () => {
@@ -109,13 +108,13 @@ describe("query.test.ts", () => {
 
     const queryDocument = await db.primary
       .collection<SchemaDocument>(CollectionName.Schemas)
-      .findOne({ _id: new UUID(query.id) });
+      .findOne({ _id: organization.query.id });
 
     expect(queryDocument).toBeNull();
 
     const record = await db.primary
       .collection<OrganizationDocument>(CollectionName.Organizations)
-      .findOne({ _id: new UUID(organization.id) });
+      .findOne({ _id: organization.id });
     assertDefined(record);
 
     expect(record.queries).toHaveLength(0);

@@ -1,0 +1,21 @@
+{
+  "id": "",
+  "name": "variables.array.query.json",
+  "schema": "",
+  "variables": {
+    "values": {
+      "type": "array",
+      "description": "The values to find",
+      "items": {
+        "type": "number"
+      }
+    }
+  },
+  "pipeline": [
+    {
+      "$match": {
+        "values": "##values"
+      }
+    }
+  ]
+}

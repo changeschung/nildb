@@ -9,16 +9,14 @@
       "type": "object",
       "properties": {
         "_id": { "type": "string", "format": "uuid" },
-        "wallet": { "type": "string" },
-        "amount": { "type": "number" },
-        "status": { "type": "string" },
-        "timestamp": {
-          "type": "string",
-          "format": "date-time",
-          "coerce": true
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
         }
       },
-      "required": ["wallet", "amount", "status", "timestamp"]
+      "required": ["_id", "values"]
     }
   }
 }

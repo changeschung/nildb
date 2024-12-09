@@ -17,6 +17,7 @@ const ConfigSchema = z.object({
   nodePrivateKey: z.string(),
   nodePublicChainAddress: z.string(),
   nodePublicEndpoint: z.string().url(),
+  metricsPort: z.number().int().positive(),
   webPort: z.number().int().positive(),
 });
 export type Config = z.infer<typeof ConfigSchema>;
@@ -24,11 +25,8 @@ export type Config = z.infer<typeof ConfigSchema>;
 export interface Context {
   config: Config;
   db: {
-    // Default db is the primary (eg `datablocks`)
     client: MongoClient;
-    // Holds organizations, users, schemas, queries collections (eg `datablocks`)
     primary: Db;
-    // Holds schema data (eg `datablocks_data`)~
     data: Db;
   };
   log: Logger;
@@ -50,6 +48,7 @@ export async function createContext(): Promise<Context> {
     nodePrivateKey: process.env.APP_NODE_PRIVATE_KEY,
     nodePublicChainAddress: process.env.APP_NODE_PUBLIC_ADDRESS,
     nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
+    metricsPort: Number(process.env.APP_METRICS_PORT),
     webPort: Number(process.env.APP_PORT),
   });
 

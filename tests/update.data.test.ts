@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
 import { type UuidDto, createUuidDto } from "#/common/types";
 import type { DataDocument } from "#/data/repository";
@@ -33,8 +34,8 @@ describe("update.data.test", () => {
     backend = fixture.users.backend;
     organization = await setupOrganization(
       fixture,
-      schema as SchemaFixture,
-      query as unknown as QueryFixture,
+      { ...schema, id: new UUID() } as SchemaFixture,
+      { ...query, id: new UUID() } as unknown as QueryFixture,
     );
 
     const _response = await backend.uploadData({
@@ -58,7 +59,7 @@ describe("update.data.test", () => {
     });
 
     const actual = await db.data
-      .collection<DataDocument>(schema)
+      .collection<DataDocument>(schema.toString())
       .findOne({ name: "foo" });
     expect(actual?._id.toString()).toBe(record._id);
   });

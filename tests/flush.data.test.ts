@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createUuidDto } from "#/common/types";
 import type { Context } from "#/env";
@@ -27,8 +28,8 @@ describe("flush.data.test", () => {
     backend = fixture.users.backend;
     organization = await setupOrganization(
       fixture,
-      schema as SchemaFixture,
-      query as unknown as QueryFixture,
+      { ...schema, id: new UUID() } as SchemaFixture,
+      { ...query, id: new UUID() } as unknown as QueryFixture,
     );
 
     const data = Array.from({ length: collectionSize }, () => ({
@@ -45,7 +46,7 @@ describe("flush.data.test", () => {
   it("can flush a collection", async () => {
     const schema = organization.schema.id;
     const response = await fixture.users.backend.flushData({ schema });
-    const count = await db.data.collection(schema).countDocuments();
+    const count = await db.data.collection(schema.toString()).countDocuments();
 
     expect(response.body.data).toBe(collectionSize);
     expect(count).toBe(0);

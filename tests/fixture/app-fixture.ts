@@ -1,10 +1,9 @@
 import { faker } from "@faker-js/faker";
 import dotenv from "dotenv";
-import type { Db } from "mongodb";
+import { type Db, UUID } from "mongodb";
 import supertest from "supertest";
 import type { JsonObject } from "type-fest";
 import { buildApp } from "#/app";
-import type { UuidDto } from "#/common/types";
 import { type Context, createContext } from "#/env";
 import { createJwt } from "#/middleware/auth";
 import type { QueryVariable } from "#/queries/repository";
@@ -23,7 +22,7 @@ export interface AppFixture {
 export async function buildFixture(): Promise<AppFixture> {
   dotenv.config({ path: ".env.test" });
   const context = await createContext();
-  const app = buildApp(context);
+  const { app } = buildApp(context);
 
   const users = {
     root: new TestClient({
@@ -80,23 +79,23 @@ async function dropDatabaseWithRetry(db: Db, maxRetries = 3, delay = 1000) {
 }
 
 export type OrganizationFixture = {
-  id: UuidDto;
+  id: UUID;
   name: string;
   schema: SchemaFixture;
   query: QueryFixture;
 };
 
 export type SchemaFixture = {
-  id: UuidDto;
+  id: UUID;
   name: string;
   keys: string[];
   schema: JsonObject;
 };
 
 export type QueryFixture = {
-  id: UuidDto;
+  id: UUID;
   name: string;
-  schema: UuidDto;
+  schema: UUID;
   variables: Record<string, QueryVariable>;
   pipeline: JsonObject[];
 };
@@ -168,7 +167,7 @@ export async function setupOrganization(
       console.log(response.body.errors);
     }
 
-    const id = response.body.data as UuidDto;
+    const id = new UUID(response.body.data);
     schema.id = id;
     query.schema = id;
   }
@@ -188,7 +187,7 @@ export async function setupOrganization(
       console.error(response.body.errors);
     }
 
-    query.id = response.body.data as UuidDto;
+    query.id = new UUID(response.body.data);
   }
 
   organization.schema = schema;

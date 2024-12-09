@@ -1,22 +1,17 @@
-import Ajv from "ajv";
-import addFormats from "ajv-formats";
 import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
-import type { EmptyObject, JsonObject } from "type-fest";
+import type { EmptyObject } from "type-fest";
 import { z } from "zod";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { Uuid, type UuidDto } from "#/common/types";
-import { dataCreateCollection, dataDeleteCollection } from "#/data/repository";
-import {
-  organizationsAddSchema,
-  organizationsRemoveSchema,
-} from "#/organizations/repository";
+import { dataDeleteCollection } from "#/data/repository";
+import { organizationsRemoveSchema } from "#/organizations/repository";
 import {
   type SchemaDocument,
   schemasDeleteOne,
   schemasFindMany,
-  schemasInsert,
 } from "#/schemas/repository";
+import { addSchemaToOrganization } from "./service";
 
 export const AddSchemaRequest = z.object({
   org: Uuid,
@@ -24,12 +19,7 @@ export const AddSchemaRequest = z.object({
   keys: z.array(z.string()),
   schema: z.record(z.string(), z.unknown()),
 });
-export type AddSchemaRequest = {
-  org: UuidDto;
-  name: string;
-  keys: string[];
-  schema: JsonObject;
-};
+export type AddSchemaRequest = z.infer<typeof AddSchemaRequest>;
 export type AddSchemaResponse = ApiResponse<UuidDto>;
 
 export const addSchemaController: RequestHandler<
@@ -42,39 +32,8 @@ export const addSchemaController: RequestHandler<
       try: () => AddSchemaRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-
-    E.flatMap((body) => {
-      try {
-        const ajv = new Ajv({ strict: false });
-        addFormats(ajv);
-        // Compile throws on invalid schemas
-        ajv.compile(body.schema);
-        return E.succeed(body);
-      } catch (error) {
-        return E.fail(
-          new Error("Schema failed compilation check", { cause: error }),
-        );
-      }
-    }),
-
-    E.flatMap((body) =>
-      pipe(
-        schemasInsert(req.context.db.primary, body),
-        E.tap((schemaId) => {
-          return dataCreateCollection(req.context.db.data, schemaId, body.keys);
-        }),
-        E.tap((schemaId) => {
-          return organizationsAddSchema(
-            req.context.db.primary,
-            body.org,
-            schemaId,
-          );
-        }),
-      ),
-    ),
-
+    E.flatMap((body) => addSchemaToOrganization(req.context, body)),
     E.map((id) => id.toString() as UuidDto),
-
     foldToApiResponse(req.context),
     E.runPromise,
   );
@@ -103,7 +62,7 @@ export const listSchemasController: RequestHandler<
 export const DeleteSchemaRequest = z.object({
   id: Uuid,
 });
-export type DeleteSchemaRequest = { id: UuidDto };
+export type DeleteSchemaRequest = z.infer<typeof DeleteSchemaRequest>;
 export type DeleteSchemaResponse = ApiResponse<UuidDto>;
 
 export const deleteSchemaController: RequestHandler<
