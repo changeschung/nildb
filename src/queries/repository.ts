@@ -8,12 +8,20 @@ export type QueryVariable = {
   description: string;
 };
 
+export type QueryArrayVariable = {
+  type: "array";
+  description: string;
+  items: {
+    type: "string" | "number" | "boolean" | "date";
+  };
+};
+
 export type QueryDocument = DocumentBase & {
   org: UUID;
   name: string;
   // Defines the pipeline's starting collection
   schema: UUID;
-  variables: Record<string, QueryVariable>;
+  variables: Record<string, QueryVariable | QueryArrayVariable>;
   pipeline: Record<string, unknown>[];
 };
 

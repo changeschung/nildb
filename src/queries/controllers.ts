@@ -1,27 +1,31 @@
 import { Effect as E, pipe } from "effect";
-import type { UnknownException } from "effect/Cause";
 import type { RequestHandler } from "express";
 import type { EmptyObject, JsonValue } from "type-fest";
 import { z } from "zod";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { Uuid, type UuidDto } from "#/common/types";
-import {
-  type QueryRuntimeVariables,
-  dataRunAggregation,
-} from "#/data/repository";
 import { organizationsRemoveQuery } from "#/organizations/repository";
 import {
   type QueryDocument,
   queriesDeleteOne,
   queriesFindMany,
-  queriesFindOne,
 } from "#/queries/repository";
-import { addQueryToOrganization } from "#/queries/service";
+import { addQueryToOrganization, executeQuery } from "#/queries/service";
 
-export const QueryVariableValidator = z.object({
-  type: z.enum(["string", "number", "boolean", "date"]),
-  description: z.string(),
-});
+const VariablePrimitive = z.enum(["string", "number", "boolean", "date"]);
+export const QueryVariableValidator = z.union([
+  z.object({
+    type: VariablePrimitive,
+    description: z.string(),
+  }),
+  z.object({
+    type: z.enum(["array"]),
+    description: z.string(),
+    items: z.object({
+      type: VariablePrimitive,
+    }),
+  }),
+]);
 export const AddQueryRequest = z.object({
   org: Uuid,
   name: z.string(),
@@ -124,75 +128,10 @@ export const executeQueryController: RequestHandler<
       try: () => ExecuteQueryRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-
-    E.flatMap((request) =>
-      E.gen(function* (_) {
-        const query = yield* _(
-          queriesFindOne(req.context.db.primary, { _id: request.id }),
-        );
-        const variables = yield* _(validateVariables(query, request));
-        return yield* _(
-          dataRunAggregation(req.context.db.data, query, variables),
-        );
-      }),
-    ),
-
+    E.flatMap((request) => executeQuery(req.context, request)),
     foldToApiResponse(req.context),
     E.runPromise,
   );
 
   res.send(response);
 };
-
-function validateVariables(
-  query: QueryDocument,
-  request: { variables: Record<string, unknown> },
-): E.Effect<QueryRuntimeVariables, UnknownException> {
-  return E.try(() => {
-    const provided = Object.keys(request.variables);
-    const permitted = Object.keys(query.variables);
-
-    if (provided.length !== permitted.length) {
-      throw new Error(
-        `Invalid query execution variables, expected: ${JSON.stringify(query.variables)}`,
-      );
-    }
-
-    const variables: QueryRuntimeVariables = {};
-
-    for (const key of provided) {
-      const { type } = query.variables[key];
-      const value = request.variables[key];
-
-      switch (type) {
-        case "string": {
-          variables[key] = z.string().parse(value, { path: [key] });
-          break;
-        }
-        case "number": {
-          variables[key] = z.number().parse(value, { path: [key] });
-          break;
-        }
-        case "boolean": {
-          variables[key] = z.boolean().parse(value, { path: [key] });
-          break;
-        }
-        case "date": {
-          variables[key] = z
-            .preprocess((arg) => {
-              if (arg === null || arg === undefined) return undefined;
-              if (typeof arg !== "string") return undefined;
-              return new Date(arg);
-            }, z.date())
-            .parse(value, { path: [key] });
-
-          break;
-        }
-        default: {
-          throw new Error("Invalid query execute variables");
-        }
-      }
-    }
-    return variables;
-  });
-}

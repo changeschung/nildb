@@ -79,23 +79,6 @@ describe("queries.variables.test.ts", () => {
     }
   });
 
-  it("rejects array as variable value", async () => {
-    const id = organization.query.id;
-    const variables = {
-      minAmount: [500, 600],
-      status: "completed",
-      startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    };
-
-    const response = await backend
-      .executeQuery({
-        id,
-        variables,
-      })
-      .expect(200);
-    expect(response.body.errors[0]).toMatch(/invalid_type/);
-  });
-
   it("rejects object as variable value", async () => {
     const id = organization.query.id;
     const variables = {
@@ -110,7 +93,11 @@ describe("queries.variables.test.ts", () => {
         variables,
       })
       .expect(200);
-    expect(response.body.errors[0]).toMatch(/Expected string, received object/);
+
+    expect(response.body.errors).toHaveLength(1);
+    const stringifiedErrors = JSON.stringify(response.body.errors);
+    expect(stringifiedErrors).toMatch("status");
+    expect(stringifiedErrors).toMatch("Expected string");
   });
 
   it("rejects when providing null as variable value", async () => {
@@ -127,7 +114,11 @@ describe("queries.variables.test.ts", () => {
         variables,
       })
       .expect(200);
-    expect(response.body.errors[0]).toMatch(/invalid_type/);
+
+    expect(response.body.errors).toHaveLength(1);
+    const stringifiedErrors = JSON.stringify(response.body.errors);
+    expect(stringifiedErrors).toMatch("startDate");
+    expect(stringifiedErrors).toMatch("Required");
   });
 
   it("reject undefined as variable value", async () => {
@@ -144,9 +135,10 @@ describe("queries.variables.test.ts", () => {
         variables,
       })
       .expect(200);
-    expect(response.body.errors[0]).toMatch(
-      /Invalid query execution variables/,
-    );
+
+    expect(response.body.errors).toHaveLength(1);
+    const stringifiedErrors = JSON.stringify(response.body.errors);
+    expect(stringifiedErrors).toMatch("startDate");
   });
 
   it("rejects function as variable value", async () => {

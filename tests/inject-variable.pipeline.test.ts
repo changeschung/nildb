@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { injectVariablesIntoAggregation } from "#/data/repository";
+import { injectVariablesIntoAggregation } from "#/queries/service";
 
 describe("inject.variable.pipeline.test", () => {
   it("replaces simple variables", () => {

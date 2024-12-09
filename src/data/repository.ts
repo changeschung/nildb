@@ -5,7 +5,7 @@ import {
   MongoBulkWriteError,
   type UpdateFilter,
 } from "mongodb/lib/beta";
-import type { JsonObject, JsonValue } from "type-fest";
+import type { JsonObject } from "type-fest";
 import { type DbError, succeedOrMapToDbError } from "#/common/errors";
 import type { DocumentBase } from "#/common/mongo";
 import type { UuidDto } from "#/common/types";
@@ -231,17 +231,14 @@ export function dataDeleteMany(
 export function dataRunAggregation(
   db: Db,
   query: QueryDocument,
-  variables: QueryRuntimeVariables,
+  pipeline: Document[],
 ): E.Effect<JsonObject[], DbError> {
   return pipe(
     E.tryPromise(() => {
-      const pipeline = injectVariablesIntoAggregation(
-        query.pipeline,
-        variables,
-      );
-      console.log(pipeline[0]);
-      const collection = db.collection<DocumentBase>(query.schema.toString());
-      return collection.aggregate(pipeline).toArray();
+      return db
+        .collection<DocumentBase>(query.schema.toString())
+        .aggregate(pipeline)
+        .toArray();
     }),
     succeedOrMapToDbError({
       name: "dataRunAggregation",
@@ -265,41 +262,4 @@ export function dataFindMany(
       params: { schema },
     }),
   );
-}
-
-export type QueryRuntimeVariables = Record<
-  string,
-  string | number | boolean | Date
->;
-
-export function injectVariablesIntoAggregation(
-  aggregation: Record<string, unknown>[],
-  variables: QueryRuntimeVariables,
-): Document[] {
-  const prefixIdentifier = "##";
-  const traverse = (current: JsonValue): JsonValue => {
-    if (typeof current === "string" && current.startsWith(prefixIdentifier)) {
-      const key = current.split(prefixIdentifier)[1];
-
-      if (key in variables) {
-        return variables[key] as JsonValue;
-      }
-      throw new Error(`Missing pipeline variable: ${current}`);
-    }
-
-    if (Array.isArray(current)) {
-      return current.map((e) => traverse(e));
-    }
-
-    if (typeof current === "object" && current !== null) {
-      const result: JsonObject = {};
-      for (const [key, value] of Object.entries(current)) {
-        result[key] = traverse(value);
-      }
-      return result;
-    }
-
-    return current;
-  };
-  return traverse(aggregation as JsonValue) as Document[];
 }
