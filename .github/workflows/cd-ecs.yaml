@@ -34,7 +34,7 @@ jobs:
           framework: ecs_service
           deploy_env: sandbox
           deploy_roles: |
-            { "sandbox": "arn:aws:iam::767397865113:role/nildb-github" }
+            { "sandbox": "arn:aws:iam::767397865113:role/nil-db-github" }
           gha_app_id: ${{ secrets.NILLION_GITHUB_ACTIONS_APP_ID }}
           gha_app_private_key: ${{ secrets.NILLION_GITHUB_ACTIONS_APP_PRIVATE_KEY }}
           tf_secrets_master_password: ${{ secrets.SECRETS_MASTER_PASSWORD }}
