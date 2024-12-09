@@ -1,4 +1,4 @@
-name: CD - Update ECS Task
+name: CD - Deploy to ECS
 
 on:
   workflow_dispatch:
@@ -12,35 +12,30 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  id-token: write # Required for OIDC
+  contents: read  # Required for checkout
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          role-to-assume: "arn:aws:iam::767397865113:role/DevOps"
-          aws-region: "eu-west-1"
-          role-skip-session-tagging: true
+      - name: Verify deployment.yaml
+        uses: NillionNetwork/devops/actions/terraform/frameworks/ecs_service@master
 
-      - run: |
-          aws ecs describe-task-definition \
-            --task-definition nil-db-sandbox-nil-db \
-            --query taskDefinition > task-definition.json
-
-      - uses: aws-actions/amazon-ecs-render-task-definition@v1
-        id: task-def
+      - name: Deploy ECS service
+        uses: NillionNetwork/devops/actions/terraform/frameworks@master
+        env:
+          TF_VAR_deployment_image_tag: ${{ inputs.tag }}
+          TF_VAR_deployment_image_repo: 592920173613.dkr.ecr.eu-west-1.amazonaws.com/nildb-api
         with:
-          task-definition: task-definition.json
-          container-name: nil-db
-          image: 592920173613.dkr.ecr.eu-west-1.amazonaws.com/datablocks-api:${{ inputs.tag }}
-
-      - uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          cluster: app-cluster-sandbox
-          service: nil-db-sandbox-nil-db
-          wait-for-service-stability: true
+          framework: ecs_service
+          deploy_env: sandbox
+          deploy_roles: |
+            { "sandbox": "arn:aws:iam::767397865113:role/nildb-github" }
+          gha_app_id: ${{ secrets.NILLION_GITHUB_ACTIONS_APP_ID }}
+          gha_app_private_key: ${{ secrets.NILLION_GITHUB_ACTIONS_APP_PRIVATE_KEY }}
+          tf_secrets_master_password: ${{ secrets.SECRETS_MASTER_PASSWORD }}
+          tg_command: ${{ github.ref == 'refs/heads/main' && 'apply -auto-approve' || 'plan' }}
