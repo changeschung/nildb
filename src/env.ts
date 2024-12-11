@@ -1,9 +1,7 @@
-import { createHash } from "node:crypto";
-import { secp256k1 } from "@noble/curves/secp256k1";
-import { bech32 } from "bech32";
 import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
 import { z } from "zod";
+import { Identity } from "#/common/crypto";
 import { createLogger } from "#/middleware/logger";
 import { initAndCreateDbClients } from "./common/mongo";
 
@@ -29,10 +27,8 @@ export interface Context {
   };
   log: Logger;
   node: {
-    address: string;
-    privateKey: Uint8Array;
-    publicKey: string;
     endpoint: string;
+    identity: Identity;
   };
 }
 
@@ -49,19 +45,10 @@ export async function createContext(): Promise<Context> {
     webPort: Number(process.env.APP_PORT),
   });
 
-  const privateKey = Uint8Array.from(
-    Buffer.from(config.nodePrivateKey, "base64"),
-  );
-  const publicKey = secp256k1.getPublicKey(privateKey, true);
-  const sha256Hash = createHash("sha256").update(publicKey).digest();
-  const ripemd160Hash = createHash("ripemd160").update(sha256Hash).digest();
-  const prefix = "nillion1";
-  const address = bech32.encode(prefix, bech32.toWords(ripemd160Hash));
+  const identity = Identity.fromBase64(config.nodePrivateKey);
 
   const node = {
-    address,
-    publicKey: Buffer.from(publicKey).toString("base64"),
-    privateKey,
+    identity,
     endpoint: config.nodePublicEndpoint,
   };
 

@@ -24,8 +24,8 @@ export function getNodeInfo(context: Context): AboutNode {
   return {
     started,
     build: getBuildInfo(context),
-    address: context.node.address,
-    publicKey: context.node.publicKey,
+    address: context.node.identity.address,
+    publicKey: context.node.identity.publicKeyAsBase64,
     endpoint: context.node.endpoint,
   };
 }
