@@ -1,4 +1,3 @@
-import assert from "node:assert";
 import { createHash } from "node:crypto";
 import { secp256k1 } from "@noble/curves/secp256k1";
 import { bech32 } from "bech32";
@@ -15,7 +14,6 @@ const ConfigSchema = z.object({
   jwtSecret: z.string().min(10),
   logLevel: z.enum(["debug", "info", "warn", "error"]),
   nodePrivateKey: z.string(),
-  nodePublicChainAddress: z.string(),
   nodePublicEndpoint: z.string().url(),
   metricsPort: z.number().int().positive(),
   webPort: z.number().int().positive(),
@@ -46,7 +44,6 @@ export async function createContext(): Promise<Context> {
     jwtSecret: process.env.APP_JWT_SECRET,
     logLevel: process.env.APP_LOG_LEVEL,
     nodePrivateKey: process.env.APP_NODE_PRIVATE_KEY,
-    nodePublicChainAddress: process.env.APP_NODE_PUBLIC_ADDRESS,
     nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
     metricsPort: Number(process.env.APP_METRICS_PORT),
     webPort: Number(process.env.APP_PORT),
@@ -60,11 +57,6 @@ export async function createContext(): Promise<Context> {
   const ripemd160Hash = createHash("ripemd160").update(sha256Hash).digest();
   const prefix = "nillion1";
   const address = bech32.encode(prefix, bech32.toWords(ripemd160Hash));
-
-  assert(
-    address === config.nodePublicChainAddress,
-    "Expected address does not match computed address",
-  );
 
   const node = {
     address,
