@@ -46,7 +46,7 @@ export function buildApp(context: Context): App {
   app.use(apiRequestsCounter(context));
 
   app.use(buildApiDocsRoutes());
-  app.use(express.json({ limit: "10mb" }));
+  app.use(express.json({ limit: "17mb" }));
 
   const v1Router = Router();
 
