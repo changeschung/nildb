@@ -2,10 +2,12 @@ import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
 import type { EmptyObject, JsonArray } from "type-fest";
 import { z } from "zod";
+import { ControllerError } from "#/common/error";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import type { DocumentBase } from "#/common/mongo";
 import { Uuid, type UuidDto } from "#/common/types";
 import { validateData } from "#/common/validator";
+import { isAccountAllowedGuard } from "#/middleware/auth";
 import { schemasFindOne } from "#/schemas/repository";
 import {
   type CreatedResult,
@@ -35,6 +37,11 @@ export const createDataController: RequestHandler<
   CreateDataResponse,
   CreateDataRequest
 > = async (req, res) => {
+  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+    res.sendStatus(401);
+    return;
+  }
+
   const response = await pipe(
     E.try({
       try: () => CreateDataRequest.parse(req.body),
@@ -45,7 +52,9 @@ export const createDataController: RequestHandler<
       return body.data.length <= MAX_RECORDS_LENGTH
         ? E.succeed(body)
         : E.fail(
-            new Error(`Max data length is ${MAX_RECORDS_LENGTH} elements`),
+            new ControllerError({
+              message: `Max data length is ${MAX_RECORDS_LENGTH} elements`,
+            }),
           );
     }),
 
@@ -53,8 +62,9 @@ export const createDataController: RequestHandler<
       pipe(
         E.Do,
         E.bind("document", () => {
-          return schemasFindOne(req.context.db.primary, {
+          return schemasFindOne(req.ctx, {
             _id: body.schema,
+            owner: req.account._id,
           });
         }),
         E.bind("data", ({ document }) => {
@@ -64,12 +74,12 @@ export const createDataController: RequestHandler<
           );
         }),
         E.flatMap(({ document, data }) => {
-          return dataInsert(req.context.db.data, document, data);
+          return dataInsert(req.ctx, document, data);
         }),
       ),
     ),
 
-    foldToApiResponse(req.context),
+    foldToApiResponse(req.ctx),
     E.runPromise,
   );
 
@@ -89,6 +99,11 @@ export const updateDataController: RequestHandler<
   UpdateDataResponse,
   UpdateDataRequest
 > = async (req, res) => {
+  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+    res.sendStatus(401);
+    return;
+  }
+
   const response = await pipe(
     E.try({
       try: () => UpdateDataRequest.parse(req.body),
@@ -96,17 +111,12 @@ export const updateDataController: RequestHandler<
     }),
 
     E.flatMap((body) =>
-      dataUpdateMany(
-        req.context.db.data,
-        body.schema,
-        body.filter,
-        body.update,
-      ),
+      dataUpdateMany(req.ctx, body.schema, body.filter, body.update),
     ),
 
     E.map((data) => data),
 
-    foldToApiResponse(req.context),
+    foldToApiResponse(req.ctx),
     E.runPromise,
   );
 
@@ -125,19 +135,22 @@ export const readDataController: RequestHandler<
   ReadDataResponse,
   ReadDataRequest
 > = async (req, res) => {
+  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+    res.sendStatus(401);
+    return;
+  }
+
   const response = await pipe(
     E.try({
       try: () => ReadDataRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
 
-    E.flatMap((body) =>
-      dataFindMany(req.context.db.data, body.schema, body.filter),
-    ),
+    E.flatMap((body) => dataFindMany(req.ctx, body.schema, body.filter)),
 
     E.map((data) => data),
 
-    foldToApiResponse(req.context),
+    foldToApiResponse(req.ctx),
     E.runPromise,
   );
 
@@ -156,6 +169,11 @@ export const deleteDataController: RequestHandler<
   DeleteDataResponse,
   DeleteDataRequest
 > = async (req, res) => {
+  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+    res.sendStatus(401);
+    return;
+  }
+
   const response = await pipe(
     E.try({
       try: () => DeleteDataRequest.parse(req.body),
@@ -174,10 +192,10 @@ export const deleteDataController: RequestHandler<
     }),
 
     E.flatMap((request) =>
-      dataDeleteMany(req.context.db.data, request.schema, request.filter),
+      dataDeleteMany(req.ctx, request.schema, request.filter),
     ),
 
-    foldToApiResponse(req.context),
+    foldToApiResponse(req.ctx),
     E.runPromise,
   );
 
@@ -195,17 +213,20 @@ export const flushDataController: RequestHandler<
   FlushDataResponse,
   FlushDataRequest
 > = async (req, res) => {
+  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+    res.sendStatus(401);
+    return;
+  }
+
   const response = await pipe(
     E.try({
       try: () => FlushDataRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
 
-    E.flatMap((request) =>
-      dataFlushCollection(req.context.db.data, request.schema),
-    ),
+    E.flatMap((request) => dataFlushCollection(req.ctx, request.schema)),
 
-    foldToApiResponse(req.context),
+    foldToApiResponse(req.ctx),
     E.runPromise,
   );
 
@@ -223,17 +244,22 @@ export const tailDataController: RequestHandler<
   TailDataResponse,
   TailDataRequest
 > = async (req, res) => {
+  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+    res.sendStatus(401);
+    return;
+  }
+
   const response = await pipe(
     E.try({
       try: () => TailDataRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
 
-    E.flatMap((body) => dataTailCollection(req.context.db.data, body.schema)),
+    E.flatMap((body) => dataTailCollection(req.ctx, body.schema)),
 
     E.map((data) => data as JsonArray),
 
-    foldToApiResponse(req.context),
+    foldToApiResponse(req.ctx),
     E.runPromise,
   );
 

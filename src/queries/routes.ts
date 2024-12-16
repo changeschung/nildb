@@ -6,20 +6,18 @@ import {
   listQueriesController,
 } from "#/queries/controllers";
 
-export const QueriesEndpoint = {
-  Add: "/queries",
-  Delete: "/queries",
-  List: "/queries",
-  Execute: "/queries/execute",
+export const QueriesEndpointV1 = {
+  Base: "/api/v1/queries",
+  Execute: "/api/v1/queries/execute",
 } as const;
 
 export function buildQueriesRouter(): Router {
   const router = Router();
 
-  router.post(QueriesEndpoint.Add, addQueryController);
-  router.get(QueriesEndpoint.List, listQueriesController);
-  router.delete(QueriesEndpoint.Delete, deleteQueryController);
-  router.post(QueriesEndpoint.Execute, executeQueryController);
+  router.get(QueriesEndpointV1.Base, listQueriesController);
+  router.post(QueriesEndpointV1.Base, addQueryController);
+  router.delete(QueriesEndpointV1.Base, deleteQueryController);
+  router.post(QueriesEndpointV1.Execute, executeQueryController);
 
   return router;
 }

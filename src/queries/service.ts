@@ -21,29 +21,27 @@ import {
 } from "#/queries/repository";
 
 export function addQueryToOrganization(
-  context: Context,
+  ctx: Context,
   request: AddQueryRequest,
 ): E.Effect<UUID, Error | DbError> {
   return pipe(
     validateData(pipelineSchema, request.pipeline),
     E.flatMap(() => {
-      return queriesInsert(context.db.primary, request);
+      return queriesInsert(ctx, request);
     }),
     E.tap((queryId) => {
-      return organizationsAddQuery(context.db.primary, request.org, queryId);
+      return organizationsAddQuery(ctx, request.owner, queryId);
     }),
   );
 }
 
 export function executeQuery(
-  context: Context,
+  ctx: Context,
   request: ExecuteQueryRequest,
 ): E.Effect<JsonValue, z.ZodError | DbError | Error> {
   return pipe(
     E.Do,
-    E.bind("query", () =>
-      queriesFindOne(context.db.primary, { _id: request.id }),
-    ),
+    E.bind("query", () => queriesFindOne(ctx, { _id: request.id })),
     E.bind("variables", ({ query }) =>
       validateVariables(query.variables, request.variables),
     ),
@@ -51,7 +49,7 @@ export function executeQuery(
       injectVariablesIntoAggregation(query.pipeline, variables),
     ),
     E.flatMap(({ query, pipeline }) =>
-      dataRunAggregation(context.db.data, query, pipeline),
+      dataRunAggregation(ctx, query, pipeline),
     ),
   );
 }
@@ -80,7 +78,7 @@ function validateVariables(
 
   return pipe(
     providedKeys,
-    // biome-ignore lint/complexity/noForEach: biome doesn't recognise Effect.forEach
+    // biome-ignore lint/complexity/noForEach: biome mistake Effect.forEach for conventional for ... each
     E.forEach((key) => {
       const variableTemplate = template[key];
 

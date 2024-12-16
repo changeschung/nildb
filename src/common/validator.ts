@@ -3,6 +3,7 @@ import * as addFormats from "ajv-formats";
 import type { DataValidationCxt } from "ajv/dist/types";
 import { Effect as E } from "effect";
 import { type SafeParseReturnType, z } from "zod";
+import { ServiceError } from "#/common/error";
 import { Uuid } from "#/common/types";
 
 export function validateSchema(
@@ -39,7 +40,10 @@ export function validateData<T>(
       return data as T;
     },
     catch: (cause) => {
-      return new Error("Schema compilation failed", { cause });
+      return new ServiceError({
+        message: "Data failed schema validation",
+        cause,
+      });
     },
   });
 }

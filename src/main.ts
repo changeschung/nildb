@@ -4,17 +4,18 @@ import { createContext } from "./env";
 
 async function main() {
   dotenv.config();
+  console.warn("Starting api ...");
 
-  const context = await createContext();
-  const { app, metrics } = buildApp(context);
+  const ctx = await createContext();
+  const { app, metrics } = buildApp(ctx);
 
-  app.listen(context.config.webPort);
-  metrics.listen(context.config.metricsPort);
+  app.listen(ctx.config.webPort);
+  metrics.listen(ctx.config.metricsPort);
 
-  context.log.info(`Node public address ${context.node.address}`);
-  context.log.info(`Node public endpoint ${context.node.endpoint}`);
-  context.log.info(`App on :${context.config.webPort}`);
-  context.log.info(`System on :${context.config.metricsPort}`);
+  ctx.log.info(`Node public address ${ctx.node.identity.address}`);
+  ctx.log.info(`Node public endpoint ${ctx.node.endpoint}`);
+  ctx.log.info(`App on :${ctx.config.webPort}`);
+  ctx.log.info(`System on :${ctx.config.metricsPort}`);
 }
 
 await main();

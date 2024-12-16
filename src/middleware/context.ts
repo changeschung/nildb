@@ -5,14 +5,14 @@ import type { Context } from "#/env";
 declare global {
   namespace Express {
     interface Request {
-      context: Context;
+      ctx: Context;
     }
   }
 }
 
-export function useContextMiddleware(context: Context): RequestHandler {
+export function useContextMiddleware(ctx: Context): RequestHandler {
   return (req: Request, _res: Response, next: NextFunction) => {
-    req.context = context;
+    req.ctx = ctx;
     next();
   };
 }

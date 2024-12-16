@@ -1,28 +1,30 @@
 import { Effect as E, pipe } from "effect";
-import { type Db, type Document, type StrictFilter, UUID } from "mongodb";
+import { type Document, type StrictFilter, UUID } from "mongodb";
 import {
   type Filter,
   MongoBulkWriteError,
   type UpdateFilter,
 } from "mongodb/lib/beta";
 import type { JsonObject } from "type-fest";
-import { type DbError, succeedOrMapToDbError } from "#/common/errors";
+import type { RepositoryError } from "#/common/error";
+import { succeedOrMapToRepositoryError } from "#/common/errors";
 import type { DocumentBase } from "#/common/mongo";
 import type { UuidDto } from "#/common/types";
 import type { PartialDataDocumentDto } from "#/data/controllers";
+import type { Context } from "#/env";
 import type { QueryDocument } from "#/queries/repository";
 import type { SchemaDocument } from "#/schemas/repository";
 
 export function dataCreateCollection(
-  db: Db,
+  ctx: Context,
   schemaId: UUID,
   keys: string[],
-): E.Effect<UUID, DbError> {
+): E.Effect<UUID, RepositoryError> {
   const collectionName = schemaId.toJSON();
 
   return pipe(
     E.tryPromise(async () => {
-      const collection = await db.createCollection(collectionName);
+      const collection = await ctx.db.data.createCollection(collectionName);
 
       // _id is a key by default so we remove to avoid the collision
       const keysWithOutId = keys.filter((key) => key !== "_id");
@@ -32,9 +34,10 @@ export function dataCreateCollection(
 
       return schemaId;
     }),
-    succeedOrMapToDbError({
-      name: "dataCreateCollection",
-      params: { keys, schemaId },
+    succeedOrMapToRepositoryError({
+      op: "dataCreateCollection",
+      keys,
+      schemaId,
     }),
   );
 }
@@ -42,10 +45,10 @@ export function dataCreateCollection(
 export const TAIL_DATA_LIMIT = 25;
 
 export function dataTailCollection(
-  db: Db,
+  ctx: Context,
   schema: UUID,
-): E.Effect<DataDocument[], DbError> {
-  const collection = db.collection<DataDocument>(schema.toString());
+): E.Effect<DataDocument[], RepositoryError> {
+  const collection = ctx.db.data.collection<DataDocument>(schema.toString());
   return pipe(
     E.tryPromise(() => {
       return collection
@@ -54,42 +57,42 @@ export function dataTailCollection(
         .limit(TAIL_DATA_LIMIT)
         .toArray();
     }),
-    succeedOrMapToDbError({
-      name: "dataTailCollection",
-      params: { schema },
+    succeedOrMapToRepositoryError({
+      op: "dataTailCollection",
+      schema,
     }),
   );
 }
 
 export function dataDeleteCollection(
-  db: Db,
+  ctx: Context,
   schema: UUID,
-): E.Effect<boolean, DbError> {
+): E.Effect<boolean, RepositoryError> {
   return pipe(
     E.tryPromise(() => {
-      return db.dropCollection(schema.toString());
+      return ctx.db.data.dropCollection(schema.toString());
     }),
-    succeedOrMapToDbError({
-      name: "dataDeleteCollection",
-      params: { schema },
+    succeedOrMapToRepositoryError({
+      op: "dataDeleteCollection",
+      schema,
     }),
   );
 }
 
 export function dataFlushCollection(
-  db: Db,
+  ctx: Context,
   schema: UUID,
-): E.Effect<number, DbError> {
-  const collection = db.collection<DataDocument>(schema.toString());
+): E.Effect<number, RepositoryError> {
+  const collection = ctx.db.data.collection<DataDocument>(schema.toString());
 
   return pipe(
     E.tryPromise(async () => {
       const result = await collection.deleteMany();
       return result.deletedCount;
     }),
-    succeedOrMapToDbError({
-      name: "dataFlushCollection",
-      params: { schema },
+    succeedOrMapToRepositoryError({
+      op: "dataFlushCollection",
+      schema,
     }),
   );
 }
@@ -97,10 +100,6 @@ export function dataFlushCollection(
 export type DataDocument<
   T extends Record<string, unknown> = Record<string, unknown>,
 > = DocumentBase & T;
-
-export type PartialDataDocument<
-  T extends Record<string, unknown> = Record<string, unknown>,
-> = Pick<DocumentBase, "_id"> & T;
 
 export type CreateFailure = {
   error: string;
@@ -113,10 +112,10 @@ export type CreatedResult = {
 };
 
 export function dataInsert(
-  db: Db,
+  ctx: Context,
   schema: SchemaDocument,
   data: PartialDataDocumentDto[],
-): E.Effect<CreatedResult, DbError> {
+): E.Effect<CreatedResult, RepositoryError> {
   return pipe(
     E.tryPromise(async () => {
       const created = new Set<UuidDto>();
@@ -136,7 +135,9 @@ export function dataInsert(
         batches.push(batch);
       }
 
-      const collection = db.collection<DataDocument>(schema._id.toString());
+      const collection = ctx.db.data.collection<DataDocument>(
+        schema._id.toString(),
+      );
 
       for (const batch of batches) {
         try {
@@ -175,9 +176,9 @@ export function dataInsert(
       };
     }),
 
-    succeedOrMapToDbError({
-      name: "dataInsert",
-      params: { schema: schema._id },
+    succeedOrMapToRepositoryError({
+      op: "dataInsert",
+      schema: schema._id,
     }),
   );
 }
@@ -188,14 +189,16 @@ export type UpdateResult = {
 };
 
 export function dataUpdateMany(
-  db: Db,
+  ctx: Context,
   schema: UUID,
   filter: Filter<DocumentBase>,
   update: UpdateFilter<DocumentBase>,
-): E.Effect<UpdateResult, DbError> {
+): E.Effect<UpdateResult, RepositoryError> {
   return pipe(
     E.tryPromise(async () => {
-      const collection = db.collection<DocumentBase>(schema.toString());
+      const collection = ctx.db.data.collection<DocumentBase>(
+        schema.toString(),
+      );
       const result = await collection.updateMany(filter, update);
 
       return {
@@ -203,63 +206,68 @@ export function dataUpdateMany(
         updated: result.modifiedCount,
       };
     }),
-    succeedOrMapToDbError({
-      name: "dataUpdateMany",
-      params: { schema },
+    succeedOrMapToRepositoryError({
+      op: "dataUpdateMany",
+      schema,
     }),
   );
 }
 
 export function dataDeleteMany(
-  db: Db,
+  ctx: Context,
   schema: UUID,
   filter: StrictFilter<DocumentBase>,
-): E.Effect<number, DbError> {
+): E.Effect<number, RepositoryError> {
   return pipe(
     E.tryPromise(async () => {
-      const collection = db.collection<DocumentBase>(schema.toString());
+      const collection = ctx.db.data.collection<DocumentBase>(
+        schema.toString(),
+      );
       const result = await collection.deleteMany(filter);
       return result.deletedCount;
     }),
-    succeedOrMapToDbError({
-      name: "dataDeleteMany",
-      params: { schema, filter },
+    succeedOrMapToRepositoryError({
+      op: "dataDeleteMany",
+      schema,
+      filter,
     }),
   );
 }
 
 export function dataRunAggregation(
-  db: Db,
+  ctx: Context,
   query: QueryDocument,
   pipeline: Document[],
-): E.Effect<JsonObject[], DbError> {
+): E.Effect<JsonObject[], RepositoryError> {
   return pipe(
     E.tryPromise(() => {
-      return db
+      return ctx.db.data
         .collection<DocumentBase>(query.schema.toString())
         .aggregate(pipeline)
         .toArray();
     }),
-    succeedOrMapToDbError({
-      name: "dataRunAggregation",
-      params: { query: query._id },
+    succeedOrMapToRepositoryError({
+      op: "dataRunAggregation",
+      query: query._id,
     }),
   );
 }
 
 export function dataFindMany(
-  db: Db,
+  ctx: Context,
   schema: UUID,
   filter: Filter<DocumentBase>,
-): E.Effect<DataDocument[], DbError> {
+): E.Effect<DataDocument[], RepositoryError> {
   return pipe(
     E.tryPromise(() => {
-      const collection = db.collection<DataDocument>(schema.toString());
+      const collection = ctx.db.data.collection<DataDocument>(
+        schema.toString(),
+      );
       return collection.find(filter).sort({ _created: -1 }).toArray();
     }),
-    succeedOrMapToDbError({
-      name: "dataFindMany",
-      params: { schema },
+    succeedOrMapToRepositoryError({
+      op: "dataFindMany",
+      schema,
     }),
   );
 }
