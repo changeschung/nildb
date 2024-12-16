@@ -1,38 +1,31 @@
 import { faker } from "@faker-js/faker";
-import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createUuidDto } from "#/common/types";
 import type { Context } from "#/env";
-import query from "./data/simple.query.json";
-import schema from "./data/simple.schema.json";
+import queryJson from "./data/simple.query.json";
+import schemaJson from "./data/simple.schema.json";
 import {
   type AppFixture,
-  type OrganizationFixture,
   type QueryFixture,
   type SchemaFixture,
   buildFixture,
-  setupOrganization,
+  registerSchemaAndQuery,
 } from "./fixture/app-fixture";
 import type { TestClient } from "./fixture/client";
 
 describe("Schemas delete by filter", () => {
   let fixture: AppFixture;
   let db: Context["db"];
-  let backend: TestClient;
-  let organization: OrganizationFixture;
+  let organization: TestClient;
   const collectionSize = 100;
+  const schema = schemaJson as unknown as SchemaFixture;
+  const query = queryJson as unknown as QueryFixture;
 
   beforeAll(async () => {
     fixture = await buildFixture();
-    db = fixture.context.db;
-    backend = fixture.users.backend;
-    organization = await setupOrganization(
-      fixture,
-      { ...schema, id: new UUID() } as SchemaFixture,
-      { ...query, id: new UUID() } as unknown as QueryFixture,
-    );
-
-    const schemaId = organization.schema.id;
+    db = fixture.ctx.db;
+    organization = fixture.users.organization;
+    await registerSchemaAndQuery(fixture, schema, query);
 
     const data = Array.from({ length: collectionSize - 3 }, () => ({
       _id: createUuidDto(),
@@ -45,35 +38,49 @@ describe("Schemas delete by filter", () => {
 
     const shuffledData = [...data].sort(() => Math.random() - 0.5);
 
-    const _response = await backend.uploadData({
-      schema: schemaId,
+    const _response = await organization.uploadData({
+      schema: schema.id,
       data: shuffledData,
     });
   });
 
   it("rejects empty filter", async () => {
-    const schema = organization.schema.id;
     const filter = {};
-    const response = await backend.deleteData({ schema, filter });
+
+    const response = await organization.deleteData({
+      schema: schema.id,
+      filter,
+    });
+
     expect(response.body.errors).toHaveLength(1);
   });
 
   it("can remove a single match", async () => {
-    const schema = organization.schema.id;
     const filter = { name: "foo" };
-    const response = await backend.deleteData({ schema, filter }).expect(200);
-    const count = await db.data.collection(schema.toString()).countDocuments();
+
+    const response = await organization.deleteData({
+      schema: schema.id,
+      filter,
+    });
+    const count = await db.data
+      .collection(schema.id.toString())
+      .countDocuments();
+
     expect(response.body.data).toBe(1);
     expect(count).toBe(collectionSize - 1);
   });
 
   it("can remove multiple matches", async () => {
-    const schema = organization.schema.id;
     const filter = { name: "bar" };
 
-    const response = await backend.deleteData({ schema, filter }).expect(200);
+    const response = await organization.deleteData({
+      schema: schema.id,
+      filter,
+    });
+    const count = await db.data
+      .collection(schema.id.toString())
+      .countDocuments();
 
-    const count = await db.data.collection(schema.toString()).countDocuments();
     expect(response.body.data).toBe(2);
     expect(count).toBe(collectionSize - 3);
   });

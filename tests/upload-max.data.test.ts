@@ -1,32 +1,27 @@
-import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createUuidDto } from "#/common/types";
 import { MAX_RECORDS_LENGTH } from "#/data/controllers";
-import query from "./data/simple.query.json";
-import schema from "./data/simple.schema.json";
+import queryJson from "./data/simple.query.json";
+import schemaJson from "./data/simple.schema.json";
 import {
   type AppFixture,
-  type OrganizationFixture,
   type QueryFixture,
   type SchemaFixture,
   buildFixture,
-  setupOrganization,
+  registerSchemaAndQuery,
 } from "./fixture/app-fixture";
 import type { TestClient } from "./fixture/client";
 
 describe("upload.max.data.test", () => {
   let fixture: AppFixture;
   let backend: TestClient;
-  let organization: OrganizationFixture;
+  const schema = schemaJson as unknown as SchemaFixture;
+  const query = queryJson as unknown as QueryFixture;
 
   beforeAll(async () => {
     fixture = await buildFixture();
-    backend = fixture.users.backend;
-    organization = await setupOrganization(
-      fixture,
-      { ...schema, id: new UUID() } as SchemaFixture,
-      { ...query, id: new UUID() } as unknown as QueryFixture,
-    );
+    backend = fixture.users.organization;
+    await registerSchemaAndQuery(fixture, schema, query);
   });
 
   const nextDocument = () => ({
@@ -40,12 +35,10 @@ describe("upload.max.data.test", () => {
       nextDocument(),
     );
 
-    const response = await backend
-      .uploadData({
-        schema: organization.schema.id,
-        data,
-      })
-      .expect(200);
+    const response = await backend.uploadData({
+      schema: schema.id,
+      data,
+    });
 
     expect(response.body.errors[0]).toMatch(
       `Max data length is ${MAX_RECORDS_LENGTH} elements`,
@@ -57,12 +50,10 @@ describe("upload.max.data.test", () => {
       nextDocument(),
     );
 
-    const response = await backend
-      .uploadData({
-        schema: organization.schema.id,
-        data,
-      })
-      .expect(200);
+    const response = await backend.uploadData({
+      schema: schema.id,
+      data,
+    });
 
     expect(response.body.data.errors).toHaveLength(0);
     expect(response.body.data.created).toHaveLength(MAX_RECORDS_LENGTH);

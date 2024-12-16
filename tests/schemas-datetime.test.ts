@@ -1,16 +1,14 @@
-import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createUuidDto } from "#/common/types";
 import type { Context } from "#/env";
-import query from "./data/datetime.query.json";
-import schema from "./data/datetime.schema.json";
+import queryJson from "./data/datetime.query.json";
+import schemaJson from "./data/datetime.schema.json";
 import {
   type AppFixture,
-  type OrganizationFixture,
   type QueryFixture,
   type SchemaFixture,
   buildFixture,
-  setupOrganization,
+  registerSchemaAndQuery,
 } from "./fixture/app-fixture";
 import type { TestClient } from "./fixture/client";
 
@@ -18,43 +16,35 @@ describe("schemas.datetime.test", async () => {
   let fixture: AppFixture;
   let db: Context["db"];
   let backend: TestClient;
-  let organization: OrganizationFixture;
+  const schema = schemaJson as unknown as SchemaFixture;
+  const query = queryJson as unknown as QueryFixture;
 
   beforeAll(async () => {
     fixture = await buildFixture();
-    db = fixture.context.db;
-    backend = fixture.users.backend;
-    organization = await setupOrganization(
-      fixture,
-      { ...schema, id: new UUID() } as SchemaFixture,
-      { ...query, id: new UUID() } as unknown as QueryFixture,
-    );
+    db = fixture.ctx.db;
+    backend = fixture.users.organization;
+    await registerSchemaAndQuery(fixture, schema, query);
   });
 
   it("can upload date-times", async () => {
-    const schema = organization.schema.id;
-
     const data = [
       { _id: createUuidDto(), datetime: "2024-03-19T14:30:00Z" },
       { _id: createUuidDto(), datetime: "2024-03-19T14:30:00.123Z" },
       { _id: createUuidDto(), datetime: "2024-03-19T14:30:00+01:00" },
     ];
 
-    const response = await backend
-      .uploadData({
-        schema,
-        data,
-      })
-      .expect(200);
+    const response = await backend.uploadData({
+      schema: schema.id,
+      data,
+    });
     expect(response.body.data.created).toHaveLength(3);
 
-    const cursor = db.data.collection(schema.toString()).find({});
+    const cursor = db.data.collection(schema.id.toString()).find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(3);
   });
 
   it("rejects invalid date-times", async () => {
-    const schema = organization.schema.id;
     const data = [
       { _id: createUuidDto(), datetime: "2024-03-19" },
       { _id: createUuidDto(), datetime: "14:30:00" },
@@ -64,23 +54,19 @@ describe("schemas.datetime.test", async () => {
     ];
 
     for (const invalid of data) {
-      const response = await backend
-        .uploadData({
-          schema,
-          data: [invalid],
-        })
-        .expect(200);
+      const response = await backend.uploadData({
+        schema: schema.id,
+        data: [invalid],
+      });
       expect(response.body.errors).toHaveLength(1);
     }
   });
 
   it("can run query with datetime data", async () => {
-    const response = await backend
-      .executeQuery({
-        id: organization.query.id,
-        variables: organization.query.variables,
-      })
-      .expect(200);
+    const response = await backend.executeQuery({
+      id: query.id,
+      variables: query.variables,
+    });
 
     expect(response.body.data).toEqual([
       {

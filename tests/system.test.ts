@@ -17,13 +17,10 @@ describe("system.test.ts", () => {
 
   it("reports app version", async () => {
     const response = await admin.about().expect(200);
-
     const body = response.body;
 
     expect(body.build.version).toBe("0.0.0");
-    expect(body.address).toBe(
-      "nillion11q073p3a4wjhw3kffnev3c675mnf0j5rk86tr6s",
-    );
-    expect(body.publicKey).toBe("A0wcqQiz1QW1jOiqXVgD8qilY2RB3IB6qTyMKiym0ATZ");
+    expect(body.did).toBe(fixture.ctx.node.identity.did);
+    expect(body.publicKey).toBe(fixture.ctx.node.identity.publicKey);
   });
 });

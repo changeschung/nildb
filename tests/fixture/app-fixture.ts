@@ -4,59 +4,61 @@ import { type Db, UUID } from "mongodb";
 import supertest from "supertest";
 import type { JsonObject } from "type-fest";
 import { buildApp } from "#/app";
+import { Identity } from "#/common/identity";
 import { type Context, createContext } from "#/env";
-import { createJwt } from "#/middleware/auth";
 import type { QueryVariable } from "#/queries/repository";
 import { TestClient } from "./client";
 
 export interface AppFixture {
   app: Express.Application;
-  context: Context;
+  ctx: Context;
   users: {
     root: TestClient;
     admin: TestClient;
-    backend: TestClient;
+    organization: TestClient;
   };
 }
 
 export async function buildFixture(): Promise<AppFixture> {
   dotenv.config({ path: ".env.test" });
-  const context = await createContext();
-  const { app } = buildApp(context);
+  const ctx = await createContext();
+  const { app } = buildApp(ctx);
+
+  const node = {
+    identity: Identity.fromSk(ctx.config.nodePrivateKey),
+    endpoint: ctx.config.nodePublicEndpoint,
+  };
 
   const users = {
     root: new TestClient({
       request: supertest(app),
-      email: "root@datablocks.com",
-      password: "datablocks-root-password",
-      jwt: createJwt(
-        {
-          sub: "00000000-0000-0000-0000-000000000000",
-          iat: Math.round(Date.now() / 1000),
-          type: "root",
-        },
-        context.config.jwtSecret,
-      ),
+      identity: Identity.fromSk(ctx.config.rootAccountPrivateKey),
+      node,
     }),
     admin: new TestClient({
       request: supertest(app),
-      email: faker.internet.email().toLowerCase(),
-      password: faker.internet.password(),
-      jwt: "",
+      identity: Identity.new(),
+      node,
     }),
-    backend: new TestClient({
+    organization: new TestClient({
       request: supertest(app),
-      email: faker.internet.email().toLowerCase(),
-      password: faker.internet.password(),
-      jwt: "",
+      identity: Identity.new(),
+      node,
     }),
   };
 
-  await dropDatabaseWithRetry(context.db.primary);
-  await dropDatabaseWithRetry(context.db.data);
+  await dropDatabaseWithRetry(ctx.db.primary);
+  await dropDatabaseWithRetry(ctx.db.data);
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  return { app, context, users };
+  const fixture = { app, ctx, users };
+  await createAccount("admin", users.admin._options.identity, users.root);
+  await createAccount(
+    "organization",
+    users.organization._options.identity,
+    users.root,
+  );
+  return fixture;
 }
 
 async function dropDatabaseWithRetry(db: Db, maxRetries = 3, delay = 1000) {
@@ -78,13 +80,6 @@ async function dropDatabaseWithRetry(db: Db, maxRetries = 3, delay = 1000) {
   }
 }
 
-export type OrganizationFixture = {
-  id: UUID;
-  name: string;
-  schema: SchemaFixture;
-  query: QueryFixture;
-};
-
 export type SchemaFixture = {
   id: UUID;
   name: string;
@@ -100,71 +95,37 @@ export type QueryFixture = {
   pipeline: JsonObject[];
 };
 
-export async function setupAdmin(fixture: AppFixture): Promise<void> {
-  const { root, admin } = fixture.users;
-  await root.createUser({
-    email: admin.email,
-    password: admin.password,
-    type: "admin",
+export async function createAccount(
+  type: "admin" | "organization",
+  identity: Identity,
+  root: TestClient,
+): Promise<void> {
+  await root.registerAccount({
+    type,
+    did: identity.did,
+    publicKey: identity.publicKey,
+    name: type === "admin" ? faker.person.fullName() : faker.company.name(),
   });
-
-  const response = await admin.login({
-    email: admin.email,
-    password: admin.password,
-  });
-  admin.jwt = response.body.data;
 }
 
-export async function setupOrganization(
+export async function registerSchemaAndQuery(
   fixture: AppFixture,
   schema: SchemaFixture,
   query: QueryFixture,
-): Promise<OrganizationFixture> {
-  const organization: Partial<OrganizationFixture> = {};
-  const { admin, backend } = fixture.users;
-
-  await setupAdmin(fixture);
+): Promise<void> {
+  const { organization } = fixture.users;
 
   {
-    const response = await admin
-      .createOrganization({
-        name: faker.company.name(),
-      })
-      .expect(200);
+    const response = await organization.addSchema({
+      owner: organization.did,
+      name: schema.name,
+      keys: schema.keys,
+      schema: schema.schema,
+    });
 
     if (response.body.errors) {
-      console.log(response.body.errors);
-    }
-
-    organization.id = response.body.data;
-  }
-
-  {
-    const response = await admin
-      .createOrganizationAccessToken({
-        id: organization.id!,
-      })
-      .expect(200);
-
-    if (response.body.errors) {
-      console.log(response.body.errors);
-    }
-
-    backend.jwt = response.body.data;
-  }
-
-  {
-    const response = await backend
-      .addSchema({
-        org: organization.id!,
-        name: schema.name,
-        keys: schema.keys,
-        schema: schema.schema,
-      })
-      .expect(200);
-
-    if (response.body.errors) {
-      console.log(response.body.errors);
+      console.error(response);
+      throw response.body;
     }
 
     const id = new UUID(response.body.data);
@@ -173,15 +134,13 @@ export async function setupOrganization(
   }
 
   {
-    const response = await backend
-      .addQuery({
-        org: organization.id!,
-        name: query.name,
-        schema: query.schema,
-        variables: query.variables,
-        pipeline: query.pipeline,
-      })
-      .expect(200);
+    const response = await organization.addQuery({
+      owner: organization.did,
+      name: query.name,
+      schema: query.schema,
+      variables: query.variables,
+      pipeline: query.pipeline,
+    });
 
     if (response.body.errors) {
       console.error(response.body.errors);
@@ -189,19 +148,4 @@ export async function setupOrganization(
 
     query.id = new UUID(response.body.data);
   }
-
-  organization.schema = schema;
-  organization.query = query;
-
-  if (!organization.schema.id) {
-    console.error("Test schema setup failed");
-    throw new Error("Test query setup failed");
-  }
-
-  if (!organization.query.id) {
-    console.error("Test query setup failed");
-    throw new Error("Test query setup failed");
-  }
-
-  return organization as OrganizationFixture;
 }
