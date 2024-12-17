@@ -24,7 +24,8 @@ jobs:
 
       - name: Verify deployment.yaml
         uses: NillionNetwork/devops/actions/terraform/frameworks/ecs_service@master
-        dir: infra/node-dvml
+        with:
+          dir: infra/node-dvml
 
       - name: Deploy ECS service
         uses: NillionNetwork/devops/actions/terraform/frameworks@master
