@@ -1,4 +1,4 @@
-name: CD - Deploy to ECS
+name: "node-dvml: Deploy to ECS"
 
 on:
   workflow_dispatch:
@@ -24,10 +24,12 @@ jobs:
 
       - name: Verify deployment.yaml
         uses: NillionNetwork/devops/actions/terraform/frameworks/ecs_service@master
+        dir: infra/node-dvml
 
       - name: Deploy ECS service
         uses: NillionNetwork/devops/actions/terraform/frameworks@master
         env:
+          TF_VAR_deployment_dir: infra/node-dvml
           TF_VAR_deployment_image_tag: ${{ inputs.tag }}
           TF_VAR_deployment_image_repo: 767397865113.dkr.ecr.eu-west-1.amazonaws.com/nildb-api
         with:
