@@ -1,7 +1,11 @@
 import type { Test } from "supertest";
 import type TestAgent from "supertest/lib/agent";
-import type { LoginRequest } from "#/auth/controllers";
-import { AuthEndpoints } from "#/auth/routes";
+import type {
+  RegisterAccountRequest,
+  RemoveAccountRequest,
+} from "#/accounts/controllers";
+import { AccountsEndpointV1 } from "#/accounts/routes";
+import type { Identity } from "#/common/identity";
 import type {
   CreateDataRequest,
   DeleteDataRequest,
@@ -10,36 +14,28 @@ import type {
   TailDataRequest,
   UpdateDataRequest,
 } from "#/data/controllers";
-import { DataEndpoint } from "#/data/routes";
-import type {
-  CreateOrganizationAccessTokenRequest,
-  CreateOrganizationRequest,
-  DeleteOrganizationRequest,
-} from "#/organizations/controllers";
-import { OrganizationsEndpoint } from "#/organizations/routes";
+import { DataEndpointV1 } from "#/data/routes";
 import type {
   AddQueryRequest,
   DeleteQueryRequest,
   ExecuteQueryRequest,
 } from "#/queries/controllers";
-import { QueriesEndpoint } from "#/queries/routes";
+import { QueriesEndpointV1 } from "#/queries/routes";
 import type {
   AddSchemaRequest,
   DeleteSchemaRequest,
 } from "#/schemas/controllers";
-import { SchemasEndpoint } from "#/schemas/routes";
+import { SchemasEndpointV1 } from "#/schemas/routes";
 import { SystemEndpoint } from "#/system/routes";
-import type { CreateUserRequest, DeleteUserRequest } from "#/users/controllers";
-import { UsersEndpoint } from "#/users/routes";
 
 export type TestClientOptions = {
   request: TestAgent;
-  email: string;
-  password: string;
-  jwt: string;
+  identity: Identity;
+  node: {
+    endpoint: string;
+    identity: Identity;
+  };
 };
-
-const apiv1Base = "/api/v1";
 
 export class TestClient {
   constructor(public _options: TestClientOptions) {}
@@ -48,20 +44,17 @@ export class TestClient {
     return this._options.request;
   }
 
-  get email(): string {
-    return this._options.email;
+  get did() {
+    return this._options.identity.did;
   }
 
-  get password(): string {
-    return this._options.password;
+  get publicKey() {
+    return this._options.identity.publicKey;
   }
 
-  set jwt(value: string) {
-    this._options.jwt = value;
-  }
-
-  get jwt() {
-    return this._options.jwt;
+  jwt(): Promise<string> {
+    const aud = this._options.node.identity.did;
+    return this._options.identity.createJwt({ aud });
   }
 
   health(): Test {
@@ -72,139 +65,129 @@ export class TestClient {
     return this.request.get(SystemEndpoint.About);
   }
 
-  login(body: LoginRequest): Test {
-    return this.request.post(`${apiv1Base}${AuthEndpoints.Login}`).send(body);
+  async listAccounts(): Promise<Test> {
+    const token = await this.jwt();
+    return this.request
+      .get(AccountsEndpointV1.Base)
+      .set("Authorization", `Bearer ${token}`);
   }
 
-  createUser(body: CreateUserRequest): Test {
+  async registerAccount(body: RegisterAccountRequest): Promise<Test> {
+    const token = await this.jwt();
     return this.request
-      .post(`${apiv1Base}${UsersEndpoint.Create}`)
-      .set("Authorization", `Bearer ${this.jwt}`)
+      .post(AccountsEndpointV1.Base)
+      .set("Authorization", `Bearer ${token}`)
       .send(body);
   }
 
-  deleteUser(body: DeleteUserRequest): Test {
+  async deleteAccount(body: RemoveAccountRequest): Promise<Test> {
+    const token = await this.jwt();
     return this.request
-      .delete(`${apiv1Base}${UsersEndpoint.Delete}`)
-      .set("Authorization", `Bearer ${this.jwt}`)
+      .delete(AccountsEndpointV1.Base)
+      .set("Authorization", `Bearer ${token}`)
       .send(body);
   }
 
-  createOrganization(body: CreateOrganizationRequest): Test {
+  async listSchemas(): Promise<Test> {
+    const token = await this.jwt();
     return this.request
-      .post(`${apiv1Base}${OrganizationsEndpoint.Create}`)
-      .set("Authorization", `Bearer ${this.jwt}`)
+      .get(SchemasEndpointV1.Base)
+      .set("Authorization", `Bearer ${token}`);
+  }
+
+  async addSchema(body: AddSchemaRequest): Promise<Test> {
+    const token = await this.jwt();
+    return this.request
+      .post(SchemasEndpointV1.Base)
+      .set("Authorization", `Bearer ${token}`)
       .send(body);
   }
 
-  listOrganizations(): Test {
+  async deleteSchema(body: DeleteSchemaRequest): Promise<Test> {
+    const token = await this.jwt();
     return this.request
-      .get(`${apiv1Base}${OrganizationsEndpoint.List}`)
-      .set("Authorization", `Bearer ${this.jwt}`);
-  }
-
-  createOrganizationAccessToken(
-    body: CreateOrganizationAccessTokenRequest,
-  ): Test {
-    return this.request
-      .post(`${apiv1Base}${OrganizationsEndpoint.CreateAccessToken}`)
-      .set("Authorization", `Bearer ${this.jwt}`)
+      .delete(SchemasEndpointV1.Base)
+      .set("Authorization", `Bearer ${token}`)
       .send(body);
   }
 
-  deleteOrganization(body: DeleteOrganizationRequest): Test {
+  async listQueries(): Promise<Test> {
+    const token = await this.jwt();
     return this.request
-      .delete(`${apiv1Base}${OrganizationsEndpoint.Delete}`)
-      .set("Authorization", `Bearer ${this.jwt}`)
+      .get(QueriesEndpointV1.Base)
+      .set("Authorization", `Bearer ${token}`);
+  }
+
+  async addQuery(body: AddQueryRequest): Promise<Test> {
+    const token = await this.jwt();
+    return this.request
+      .post(QueriesEndpointV1.Base)
+      .set("Authorization", `Bearer ${token}`)
       .send(body);
   }
 
-  listSchemas(): Test {
+  async deleteQuery(body: DeleteQueryRequest): Promise<Test> {
+    const token = await this.jwt();
     return this.request
-      .get(`${apiv1Base}${SchemasEndpoint.List}`)
-      .set("Authorization", `Bearer ${this.jwt}`);
-  }
-
-  addSchema(body: AddSchemaRequest): Test {
-    return this.request
-      .post(`${apiv1Base}${SchemasEndpoint.Add}`)
-      .set("Authorization", `Bearer ${this.jwt}`)
+      .delete(QueriesEndpointV1.Base)
+      .set("Authorization", `Bearer ${token}`)
       .send(body);
   }
 
-  deleteSchema(body: DeleteSchemaRequest): Test {
+  async executeQuery(body: ExecuteQueryRequest): Promise<Test> {
+    const token = await this.jwt();
     return this.request
-      .delete(`${apiv1Base}${SchemasEndpoint.Delete}`)
-      .set("Authorization", `Bearer ${this.jwt}`)
+      .post(QueriesEndpointV1.Execute)
+      .set("Authorization", `Bearer ${token}`)
       .send(body);
   }
 
-  listQueries(): Test {
-    return this.request
-      .get(`${apiv1Base}${QueriesEndpoint.List}`)
-      .set("Authorization", `Bearer ${this.jwt}`);
-  }
+  async uploadData(body: CreateDataRequest): Promise<Test> {
+    const token = await this.jwt();
 
-  addQuery(body: AddQueryRequest): Test {
     return this.request
-      .post(`${apiv1Base}${QueriesEndpoint.Add}`)
-      .set("Authorization", `Bearer ${this.jwt}`)
+      .post(DataEndpointV1.Create)
+      .set("Authorization", `Bearer ${token}`)
       .send(body);
   }
 
-  deleteQuery(body: DeleteQueryRequest): Test {
+  async deleteData(body: DeleteDataRequest): Promise<Test> {
+    const token = await this.jwt();
     return this.request
-      .delete(`${apiv1Base}${QueriesEndpoint.Delete}`)
-      .set("Authorization", `Bearer ${this.jwt}`)
+      .post(DataEndpointV1.Delete)
+      .set("Authorization", `Bearer ${token}`)
       .send(body);
   }
 
-  uploadData(body: CreateDataRequest): Test {
+  async flushData(body: FlushDataRequest): Promise<Test> {
+    const token = await this.jwt();
     return this.request
-      .post(`${apiv1Base}${DataEndpoint.Create}`)
-      .set("Authorization", `Bearer ${this.jwt}`)
+      .post(DataEndpointV1.Flush)
+      .set("Authorization", `Bearer ${token}`)
       .send(body);
   }
 
-  deleteData(body: DeleteDataRequest): Test {
+  async tailData(body: TailDataRequest): Promise<Test> {
+    const token = await this.jwt();
     return this.request
-      .post(`${apiv1Base}${DataEndpoint.Delete}`)
-      .set("Authorization", `Bearer ${this.jwt}`)
+      .post(DataEndpointV1.Tail)
+      .set("Authorization", `Bearer ${token}`)
       .send(body);
   }
 
-  flushData(body: FlushDataRequest): Test {
+  async readData(body: ReadDataRequest): Promise<Test> {
+    const token = await this.jwt();
     return this.request
-      .post(`${apiv1Base}${DataEndpoint.Flush}`)
-      .set("Authorization", `Bearer ${this.jwt}`)
+      .post(DataEndpointV1.Read)
+      .set("Authorization", `Bearer ${token}`)
       .send(body);
   }
 
-  tailData(body: TailDataRequest): Test {
+  async updateData(body: UpdateDataRequest): Promise<Test> {
+    const token = await this.jwt();
     return this.request
-      .post(`${apiv1Base}${DataEndpoint.Tail}`)
-      .set("Authorization", `Bearer ${this.jwt}`)
-      .send(body);
-  }
-
-  readData(body: ReadDataRequest): Test {
-    return this.request
-      .post(`${apiv1Base}${DataEndpoint.Read}`)
-      .set("Authorization", `Bearer ${this.jwt}`)
-      .send(body);
-  }
-
-  updateData(body: UpdateDataRequest): Test {
-    return this.request
-      .post(`${apiv1Base}${DataEndpoint.Update}`)
-      .set("Authorization", `Bearer ${this.jwt}`)
-      .send(body);
-  }
-
-  executeQuery(body: ExecuteQueryRequest): Test {
-    return this.request
-      .post(`${apiv1Base}${QueriesEndpoint.Execute}`)
-      .set("Authorization", `Bearer ${this.jwt}`)
+      .post(DataEndpointV1.Update)
+      .set("Authorization", `Bearer ${token}`)
       .send(body);
   }
 }

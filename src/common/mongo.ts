@@ -12,13 +12,9 @@ export type DocumentBase = {
 export async function initAndCreateDbClients(
   env: Config,
 ): Promise<Context["db"]> {
-  // From env vars so tests use ephemeral dbs
-  const primaryDbUri = `${env.dbUri}/${env.dbNamePrefix}`;
-  const dataDbName = `${env.dbNamePrefix}_data`;
-
-  const client = await MongoClient.connect(primaryDbUri);
-  const primary = client.db();
-  const data = client.db(dataDbName);
+  const client = await MongoClient.connect(env.dbUri);
+  const primary = client.db(env.dbNamePrimary);
+  const data = client.db(env.dbNameData);
 
   return {
     client,
@@ -28,8 +24,7 @@ export async function initAndCreateDbClients(
 }
 
 export enum CollectionName {
-  Organizations = "organizations",
-  Users = "users",
+  Accounts = "accounts",
   Schemas = "schemas",
   Queries = "queries",
 }

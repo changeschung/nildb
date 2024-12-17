@@ -3,7 +3,9 @@ import type { RequestHandler } from "express";
 import type { EmptyObject, JsonValue } from "type-fest";
 import { z } from "zod";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
+import { NilDid } from "#/common/nil-did";
 import { Uuid, type UuidDto } from "#/common/types";
+import { isAccountAllowedGuard } from "#/middleware/auth";
 import { organizationsRemoveQuery } from "#/organizations/repository";
 import {
   type QueryDocument,
@@ -11,6 +13,30 @@ import {
   queriesFindMany,
 } from "#/queries/repository";
 import { addQueryToOrganization, executeQuery } from "#/queries/service";
+
+export type ListQueriesResponse = ApiResponse<QueryDocument[]>;
+
+export const listQueriesController: RequestHandler<
+  EmptyObject,
+  ListQueriesResponse,
+  EmptyObject
+> = async (req, res) => {
+  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+    res.sendStatus(401);
+    return;
+  }
+
+  const response = await pipe(
+    E.fromNullable(req.account._id),
+    E.flatMap((owner) => {
+      return queriesFindMany(req.ctx, { owner });
+    }),
+    foldToApiResponse(req.ctx),
+    E.runPromise,
+  );
+
+  res.send(response);
+};
 
 const VariablePrimitive = z.enum(["string", "number", "boolean", "date"]);
 export const QueryVariableValidator = z.union([
@@ -27,7 +53,7 @@ export const QueryVariableValidator = z.union([
   }),
 ]);
 export const AddQueryRequest = z.object({
-  org: Uuid,
+  owner: NilDid,
   name: z.string(),
   schema: Uuid,
   variables: z.record(z.string(), QueryVariableValidator),
@@ -41,33 +67,19 @@ export const addQueryController: RequestHandler<
   AddQueryResponse,
   AddQueryRequest
 > = async (req, res) => {
+  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+    res.sendStatus(401);
+    return;
+  }
+
   const response = await pipe(
     E.try({
       try: () => AddQueryRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-    E.flatMap((body) => addQueryToOrganization(req.context, body)),
+    E.flatMap((body) => addQueryToOrganization(req.ctx, body)),
     E.map((id) => id.toString() as UuidDto),
-    foldToApiResponse(req.context),
-    E.runPromise,
-  );
-
-  res.send(response);
-};
-
-export type ListQueriesResponse = ApiResponse<QueryDocument[]>;
-
-export const listQueriesController: RequestHandler<
-  EmptyObject,
-  ListQueriesResponse,
-  EmptyObject
-> = async (req, res) => {
-  const response = await pipe(
-    E.fromNullable(req.user.id),
-    E.flatMap((org) => {
-      return queriesFindMany(req.context.db.primary, { org });
-    }),
-    foldToApiResponse(req.context),
+    foldToApiResponse(req.ctx),
     E.runPromise,
   );
 
@@ -85,6 +97,11 @@ export const deleteQueryController: RequestHandler<
   DeleteQueryResponse,
   DeleteQueryRequest
 > = async (req, res) => {
+  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+    res.sendStatus(401);
+    return;
+  }
+
   const response = await pipe(
     E.try({
       try: () => DeleteQueryRequest.parse(req.body),
@@ -93,18 +110,14 @@ export const deleteQueryController: RequestHandler<
 
     E.flatMap((request) =>
       pipe(
-        queriesDeleteOne(req.context.db.primary, { _id: request.id }),
+        queriesDeleteOne(req.ctx, { _id: request.id }),
         E.flatMap((query) => {
-          return organizationsRemoveQuery(
-            req.context.db.primary,
-            query.org,
-            request.id,
-          );
+          return organizationsRemoveQuery(req.ctx, query.owner, request.id);
         }),
       ),
     ),
 
-    foldToApiResponse(req.context),
+    foldToApiResponse(req.ctx),
     E.runPromise,
   );
 
@@ -123,13 +136,20 @@ export const executeQueryController: RequestHandler<
   ExecuteQueryResponse,
   ExecuteQueryRequest
 > = async (req, res) => {
+  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+    res.sendStatus(401);
+    return;
+  }
+
   const response = await pipe(
     E.try({
       try: () => ExecuteQueryRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-    E.flatMap((request) => executeQuery(req.context, request)),
-    foldToApiResponse(req.context),
+    E.flatMap((request) => {
+      return executeQuery(req.ctx, request);
+    }),
+    foldToApiResponse(req.ctx),
     E.runPromise,
   );
 

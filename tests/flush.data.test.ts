@@ -1,52 +1,48 @@
 import { faker } from "@faker-js/faker";
-import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createUuidDto } from "#/common/types";
-import type { Context } from "#/env";
-import query from "./data/simple.query.json";
-import schema from "./data/simple.schema.json";
+import queryJson from "./data/simple.query.json";
+import schemaJson from "./data/simple.schema.json";
 import {
   type AppFixture,
-  type OrganizationFixture,
   type QueryFixture,
   type SchemaFixture,
   buildFixture,
-  setupOrganization,
+  registerSchemaAndQuery,
 } from "./fixture/app-fixture";
 import type { TestClient } from "./fixture/client";
 
 describe("flush.data.test", () => {
   let fixture: AppFixture;
-  let db: Context["db"];
-  let backend: TestClient;
-  let organization: OrganizationFixture;
+  let organization: TestClient;
   const collectionSize = 100;
+  const schema = schemaJson as unknown as SchemaFixture;
+  const query = queryJson as unknown as QueryFixture;
 
   beforeAll(async () => {
     fixture = await buildFixture();
-    db = fixture.context.db;
-    backend = fixture.users.backend;
-    organization = await setupOrganization(
-      fixture,
-      { ...schema, id: new UUID() } as SchemaFixture,
-      { ...query, id: new UUID() } as unknown as QueryFixture,
-    );
+    organization = fixture.users.organization;
+    await registerSchemaAndQuery(fixture, schema, query);
 
     const data = Array.from({ length: collectionSize }, () => ({
       _id: createUuidDto(),
       name: faker.person.fullName(),
     }));
 
-    const _response = await backend.uploadData({
-      schema: organization.schema.id,
+    const _response = await organization.uploadData({
+      schema: schema.id,
       data,
     });
   });
 
   it("can flush a collection", async () => {
-    const schema = organization.schema.id;
-    const response = await fixture.users.backend.flushData({ schema });
-    const count = await db.data.collection(schema.toString()).countDocuments();
+    const schemaId = schema.id;
+    const response = await fixture.users.organization.flushData({
+      schema: schemaId,
+    });
+    const count = await fixture.ctx.db.data
+      .collection(schemaId.toString())
+      .countDocuments();
 
     expect(response.body.data).toBe(collectionSize);
     expect(count).toBe(0);

@@ -4,6 +4,7 @@ import { aboutNodeController, healthCheckController } from "./controllers";
 export const SystemEndpoint = {
   Health: "/health",
   About: "/about",
+  Metrics: "/metrics",
 } as const;
 
 export function createSystemRouter(): Router {

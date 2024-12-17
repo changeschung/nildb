@@ -2,6 +2,7 @@ import util from "node:util";
 import { Effect as E, Option as O, pipe } from "effect";
 import { isUnknownException } from "effect/Cause";
 import type { MongoError } from "mongodb";
+import { RepositoryError } from "#/common/error";
 
 export type DbErrorContext = {
   name: string;
@@ -90,4 +91,83 @@ export function succeedOrMapToDbError<T, E extends Error = Error>(
 
 function isMongoError(error: unknown): error is MongoError {
   return error instanceof Error && "code" in error;
+}
+
+export function succeedOrMapToRepositoryError<T, E extends Error = Error>(
+  context: Record<string, unknown> = {},
+): (effect: E.Effect<T | O.Option<T>, E>) => E.Effect<T, RepositoryError> {
+  return (effect) =>
+    pipe(
+      effect,
+      E.flatMap((result) => {
+        if (O.isOption(result)) {
+          return pipe(
+            result,
+            O.match({
+              onNone: () => {
+                const error = new RepositoryError({
+                  message: "Document not found",
+                  context,
+                });
+                return E.fail(error);
+              },
+              onSome: (value) => E.succeed(value),
+            }),
+          );
+        }
+
+        if (!result) {
+          return E.fail(
+            new RepositoryError({
+              message: "Result is null",
+              context,
+            }),
+          );
+        }
+
+        return E.succeed(result as T);
+      }),
+      E.mapError((cause) => {
+        if (cause instanceof RepositoryError) {
+          return cause;
+        }
+
+        const error = isUnknownException(cause)
+          ? (cause.error as Error)
+          : cause;
+
+        if (isMongoError(error)) {
+          return new RepositoryError({
+            message: sanitizedMongoDbErrorMessage(error.code),
+            cause: error,
+            context: {
+              ...context,
+              code: String(error.code),
+            },
+          });
+        }
+
+        return new RepositoryError({
+          message: "Unexpected repository error",
+          cause: error,
+          context,
+        });
+      }),
+    );
+}
+
+function sanitizedMongoDbErrorMessage(
+  code: string | number | undefined,
+): string {
+  switch (String(code)) {
+    case "11000": {
+      return "A similar entry is already in the system";
+    }
+    case "NotFound": {
+      return "We couldn't find what you're looking for";
+    }
+    default: {
+      return "Internal db error";
+    }
+  }
 }

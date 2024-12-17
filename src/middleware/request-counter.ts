@@ -2,7 +2,7 @@ import type { RequestHandler } from "express";
 import prometheus from "prom-client";
 import type { Context } from "#/env";
 
-export function apiRequestsCounter(_context: Context): RequestHandler {
+export function apiRequestsCounter(_ctx: Context): RequestHandler {
   const counter = new prometheus.Counter({
     name: "api_requests_total",
     help: "Total API requests by id",
@@ -10,9 +10,13 @@ export function apiRequestsCounter(_context: Context): RequestHandler {
   });
 
   const middleware: RequestHandler = (req, _res, next) => {
-    if (req.user) {
+    if (req.account) {
+      let user_id = req.ctx.node.identity.did;
+      if (req.account._type !== "root") {
+        user_id = req.account._id;
+      }
       counter.inc({
-        user_id: req.user.id.toString(),
+        user_id,
         path: req.path,
         method: req.method,
       });

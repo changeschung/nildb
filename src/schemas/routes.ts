@@ -5,18 +5,16 @@ import {
   listSchemasController,
 } from "#/schemas/controllers";
 
-export const SchemasEndpoint = {
-  Add: "/schemas",
-  List: "/schemas",
-  Delete: "/schemas",
+export const SchemasEndpointV1 = {
+  Base: "/api/v1/schemas",
 } as const;
 
 export function buildSchemasRouter(): Router {
   const router = Router();
 
-  router.post(SchemasEndpoint.Add, addSchemaController);
-  router.get(SchemasEndpoint.List, listSchemasController);
-  router.delete(SchemasEndpoint.Delete, deleteSchemaController);
+  router.get(SchemasEndpointV1.Base, listSchemasController);
+  router.post(SchemasEndpointV1.Base, addSchemaController);
+  router.delete(SchemasEndpointV1.Base, deleteSchemaController);
 
   return router;
 }

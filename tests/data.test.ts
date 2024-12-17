@@ -1,39 +1,35 @@
-import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createUuidDto } from "#/common/types";
-import type { CreatedResult } from "#/data/repository";
+import type { CreatedResult, DataDocument } from "#/data/repository";
 import type { Context } from "#/env";
-import query from "./data/wallet.query.json";
-import schema from "./data/wallet.schema.json";
+import queryJson from "./data/wallet.query.json";
+import schemaJson from "./data/wallet.schema.json";
 import {
   type AppFixture,
-  type OrganizationFixture,
   type QueryFixture,
   type SchemaFixture,
   buildFixture,
-  setupOrganization,
+  registerSchemaAndQuery,
 } from "./fixture/app-fixture";
+import { assertDefined } from "./fixture/assertions";
 import type { TestClient } from "./fixture/client";
 
 describe("data.test.ts", () => {
   let fixture: AppFixture;
   let db: Context["db"];
-  let backend: TestClient;
-  let organization: OrganizationFixture;
+  let organization: TestClient;
+
+  const schema = schemaJson as unknown as SchemaFixture;
+  const query = queryJson as unknown as QueryFixture;
 
   beforeAll(async () => {
     fixture = await buildFixture();
-    db = fixture.context.db;
-    backend = fixture.users.backend;
-    organization = await setupOrganization(
-      fixture,
-      { ...schema, id: new UUID() } as SchemaFixture,
-      { ...query, id: new UUID() } as unknown as QueryFixture,
-    );
+    db = fixture.ctx.db;
+    organization = fixture.users.organization;
+    await registerSchemaAndQuery(fixture, schema, query);
   });
 
   it("can upload data", async () => {
-    const schema = organization.schema.id;
     const data = [
       {
         _id: createUuidDto(),
@@ -55,22 +51,19 @@ describe("data.test.ts", () => {
       },
     ];
 
-    const response = await backend
-      .uploadData({
-        schema,
-        data,
-      })
-      .expect(200);
+    const response = await organization.uploadData({
+      schema: schema.id,
+      data,
+    });
 
     expect(response.body.data.created).toHaveLength(3);
 
-    const cursor = db.data.collection(schema.toString()).find({});
+    const cursor = db.data.collection(schema.id.toString()).find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(3);
   });
 
   it("rejects primary key collisions", async () => {
-    const schema = organization.schema.id;
     const data = [
       {
         _id: createUuidDto(),
@@ -80,20 +73,19 @@ describe("data.test.ts", () => {
       },
     ];
 
-    const response = await backend.uploadData({
-      schema,
+    const response = await organization.uploadData({
+      schema: schema.id,
       data,
     });
     const result = response.body.data as CreatedResult;
     expect(result.errors).toHaveLength(1);
 
-    const cursor = db.data.collection(schema.toString()).find({});
+    const cursor = db.data.collection(schema.id.toString()).find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(3);
   });
 
   it("allows for partial success", async () => {
-    const schema = organization.schema.id;
     const data = [
       {
         _id: createUuidDto(),
@@ -109,8 +101,8 @@ describe("data.test.ts", () => {
       },
     ];
 
-    const response = await backend.uploadData({
-      schema,
+    const response = await organization.uploadData({
+      schema: schema.id,
       data,
     });
 
@@ -120,7 +112,6 @@ describe("data.test.ts", () => {
   });
 
   it("rejects duplicates in data payload", async () => {
-    const schema = organization.schema.id;
     const data = [
       {
         _id: createUuidDto(),
@@ -136,20 +127,17 @@ describe("data.test.ts", () => {
       },
     ];
 
-    const _response = await backend
-      .uploadData({
-        schema,
-        data,
-      })
-      .expect(200);
+    const _response = await organization.uploadData({
+      schema: schema.id,
+      data,
+    });
 
-    const cursor = db.data.collection(schema.toString()).find({});
+    const cursor = db.data.collection(schema.id.toString()).find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(4);
   });
 
   it("rejects data that does not conform", async () => {
-    const schema = organization.schema.id;
     const data = [
       {
         _id: createUuidDto(),
@@ -159,25 +147,20 @@ describe("data.test.ts", () => {
       },
     ];
 
-    const response = await backend
-      .uploadData({
-        schema,
-        data,
-      })
-      .expect(200);
+    const response = await organization.uploadData({
+      schema: schema.id,
+      data,
+    });
 
-    const result = response.body;
-    expect(result.errors).toHaveLength(1);
+    const result = response.body.errors.join(";");
+    expect(result).toMatch(/failed schema validation/);
   });
 
   it("can run a query", async () => {
-    const { query } = organization;
-    const response = await backend
-      .executeQuery({
-        id: query.id,
-        variables: query.variables,
-      })
-      .expect(200);
+    const response = await organization.executeQuery({
+      id: query.id,
+      variables: query.variables,
+    });
 
     expect(response.body.data).toEqual([
       {
@@ -185,5 +168,41 @@ describe("data.test.ts", () => {
         count: 3,
       },
     ]);
+  });
+
+  it("can read data by a single id", async () => {
+    const expected = await db.data
+      .collection<DataDocument>(schema.id.toString())
+      .findOne({});
+
+    assertDefined(expected);
+    const _id = expected._id.toString();
+
+    const response = await organization.readData({
+      schema: schema.id,
+      filter: { _id },
+    });
+
+    const actual = response.body.data[0];
+    expect(actual._id).toBe(_id);
+  });
+
+  it("can read data from a list of ids", async () => {
+    const expected = await db.data
+      .collection<DataDocument>(schema.id.toString())
+      .find({})
+      .limit(3)
+      .toArray();
+
+    assertDefined(expected);
+    const ids = expected.map((document) => document._id.toString());
+
+    const response = await organization.readData({
+      schema: schema.id,
+      filter: { _id: { $in: ids } },
+    });
+
+    const actual = response.body.data;
+    expect(actual).toHaveLength(3);
   });
 });

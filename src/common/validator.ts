@@ -3,11 +3,12 @@ import * as addFormats from "ajv-formats";
 import type { DataValidationCxt } from "ajv/dist/types";
 import { Effect as E } from "effect";
 import { type SafeParseReturnType, z } from "zod";
+import { ServiceError } from "#/common/error";
 import { Uuid } from "#/common/types";
 
 export function validateSchema(
   schema: Record<string, unknown>,
-): E.Effect<boolean, Error> {
+): E.Effect<boolean, ServiceError> {
   return E.try({
     try: () => {
       const ajv = new Ajv();
@@ -17,7 +18,7 @@ export function validateSchema(
       return true;
     },
     catch: (cause) => {
-      return new Error("Schema compilation failed", { cause });
+      return new ServiceError({ message: "Schema compilation failed", cause });
     },
   });
 }
@@ -25,7 +26,7 @@ export function validateSchema(
 export function validateData<T>(
   schema: Record<string, unknown>,
   data: unknown,
-): E.Effect<T, Error> {
+): E.Effect<T, ServiceError> {
   return E.try({
     try: () => {
       const ajv = new Ajv();
@@ -39,7 +40,10 @@ export function validateData<T>(
       return data as T;
     },
     catch: (cause) => {
-      return new Error("Schema compilation failed", { cause });
+      return new ServiceError({
+        message: "Data failed schema validation",
+        cause,
+      });
     },
   });
 }
@@ -70,12 +74,18 @@ function registerCoercions(ajv: Ajv): void {
       const format = parent.format as SupportedCoercions;
 
       if (!format) {
-        throw new Error("coerce keyword requires format to be specified");
+        throw new ServiceError({
+          message: "coerce keyword requires format to be specified",
+          cause: format,
+        });
       }
 
       const coercer = coercers[format];
       if (!coercer) {
-        throw new Error(`Unsupported format for coercion: ${format}`);
+        throw new ServiceError({
+          message: `Unsupported format for coercion: ${format}`,
+          cause: coercers,
+        });
       }
 
       return (data: unknown, dataCtx?: DataValidationCxt): boolean => {

@@ -1,7 +1,10 @@
 import { Effect as E, Option as O, pipe } from "effect";
-import { type Db, type StrictFilter, UUID } from "mongodb";
-import { type DbError, succeedOrMapToDbError } from "#/common/errors";
+import { type StrictFilter, UUID } from "mongodb";
+import type { RepositoryError } from "#/common/error";
+import { succeedOrMapToRepositoryError } from "#/common/errors";
 import { CollectionName, type DocumentBase } from "#/common/mongo";
+import type { NilDid } from "#/common/nil-did";
+import type { Context } from "#/env";
 
 export type QueryVariable = {
   type: "string" | "number" | "boolean" | "date";
@@ -17,18 +20,18 @@ export type QueryArrayVariable = {
 };
 
 export type QueryDocument = DocumentBase & {
-  org: UUID;
+  owner: NilDid;
   name: string;
-  // Defines the pipeline's starting collection
+  // the query's starting collection
   schema: UUID;
   variables: Record<string, QueryVariable | QueryArrayVariable>;
   pipeline: Record<string, unknown>[];
 };
 
 export function queriesInsert(
-  db: Db,
+  ctx: Context,
   data: Omit<QueryDocument, keyof DocumentBase>,
-): E.Effect<UUID, DbError> {
+): E.Effect<UUID, RepositoryError> {
   const now = new Date();
   const document: QueryDocument = {
     ...data,
@@ -39,80 +42,90 @@ export function queriesInsert(
 
   return pipe(
     E.tryPromise(async () => {
-      const collection = db.collection<QueryDocument>(CollectionName.Queries);
+      const collection = ctx.db.primary.collection<QueryDocument>(
+        CollectionName.Queries,
+      );
       const result = await collection.insertOne(document);
       return result.insertedId;
     }),
-    succeedOrMapToDbError({
-      name: "queriesInsert",
-      params: { document },
+    succeedOrMapToRepositoryError({
+      op: "queriesInsert",
+      document,
     }),
   );
 }
 
 export function queriesFindMany(
-  db: Db,
+  ctx: Context,
   filter: StrictFilter<QueryDocument>,
-): E.Effect<QueryDocument[], DbError> {
+): E.Effect<QueryDocument[], RepositoryError> {
   return pipe(
     E.tryPromise(() => {
-      const collection = db.collection<QueryDocument>(CollectionName.Queries);
+      const collection = ctx.db.primary.collection<QueryDocument>(
+        CollectionName.Queries,
+      );
       return collection.find(filter).toArray();
     }),
-    succeedOrMapToDbError({
-      name: "queriesFindMany",
-      params: { filter },
+    succeedOrMapToRepositoryError({
+      op: "queriesFindMany",
+      filter,
     }),
   );
 }
 
 export function queriesFindOne(
-  db: Db,
+  ctx: Context,
   filter: StrictFilter<QueryDocument>,
-): E.Effect<QueryDocument, DbError> {
+): E.Effect<QueryDocument, RepositoryError> {
   return pipe(
     E.tryPromise(async () => {
-      const collection = db.collection<QueryDocument>(CollectionName.Queries);
+      const collection = ctx.db.primary.collection<QueryDocument>(
+        CollectionName.Queries,
+      );
       const result = await collection.findOne(filter);
       return O.fromNullable(result);
     }),
-    succeedOrMapToDbError({
-      name: "queriesFindOne",
-      params: { filter },
+    succeedOrMapToRepositoryError({
+      op: "queriesFindOne",
+      filter,
     }),
   );
 }
 
 export function queriesDeleteMany(
-  db: Db,
+  ctx: Context,
   filter: StrictFilter<QueryDocument>,
-): E.Effect<number, DbError> {
+): E.Effect<number, RepositoryError> {
   return pipe(
     E.tryPromise(async () => {
-      const collection = db.collection<QueryDocument>(CollectionName.Queries);
+      const collection = ctx.db.primary.collection<QueryDocument>(
+        CollectionName.Queries,
+      );
       const result = await collection.deleteMany(filter);
       return result.deletedCount;
     }),
-    succeedOrMapToDbError({
-      name: "queriesDelete",
-      params: { filter },
+    succeedOrMapToRepositoryError({
+      op: "queriesDelete",
+      filter,
     }),
   );
 }
 
 export function queriesDeleteOne(
-  db: Db,
+  ctx: Context,
   filter: StrictFilter<QueryDocument>,
-): E.Effect<QueryDocument, DbError> {
+): E.Effect<QueryDocument, RepositoryError> {
   return pipe(
     E.tryPromise(async () => {
-      const collection = db.collection<QueryDocument>(CollectionName.Queries);
+      const collection = ctx.db.primary.collection<QueryDocument>(
+        CollectionName.Queries,
+      );
       const result = await collection.findOneAndDelete(filter);
       return O.fromNullable(result);
     }),
-    succeedOrMapToDbError({
-      name: "queriesDelete",
-      params: { filter },
+    succeedOrMapToRepositoryError({
+      op: "queriesDelete",
+      filter,
     }),
   );
 }

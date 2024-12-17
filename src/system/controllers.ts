@@ -13,6 +13,6 @@ export const aboutNodeController: RequestHandler<
   AboutNodeControllerResponse,
   EmptyObject
 > = (req: Request, res: Response): void => {
-  const aboutNode = getNodeInfo(req.context);
+  const aboutNode = getNodeInfo(req.ctx);
   res.json(aboutNode);
 };

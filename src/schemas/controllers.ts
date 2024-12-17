@@ -2,19 +2,37 @@ import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
 import type { EmptyObject } from "type-fest";
 import { z } from "zod";
+import type { OrganizationAccountDocument } from "#/accounts/repository";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
+import { NilDid } from "#/common/nil-did";
 import { Uuid, type UuidDto } from "#/common/types";
-import { dataDeleteCollection } from "#/data/repository";
-import { organizationsRemoveSchema } from "#/organizations/repository";
-import {
-  type SchemaDocument,
-  schemasDeleteOne,
-  schemasFindMany,
-} from "#/schemas/repository";
-import { addSchemaToOrganization } from "./service";
+import { isAccountAllowedGuard } from "#/middleware/auth";
+import type { SchemaDocument } from "#/schemas/repository";
+import { addSchema, deleteSchema, getOrganizationSchemas } from "./service";
+
+export type ListSchemasResponse = ApiResponse<SchemaDocument[]>;
+
+export const listSchemasController: RequestHandler<
+  EmptyObject,
+  ListSchemasResponse
+> = async (req, res) => {
+  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+    res.sendStatus(401);
+    return;
+  }
+
+  const response = await pipe(
+    E.succeed(req.account as OrganizationAccountDocument),
+    E.flatMap((account) => getOrganizationSchemas(req.ctx, account)),
+    foldToApiResponse(req.ctx),
+    E.runPromise,
+  );
+
+  res.send(response);
+};
 
 export const AddSchemaRequest = z.object({
-  org: Uuid,
+  owner: NilDid,
   name: z.string().min(1),
   keys: z.array(z.string()),
   schema: z.record(z.string(), z.unknown()),
@@ -32,27 +50,9 @@ export const addSchemaController: RequestHandler<
       try: () => AddSchemaRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-    E.flatMap((body) => addSchemaToOrganization(req.context, body)),
+    E.flatMap((body) => addSchema(req.ctx, body)),
     E.map((id) => id.toString() as UuidDto),
-    foldToApiResponse(req.context),
-    E.runPromise,
-  );
-
-  res.send(response);
-};
-
-export type ListSchemasResponse = ApiResponse<SchemaDocument[]>;
-
-export const listSchemasController: RequestHandler<
-  EmptyObject,
-  ListSchemasResponse
-> = async (req, res) => {
-  const response = await pipe(
-    E.fromNullable(req.user.id),
-    E.flatMap((org) => {
-      return schemasFindMany(req.context.db.primary, { org });
-    }),
-    foldToApiResponse(req.context),
+    foldToApiResponse(req.ctx),
     E.runPromise,
   );
 
@@ -70,31 +70,19 @@ export const deleteSchemaController: RequestHandler<
   DeleteSchemaResponse,
   DeleteSchemaRequest
 > = async (req, res) => {
+  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+    res.sendStatus(401);
+    return;
+  }
+
   const response = await pipe(
     E.try({
       try: () => DeleteSchemaRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-
-    E.flatMap((body) =>
-      pipe(
-        schemasDeleteOne(req.context.db.primary, { _id: body.id }),
-        E.tap((schema) => {
-          return organizationsRemoveSchema(
-            req.context.db.primary,
-            schema.org,
-            body.id,
-          );
-        }),
-        E.tap((_orgId) => {
-          return dataDeleteCollection(req.context.db.data, body.id);
-        }),
-      ),
-    ),
-
-    E.map((id) => id.toString() as UuidDto),
-
-    foldToApiResponse(req.context),
+    E.flatMap((body) => deleteSchema(req.ctx, body.id)),
+    E.map((schema) => schema._id.toString() as UuidDto),
+    foldToApiResponse(req.ctx),
     E.runPromise,
   );
 

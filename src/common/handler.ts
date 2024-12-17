@@ -3,6 +3,7 @@ import { Effect as E, pipe } from "effect";
 import { UnknownException } from "effect/Cause";
 import type { JsonArray } from "type-fest";
 import { ZodError } from "zod";
+import { AppError } from "#/common/error";
 import type { Context } from "#/env";
 import { DbError } from "./errors";
 
@@ -58,19 +59,36 @@ const transformError = (error: unknown): unknown[] => {
   if (error instanceof ZodError) {
     return [error.flatten()];
   }
+
   if (error instanceof DbError) {
     return [error.sanitizedMessage()];
   }
+
   if (error instanceof ValidationError) {
     return error.errors;
   }
+
   if (error instanceof UnknownException) {
     const cause = error.cause;
     if (typeof cause === "object" && cause && "message" in cause) {
       return [cause.message];
     }
-  } else if (error instanceof Error) {
-    return [error.message];
   }
+
+  if (error instanceof AppError) {
+    const messages = [];
+    let current = error;
+    // unwind error messages
+    while (current) {
+      messages.push(current.message);
+      if (current.cause instanceof AppError) {
+        current = current.cause;
+      } else {
+        break;
+      }
+    }
+    return messages;
+  }
+
   return ["An unknown error occurred"];
 };

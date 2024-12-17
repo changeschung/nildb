@@ -1,22 +1,28 @@
-import assert from "node:assert";
-import { createHash } from "node:crypto";
-import { secp256k1 } from "@noble/curves/secp256k1";
-import { bech32 } from "bech32";
 import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
 import { z } from "zod";
+import type {
+  AccountDocument,
+  RootAccountDocument,
+} from "#/accounts/repository";
+import { Cache } from "#/common/cache";
+import { Identity } from "#/common/identity";
+import type { NilDid } from "#/common/nil-did";
 import { createLogger } from "#/middleware/logger";
 import { initAndCreateDbClients } from "./common/mongo";
 
+export const PRIVATE_KEY_LENGTH = 64;
+export const PUBLIC_KEY_LENGTH = 66;
+
 const ConfigSchema = z.object({
-  dbNamePrefix: z.string().min(4),
+  dbNamePrimary: z.string().min(4),
+  dbNameData: z.string().min(4),
   dbUri: z.string().startsWith("mongodb"),
-  env: z.enum(["test", "dev", "prod"]),
-  jwtSecret: z.string().min(10),
+  env: z.enum(["testnet", "mainnet"]),
   logLevel: z.enum(["debug", "info", "warn", "error"]),
-  nodePrivateKey: z.string(),
-  nodePublicChainAddress: z.string(),
+  nodeSecretKey: z.string().min(PRIVATE_KEY_LENGTH),
   nodePublicEndpoint: z.string().url(),
+  rootAccountSecretKey: z.string().min(PRIVATE_KEY_LENGTH),
   metricsPort: z.number().int().positive(),
   webPort: z.number().int().positive(),
 });
@@ -29,52 +35,50 @@ export interface Context {
     primary: Db;
     data: Db;
   };
+  cache: {
+    accounts: Cache<NilDid, AccountDocument>;
+  };
   log: Logger;
   node: {
-    address: string;
-    privateKey: Uint8Array;
-    publicKey: string;
     endpoint: string;
+    identity: Identity;
   };
 }
 
 export async function createContext(): Promise<Context> {
   const config = ConfigSchema.parse({
-    dbNamePrefix: process.env.APP_DB_NAME_PREFIX,
+    dbNamePrimary: process.env.APP_DB_NAME_PRIMARY,
+    dbNameData: process.env.APP_DB_NAME_DATA,
     dbUri: process.env.APP_DB_URI,
     env: process.env.APP_ENV,
-    jwtSecret: process.env.APP_JWT_SECRET,
     logLevel: process.env.APP_LOG_LEVEL,
-    nodePrivateKey: process.env.APP_NODE_PRIVATE_KEY,
-    nodePublicChainAddress: process.env.APP_NODE_PUBLIC_ADDRESS,
+    nodeSecretKey: process.env.APP_NODE_SECRET_KEY,
     nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
+    rootAccountSecretKey: process.env.APP_ROOT_USER_SECRET_KEY,
     metricsPort: Number(process.env.APP_METRICS_PORT),
     webPort: Number(process.env.APP_PORT),
   });
 
-  const privateKey = Uint8Array.from(
-    Buffer.from(config.nodePrivateKey, "base64"),
-  );
-  const publicKey = secp256k1.getPublicKey(privateKey, true);
-  const sha256Hash = createHash("sha256").update(publicKey).digest();
-  const ripemd160Hash = createHash("ripemd160").update(sha256Hash).digest();
-  const prefix = "nillion1";
-  const address = bech32.encode(prefix, bech32.toWords(ripemd160Hash));
-
-  assert(
-    address === config.nodePublicChainAddress,
-    "Expected address does not match computed address",
-  );
-
   const node = {
-    address,
-    publicKey: Buffer.from(publicKey).toString("base64"),
-    privateKey,
+    identity: Identity.fromSk(config.nodeSecretKey),
+    root: Identity.fromSk(config.rootAccountSecretKey),
     endpoint: config.nodePublicEndpoint,
   };
 
+  // Hydrate with non-expiring root account
+  const accounts = new Cache<NilDid, AccountDocument>();
+  const rootDocument: RootAccountDocument = {
+    _id: node.root.did,
+    _type: "root",
+    publicKey: node.root.publicKey,
+  };
+  accounts.set(node.root.did, rootDocument, Number.MAX_SAFE_INTEGER);
+
   return {
     config,
+    cache: {
+      accounts,
+    },
     db: await initAndCreateDbClients(config),
     log: createLogger(config),
     node,
