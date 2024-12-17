@@ -19,11 +19,10 @@ const ConfigSchema = z.object({
   dbNameData: z.string().min(4),
   dbUri: z.string().startsWith("mongodb"),
   env: z.enum(["testnet", "mainnet"]),
-  jwtSecret: z.string().min(10),
   logLevel: z.enum(["debug", "info", "warn", "error"]),
-  nodePrivateKey: z.string().min(PRIVATE_KEY_LENGTH),
+  nodeSecretKey: z.string().min(PRIVATE_KEY_LENGTH),
   nodePublicEndpoint: z.string().url(),
-  rootAccountPrivateKey: z.string().min(PRIVATE_KEY_LENGTH),
+  rootAccountSecretKey: z.string().min(PRIVATE_KEY_LENGTH),
   metricsPort: z.number().int().positive(),
   webPort: z.number().int().positive(),
 });
@@ -52,18 +51,17 @@ export async function createContext(): Promise<Context> {
     dbNameData: process.env.APP_DB_NAME_DATA,
     dbUri: process.env.APP_DB_URI,
     env: process.env.APP_ENV,
-    jwtSecret: process.env.APP_JWT_SECRET,
     logLevel: process.env.APP_LOG_LEVEL,
-    nodePrivateKey: process.env.APP_NODE_PRIVATE_KEY,
+    nodeSecretKey: process.env.APP_NODE_SECRET_KEY,
     nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
-    rootAccountPrivateKey: process.env.APP_ROOT_USER_PRIVATE_KEY,
+    rootAccountSecretKey: process.env.APP_ROOT_USER_SECRET_KEY,
     metricsPort: Number(process.env.APP_METRICS_PORT),
     webPort: Number(process.env.APP_PORT),
   });
 
   const node = {
-    identity: Identity.fromSk(config.nodePrivateKey),
-    root: Identity.fromSk(config.rootAccountPrivateKey),
+    identity: Identity.fromSk(config.nodeSecretKey),
+    root: Identity.fromSk(config.rootAccountSecretKey),
     endpoint: config.nodePublicEndpoint,
   };
 
