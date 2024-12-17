@@ -2,7 +2,6 @@ import { Effect as E, pipe } from "effect";
 import type { UUID } from "mongodb";
 import type { OrganizationAccountDocument } from "#/accounts/repository";
 import type { ServiceError } from "#/common/error";
-import type { DbError } from "#/common/errors";
 import { validateSchema } from "#/common/validator";
 import { dataCreateCollection, dataDeleteCollection } from "#/data/repository";
 import type { Context } from "#/env";
@@ -31,7 +30,7 @@ export function getOrganizationSchemas(
 export function addSchema(
   ctx: Context,
   request: AddSchemaRequest,
-): E.Effect<UUID, Error | DbError> {
+): E.Effect<UUID, ServiceError> {
   return pipe(
     validateSchema(request.schema),
     E.flatMap(() => schemasInsert(ctx, request)),
