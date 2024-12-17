@@ -7,13 +7,13 @@ import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import type { DocumentBase } from "#/common/mongo";
 import { Uuid, type UuidDto } from "#/common/types";
 import { validateData } from "#/common/validator";
+import { readData } from "#/data/service";
 import { isAccountAllowedGuard } from "#/middleware/auth";
 import { schemasFindOne } from "#/schemas/repository";
 import {
   type CreatedResult,
   type UpdateResult,
   dataDeleteMany,
-  dataFindMany,
   dataFlushCollection,
   dataInsert,
   dataTailCollection,
@@ -146,7 +146,7 @@ export const readDataController: RequestHandler<
       catch: (error) => error as z.ZodError,
     }),
 
-    E.flatMap((body) => dataFindMany(req.ctx, body.schema, body.filter)),
+    E.flatMap((body) => readData(req.ctx, body)),
 
     E.map((data) => data),
 
@@ -254,11 +254,8 @@ export const tailDataController: RequestHandler<
       try: () => TailDataRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-
     E.flatMap((body) => dataTailCollection(req.ctx, body.schema)),
-
     E.map((data) => data as JsonArray),
-
     foldToApiResponse(req.ctx),
     E.runPromise,
   );

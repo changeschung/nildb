@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { createUuidDto } from "#/common/types";
-import type { CreatedResult } from "#/data/repository";
+import type { CreatedResult, DataDocument } from "#/data/repository";
 import type { Context } from "#/env";
 import queryJson from "./data/wallet.query.json";
 import schemaJson from "./data/wallet.schema.json";
@@ -11,6 +11,7 @@ import {
   buildFixture,
   registerSchemaAndQuery,
 } from "./fixture/app-fixture";
+import { assertDefined } from "./fixture/assertions";
 import type { TestClient } from "./fixture/client";
 
 describe("data.test.ts", () => {
@@ -167,5 +168,41 @@ describe("data.test.ts", () => {
         count: 3,
       },
     ]);
+  });
+
+  it("can read data by a single id", async () => {
+    const expected = await db.data
+      .collection<DataDocument>(schema.id.toString())
+      .findOne({});
+
+    assertDefined(expected);
+    const _id = expected._id.toString();
+
+    const response = await organization.readData({
+      schema: schema.id,
+      filter: { _id },
+    });
+
+    const actual = response.body.data[0];
+    expect(actual._id).toBe(_id);
+  });
+
+  it("can read data from a list of ids", async () => {
+    const expected = await db.data
+      .collection<DataDocument>(schema.id.toString())
+      .find({})
+      .limit(3)
+      .toArray();
+
+    assertDefined(expected);
+    const ids = expected.map((document) => document._id.toString());
+
+    const response = await organization.readData({
+      schema: schema.id,
+      filter: { _id: { $in: ids } },
+    });
+
+    const actual = response.body.data;
+    expect(actual).toHaveLength(3);
   });
 });
