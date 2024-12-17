@@ -58,7 +58,8 @@ describe("schemas.datetime.test", async () => {
         schema: schema.id,
         data: [invalid],
       });
-      expect(response.body.errors).toHaveLength(1);
+      const result = response.body.errors.join(";");
+      expect(result).toMatch(/failed schema validation/);
     }
   });
 

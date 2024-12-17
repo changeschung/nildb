@@ -152,8 +152,8 @@ describe("data.test.ts", () => {
       data,
     });
 
-    const result = response.body;
-    expect(result.errors).toHaveLength(1);
+    const result = response.body.errors.join(";");
+    expect(result).toMatch(/failed schema validation/);
   });
 
   it("can run a query", async () => {

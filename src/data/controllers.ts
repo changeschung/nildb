@@ -6,16 +6,13 @@ import { ControllerError } from "#/common/error";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import type { DocumentBase } from "#/common/mongo";
 import { Uuid, type UuidDto } from "#/common/types";
-import { validateData } from "#/common/validator";
-import { readData } from "#/data/service";
+import { createDataService, readData } from "#/data/service";
 import { isAccountAllowedGuard } from "#/middleware/auth";
-import { schemasFindOne } from "#/schemas/repository";
 import {
   type CreatedResult,
   type UpdateResult,
   dataDeleteMany,
   dataFlushCollection,
-  dataInsert,
   dataTailCollection,
   dataUpdateMany,
 } from "./repository";
@@ -58,26 +55,14 @@ export const createDataController: RequestHandler<
           );
     }),
 
-    E.flatMap((body) =>
-      pipe(
-        E.Do,
-        E.bind("document", () => {
-          return schemasFindOne(req.ctx, {
-            _id: body.schema,
-            owner: req.account._id,
-          });
-        }),
-        E.bind("data", ({ document }) => {
-          return validateData<PartialDataDocumentDto[]>(
-            document.schema,
-            body.data,
-          );
-        }),
-        E.flatMap(({ document, data }) => {
-          return dataInsert(req.ctx, document, data);
-        }),
-      ),
-    ),
+    E.flatMap((body) => {
+      return createDataService(
+        req.ctx,
+        req.account._id,
+        body.schema,
+        body.data,
+      );
+    }),
 
     foldToApiResponse(req.ctx),
     E.runPromise,
