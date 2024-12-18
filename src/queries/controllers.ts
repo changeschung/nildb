@@ -6,17 +6,12 @@ import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { NilDid } from "#/common/nil-did";
 import { Uuid, type UuidDto } from "#/common/types";
 import { isAccountAllowedGuard } from "#/middleware/auth";
-import { OrganizationRepository } from "#/organizations/repository";
-import {
-  type QueryDocument,
-  queriesDeleteOne,
-  queriesFindMany,
-} from "#/queries/repository";
-import { addQueryToOrganization, executeQuery } from "#/queries/service";
+import type { QueryDocument } from "./repository";
+import { QueriesService } from "./service";
 
 export type ListQueriesResponse = ApiResponse<QueryDocument[]>;
 
-export const listQueriesController: RequestHandler<
+const listQueries: RequestHandler<
   EmptyObject,
   ListQueriesResponse,
   EmptyObject
@@ -29,7 +24,7 @@ export const listQueriesController: RequestHandler<
   const response = await pipe(
     E.fromNullable(req.account._id),
     E.flatMap((owner) => {
-      return queriesFindMany(req.ctx, { owner });
+      return QueriesService.findQueries(req.ctx, owner);
     }),
     foldToApiResponse(req.ctx),
     E.runPromise,
@@ -63,7 +58,7 @@ export const AddQueryRequest = z.object({
 export type AddQueryRequest = z.infer<typeof AddQueryRequest>;
 export type AddQueryResponse = ApiResponse<UuidDto>;
 
-export const addQueryController: RequestHandler<
+const addQuery: RequestHandler<
   EmptyObject,
   AddQueryResponse,
   AddQueryRequest
@@ -78,7 +73,7 @@ export const addQueryController: RequestHandler<
       try: () => AddQueryRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-    E.flatMap((body) => addQueryToOrganization(req.ctx, body)),
+    E.flatMap((body) => QueriesService.addQuery(req.ctx, body)),
     E.map((id) => id.toString() as UuidDto),
     foldToApiResponse(req.ctx),
     E.runPromise,
@@ -93,7 +88,7 @@ export const DeleteQueryRequest = z.object({
 export type DeleteQueryRequest = z.infer<typeof DeleteQueryRequest>;
 export type DeleteQueryResponse = ApiResponse<boolean>;
 
-export const deleteQueryController: RequestHandler<
+const deleteQuery: RequestHandler<
   EmptyObject,
   DeleteQueryResponse,
   DeleteQueryRequest
@@ -108,20 +103,9 @@ export const deleteQueryController: RequestHandler<
       try: () => DeleteQueryRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-
-    E.flatMap((request) =>
-      pipe(
-        queriesDeleteOne(req.ctx, { _id: request.id }),
-        E.flatMap((query) => {
-          return OrganizationRepository.removeQuery(
-            req.ctx,
-            query.owner,
-            request.id,
-          );
-        }),
-      ),
-    ),
-
+    E.flatMap((request) => {
+      return QueriesService.removeQuery(req.ctx, req.account._id, request.id);
+    }),
     foldToApiResponse(req.ctx),
     E.runPromise,
   );
@@ -136,7 +120,7 @@ export const ExecuteQueryRequest = z.object({
 export type ExecuteQueryRequest = z.infer<typeof ExecuteQueryRequest>;
 export type ExecuteQueryResponse = ApiResponse<JsonValue>;
 
-export const executeQueryController: RequestHandler<
+const executeQuery: RequestHandler<
   EmptyObject,
   ExecuteQueryResponse,
   ExecuteQueryRequest
@@ -152,11 +136,18 @@ export const executeQueryController: RequestHandler<
       catch: (error) => error as z.ZodError,
     }),
     E.flatMap((request) => {
-      return executeQuery(req.ctx, request);
+      return QueriesService.executeQuery(req.ctx, request);
     }),
     foldToApiResponse(req.ctx),
     E.runPromise,
   );
 
   res.send(response);
+};
+
+export const QueriesController = {
+  addQuery,
+  deleteQuery,
+  executeQuery,
+  listQueries,
 };
