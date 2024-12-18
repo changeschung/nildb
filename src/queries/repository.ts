@@ -1,5 +1,5 @@
 import { Effect as E, Option as O, pipe } from "effect";
-import { type StrictFilter, UUID } from "mongodb";
+import type { StrictFilter, UUID } from "mongodb";
 import type { RepositoryError } from "#/common/error";
 import { succeedOrMapToRepositoryError } from "#/common/errors";
 import { CollectionName, type DocumentBase } from "#/common/mongo";
@@ -28,18 +28,10 @@ export type QueryDocument = DocumentBase & {
   pipeline: Record<string, unknown>[];
 };
 
-export function queriesInsert(
+function insert(
   ctx: Context,
-  data: Omit<QueryDocument, keyof DocumentBase>,
+  document: QueryDocument,
 ): E.Effect<UUID, RepositoryError> {
-  const now = new Date();
-  const document: QueryDocument = {
-    ...data,
-    _id: new UUID(),
-    _created: now,
-    _updated: now,
-  };
-
   return pipe(
     E.tryPromise(async () => {
       const collection = ctx.db.primary.collection<QueryDocument>(
@@ -49,13 +41,13 @@ export function queriesInsert(
       return result.insertedId;
     }),
     succeedOrMapToRepositoryError({
-      op: "queriesInsert",
+      op: "QueriesRepository.insert",
       document,
     }),
   );
 }
 
-export function queriesFindMany(
+function findMany(
   ctx: Context,
   filter: StrictFilter<QueryDocument>,
 ): E.Effect<QueryDocument[], RepositoryError> {
@@ -67,13 +59,13 @@ export function queriesFindMany(
       return collection.find(filter).toArray();
     }),
     succeedOrMapToRepositoryError({
-      op: "queriesFindMany",
+      op: "QueriesRepository.findMany",
       filter,
     }),
   );
 }
 
-export function queriesFindOne(
+function findOne(
   ctx: Context,
   filter: StrictFilter<QueryDocument>,
 ): E.Effect<QueryDocument, RepositoryError> {
@@ -86,13 +78,13 @@ export function queriesFindOne(
       return O.fromNullable(result);
     }),
     succeedOrMapToRepositoryError({
-      op: "queriesFindOne",
+      op: "QueriesRepository.findOne",
       filter,
     }),
   );
 }
 
-export function queriesDeleteMany(
+function deleteMany(
   ctx: Context,
   filter: StrictFilter<QueryDocument>,
 ): E.Effect<number, RepositoryError> {
@@ -105,27 +97,35 @@ export function queriesDeleteMany(
       return result.deletedCount;
     }),
     succeedOrMapToRepositoryError({
-      op: "queriesDelete",
+      op: "QueriesRepository.deleteMany",
       filter,
     }),
   );
 }
 
-export function queriesDeleteOne(
+function deleteOne(
   ctx: Context,
   filter: StrictFilter<QueryDocument>,
-): E.Effect<QueryDocument, RepositoryError> {
+): E.Effect<boolean, RepositoryError> {
   return pipe(
     E.tryPromise(async () => {
       const collection = ctx.db.primary.collection<QueryDocument>(
         CollectionName.Queries,
       );
-      const result = await collection.findOneAndDelete(filter);
-      return O.fromNullable(result);
+      const result = await collection.deleteOne(filter);
+      return O.fromNullable(result.deletedCount === 1);
     }),
     succeedOrMapToRepositoryError({
-      op: "queriesDelete",
+      op: "QueriesRepository.deleteOne",
       filter,
     }),
   );
 }
+
+export const QueriesRepository = {
+  deleteOne,
+  deleteMany,
+  findOne,
+  findMany,
+  insert,
+};

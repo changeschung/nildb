@@ -15,7 +15,7 @@ import type { Context } from "#/env";
 import type { QueryDocument } from "#/queries/repository";
 import type { SchemaDocument } from "#/schemas/repository";
 
-export function dataCreateCollection(
+function createCollection(
   ctx: Context,
   schemaId: UUID,
   keys: string[],
@@ -35,7 +35,7 @@ export function dataCreateCollection(
       return schemaId;
     }),
     succeedOrMapToRepositoryError({
-      op: "dataCreateCollection",
+      op: "DataRepository.createCollection",
       keys,
       schemaId,
     }),
@@ -44,7 +44,7 @@ export function dataCreateCollection(
 
 export const TAIL_DATA_LIMIT = 25;
 
-export function dataTailCollection(
+function tailCollection(
   ctx: Context,
   schema: UUID,
 ): E.Effect<DataDocument[], RepositoryError> {
@@ -58,13 +58,13 @@ export function dataTailCollection(
         .toArray();
     }),
     succeedOrMapToRepositoryError({
-      op: "dataTailCollection",
+      op: "DataRepository.tailCollection",
       schema,
     }),
   );
 }
 
-export function dataDeleteCollection(
+function deleteCollection(
   ctx: Context,
   schema: UUID,
 ): E.Effect<boolean, RepositoryError> {
@@ -73,13 +73,13 @@ export function dataDeleteCollection(
       return ctx.db.data.dropCollection(schema.toString());
     }),
     succeedOrMapToRepositoryError({
-      op: "dataDeleteCollection",
+      op: "DataRepository.deleteCollection",
       schema,
     }),
   );
 }
 
-export function dataFlushCollection(
+export function flushCollection(
   ctx: Context,
   schema: UUID,
 ): E.Effect<number, RepositoryError> {
@@ -91,7 +91,7 @@ export function dataFlushCollection(
       return result.deletedCount;
     }),
     succeedOrMapToRepositoryError({
-      op: "dataFlushCollection",
+      op: "DataRepository.flushCollection",
       schema,
     }),
   );
@@ -111,7 +111,7 @@ export type CreatedResult = {
   errors: CreateFailure[];
 };
 
-export function dataInsert(
+function insert(
   ctx: Context,
   schema: SchemaDocument,
   data: PartialDataDocumentDto[],
@@ -177,7 +177,7 @@ export function dataInsert(
     }),
 
     succeedOrMapToRepositoryError({
-      op: "dataInsert",
+      op: "DataRepository.insert",
       schema: schema._id,
     }),
   );
@@ -188,7 +188,7 @@ export type UpdateResult = {
   updated: number;
 };
 
-export function dataUpdateMany(
+function updateMany(
   ctx: Context,
   schema: UUID,
   filter: Filter<DocumentBase>,
@@ -207,13 +207,13 @@ export function dataUpdateMany(
       };
     }),
     succeedOrMapToRepositoryError({
-      op: "dataUpdateMany",
+      op: "DataRepository.updateMany",
       schema,
     }),
   );
 }
 
-export function dataDeleteMany(
+function deleteMany(
   ctx: Context,
   schema: UUID,
   filter: StrictFilter<DocumentBase>,
@@ -227,14 +227,14 @@ export function dataDeleteMany(
       return result.deletedCount;
     }),
     succeedOrMapToRepositoryError({
-      op: "dataDeleteMany",
+      op: "DataRepository.deleteMany",
       schema,
       filter,
     }),
   );
 }
 
-export function dataRunAggregation(
+function runAggregation(
   ctx: Context,
   query: QueryDocument,
   pipeline: Document[],
@@ -247,13 +247,13 @@ export function dataRunAggregation(
         .toArray();
     }),
     succeedOrMapToRepositoryError({
-      op: "dataRunAggregation",
+      op: "DataRepository.runAggregation",
       query: query._id,
     }),
   );
 }
 
-export function dataFindMany(
+function findMany(
   ctx: Context,
   schema: UUID,
   filter: Filter<DocumentBase>,
@@ -266,8 +266,20 @@ export function dataFindMany(
       return collection.find(filter).sort({ _created: -1 }).toArray();
     }),
     succeedOrMapToRepositoryError({
-      op: "dataFindMany",
+      op: "DataRepository.findMany",
       schema,
     }),
   );
 }
+
+export const DataRepository = {
+  createCollection,
+  deleteCollection,
+  deleteMany,
+  findMany,
+  flushCollection,
+  insert,
+  runAggregation,
+  tailCollection,
+  updateMany,
+};

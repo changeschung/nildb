@@ -1,10 +1,12 @@
-import type { Test } from "supertest";
+import type { Response, Test } from "supertest";
 import type TestAgent from "supertest/lib/agent";
 import type {
   RegisterAccountRequest,
   RemoveAccountRequest,
 } from "#/accounts/controllers";
 import { AccountsEndpointV1 } from "#/accounts/routes";
+import type { CreateAdminAccountRequest } from "#/admin/controllers";
+import { AdminEndpointV1 } from "#/admin/routes";
 import type { Identity } from "#/common/identity";
 import type {
   CreateDataRequest,
@@ -65,129 +67,223 @@ export class TestClient {
     return this.request.get(SystemEndpoint.About);
   }
 
-  async listAccounts(): Promise<Test> {
+  async listAccounts(expectSuccess = true): Promise<Test> {
     const token = await this.jwt();
-    return this.request
+    const response = await this.request
+      .get(AdminEndpointV1.Accounts)
+      .set("Authorization", `Bearer ${token}`);
+
+    return checkResponse(expectSuccess, response, "listAccounts");
+  }
+
+  async getAccount(expectSuccess = true): Promise<Test> {
+    const token = await this.jwt();
+    const response = await this.request
       .get(AccountsEndpointV1.Base)
       .set("Authorization", `Bearer ${token}`);
+
+    return checkResponse(expectSuccess, response, "getAccount");
   }
 
-  async registerAccount(body: RegisterAccountRequest): Promise<Test> {
+  async createAdminAccount(
+    body: CreateAdminAccountRequest,
+    expectSuccess = true,
+  ): Promise<Test> {
     const token = await this.jwt();
-    return this.request
-      .post(AccountsEndpointV1.Base)
+    const response = await this.request
+      .post(AdminEndpointV1.Accounts)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
+
+    return checkResponse(expectSuccess, response, "createAdminAccount");
   }
 
-  async deleteAccount(body: RemoveAccountRequest): Promise<Test> {
+  async registerAccount(
+    body: RegisterAccountRequest,
+    expectSuccess = true,
+  ): Promise<Test> {
+    const response = await this.request
+      .post(AccountsEndpointV1.Register)
+      .send(body);
+
+    return checkResponse(expectSuccess, response, "registerAccount");
+  }
+
+  async deleteAccount(
+    body: RemoveAccountRequest,
+    expectSuccess = true,
+  ): Promise<Test> {
     const token = await this.jwt();
-    return this.request
+    const response = await this.request
       .delete(AccountsEndpointV1.Base)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
+
+    return checkResponse(expectSuccess, response, "deleteAccount");
   }
 
-  async listSchemas(): Promise<Test> {
+  async listSchemas(expectSuccess = true): Promise<Test> {
     const token = await this.jwt();
-    return this.request
+    const response = await this.request
       .get(SchemasEndpointV1.Base)
       .set("Authorization", `Bearer ${token}`);
+
+    return checkResponse(expectSuccess, response, "listSchemas");
   }
 
-  async addSchema(body: AddSchemaRequest): Promise<Test> {
+  async addSchema(body: AddSchemaRequest, expectSuccess = true): Promise<Test> {
     const token = await this.jwt();
-    return this.request
+    const response = await this.request
       .post(SchemasEndpointV1.Base)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
+
+    return checkResponse(expectSuccess, response, "addSchema");
   }
 
-  async deleteSchema(body: DeleteSchemaRequest): Promise<Test> {
+  async deleteSchema(
+    body: DeleteSchemaRequest,
+    expectSuccess = true,
+  ): Promise<Test> {
     const token = await this.jwt();
-    return this.request
+    const response = await this.request
       .delete(SchemasEndpointV1.Base)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
+
+    return checkResponse(expectSuccess, response, "deleteSchema");
   }
 
-  async listQueries(): Promise<Test> {
+  async listQueries(expectSuccess = true): Promise<Test> {
     const token = await this.jwt();
-    return this.request
+    const response = await this.request
       .get(QueriesEndpointV1.Base)
       .set("Authorization", `Bearer ${token}`);
+
+    return checkResponse(expectSuccess, response, "listQueries");
   }
 
-  async addQuery(body: AddQueryRequest): Promise<Test> {
+  async addQuery(body: AddQueryRequest, expectSuccess = true): Promise<Test> {
     const token = await this.jwt();
-    return this.request
+    const response = await this.request
       .post(QueriesEndpointV1.Base)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
+
+    return checkResponse(expectSuccess, response, "addQuery");
   }
 
-  async deleteQuery(body: DeleteQueryRequest): Promise<Test> {
+  async deleteQuery(
+    body: DeleteQueryRequest,
+    expectSuccess = true,
+  ): Promise<Test> {
     const token = await this.jwt();
-    return this.request
+    const response = await this.request
       .delete(QueriesEndpointV1.Base)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
+
+    return checkResponse(expectSuccess, response, "deleteQuery");
   }
 
-  async executeQuery(body: ExecuteQueryRequest): Promise<Test> {
+  async executeQuery(
+    body: ExecuteQueryRequest,
+    expectSuccess = true,
+  ): Promise<Test> {
     const token = await this.jwt();
-    return this.request
+    const response = await this.request
       .post(QueriesEndpointV1.Execute)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
+
+    return checkResponse(expectSuccess, response, "executeQuery");
   }
 
-  async uploadData(body: CreateDataRequest): Promise<Test> {
+  async uploadData(
+    body: CreateDataRequest,
+    expectSuccess = true,
+  ): Promise<Test> {
     const token = await this.jwt();
 
-    return this.request
+    const response = await this.request
       .post(DataEndpointV1.Create)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
+
+    return checkResponse(expectSuccess, response, "uploadData");
   }
 
-  async deleteData(body: DeleteDataRequest): Promise<Test> {
+  async deleteData(
+    body: DeleteDataRequest,
+    expectSuccess = true,
+  ): Promise<Test> {
     const token = await this.jwt();
-    return this.request
+    const response = await this.request
       .post(DataEndpointV1.Delete)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
+
+    return checkResponse(expectSuccess, response, "deleteData");
   }
 
-  async flushData(body: FlushDataRequest): Promise<Test> {
+  async flushData(body: FlushDataRequest, expectSuccess = true): Promise<Test> {
     const token = await this.jwt();
-    return this.request
+    const response = await this.request
       .post(DataEndpointV1.Flush)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
+
+    return checkResponse(expectSuccess, response, "flushData");
   }
 
-  async tailData(body: TailDataRequest): Promise<Test> {
+  async tailData(body: TailDataRequest, expectSuccess = true): Promise<Test> {
     const token = await this.jwt();
-    return this.request
+    const response = await this.request
       .post(DataEndpointV1.Tail)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
+
+    return checkResponse(expectSuccess, response, "tailData");
   }
 
-  async readData(body: ReadDataRequest): Promise<Test> {
+  async readData(body: ReadDataRequest, expectSuccess = true): Promise<Test> {
     const token = await this.jwt();
-    return this.request
+    const response = await this.request
       .post(DataEndpointV1.Read)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
+
+    return checkResponse(expectSuccess, response, "readData");
   }
 
-  async updateData(body: UpdateDataRequest): Promise<Test> {
+  async updateData(
+    body: UpdateDataRequest,
+    expectSuccess = true,
+  ): Promise<Test> {
     const token = await this.jwt();
-    return this.request
+    const response = await this.request
       .post(DataEndpointV1.Update)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
+
+    return checkResponse(expectSuccess, response, "updateData");
   }
+}
+
+function checkResponse(
+  expectSuccess: boolean,
+  response: Response,
+  method: string,
+): Response | never {
+  if (response.body.errors && expectSuccess) {
+    const message = `Unexpected request failure: method=${method}, status=${response.statusCode}`;
+    throw new Error(message, { cause: response });
+  }
+
+  if (response.statusCode >= 400 && expectSuccess) {
+    const message = `Unexpected request failure: method=${method}, status=${response.statusCode}`;
+    throw new Error(message, { cause: response });
+  }
+
+  return response;
 }

@@ -47,10 +47,13 @@ describe("Schemas delete by filter", () => {
   it("rejects empty filter", async () => {
     const filter = {};
 
-    const response = await organization.deleteData({
-      schema: schema.id,
-      filter,
-    });
+    const response = await organization.deleteData(
+      {
+        schema: schema.id,
+        filter,
+      },
+      false,
+    );
 
     expect(response.body.errors).toHaveLength(1);
   });

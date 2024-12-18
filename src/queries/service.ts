@@ -3,45 +3,58 @@ import type { UnknownException } from "effect/Cause";
 import type { Document, UUID } from "mongodb";
 import type { JsonObject, JsonValue } from "type-fest";
 import { z } from "zod";
+import { ServiceError } from "#/common/error";
 import type { DbError } from "#/common/errors";
+import type { NilDid } from "#/common/nil-did";
 import { validateData } from "#/common/validator";
-import { dataRunAggregation } from "#/data/repository";
+import { DataRepository } from "#/data/repository";
 import type { Context } from "#/env";
-import { organizationsAddQuery } from "#/organizations/repository";
+import { OrganizationRepository } from "#/organizations/repository";
 import type {
   AddQueryRequest,
   ExecuteQueryRequest,
 } from "#/queries/controllers";
 import pipelineSchema from "#/queries/mongodb_pipeline.json";
 import {
+  QueriesRepository,
   type QueryArrayVariable,
   type QueryDocument,
-  queriesFindOne,
-  queriesInsert,
 } from "#/queries/repository";
 
-export function addQueryToOrganization(
+export function addQuery(
   ctx: Context,
   request: AddQueryRequest,
 ): E.Effect<UUID, Error | DbError> {
   return pipe(
     validateData(pipelineSchema, request.pipeline),
     E.flatMap(() => {
-      return queriesInsert(ctx, request);
+      const now = new Date();
+      const document: QueryDocument = {
+        ...request,
+        _created: now,
+        _updated: now,
+      };
+      return QueriesRepository.insert(ctx, document);
     }),
     E.tap((queryId) => {
-      return organizationsAddQuery(ctx, request.owner, queryId);
+      return OrganizationRepository.addQuery(ctx, request.owner, queryId);
+    }),
+    E.mapError((cause) => {
+      return new ServiceError({
+        message: "Add organization query failure",
+        cause,
+      });
     }),
   );
 }
 
-export function executeQuery(
+function executeQuery(
   ctx: Context,
   request: ExecuteQueryRequest,
 ): E.Effect<JsonValue, z.ZodError | DbError | Error> {
   return pipe(
     E.Do,
-    E.bind("query", () => queriesFindOne(ctx, { _id: request.id })),
+    E.bind("query", () => QueriesRepository.findOne(ctx, { _id: request.id })),
     E.bind("variables", ({ query }) =>
       validateVariables(query.variables, request.variables),
     ),
@@ -49,10 +62,57 @@ export function executeQuery(
       injectVariablesIntoAggregation(query.pipeline, variables),
     ),
     E.flatMap(({ query, pipeline }) =>
-      dataRunAggregation(ctx, query, pipeline),
+      DataRepository.runAggregation(ctx, query, pipeline),
     ),
+    E.mapError((cause) => {
+      return new ServiceError({
+        message: "Execute query failure",
+        cause,
+      });
+    }),
   );
 }
+
+function findQueries(
+  ctx: Context,
+  owner: NilDid,
+): E.Effect<QueryDocument[], ServiceError> {
+  return pipe(
+    QueriesRepository.findMany(ctx, { owner }),
+    E.mapError((cause) => {
+      return new ServiceError({
+        message: "Find queries failure",
+        cause,
+      });
+    }),
+  );
+}
+
+function removeQuery(
+  ctx: Context,
+  owner: NilDid,
+  _id: UUID,
+): E.Effect<boolean, ServiceError> {
+  return pipe(
+    QueriesRepository.deleteOne(ctx, { owner, _id }),
+    E.flatMap((_success) => {
+      return OrganizationRepository.removeQuery(ctx, owner, _id);
+    }),
+    E.mapError((cause) => {
+      return new ServiceError({
+        message: "Remove query failed",
+        cause,
+      });
+    }),
+  );
+}
+
+export const QueriesService = {
+  addQuery,
+  executeQuery,
+  findQueries,
+  removeQuery,
+};
 
 export type QueryPrimitive = string | number | boolean | Date;
 

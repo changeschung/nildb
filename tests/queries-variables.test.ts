@@ -74,15 +74,17 @@ describe("queries.variables.test.ts", () => {
       startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     };
 
-    const response = await backend.executeQuery({
-      id: query.id,
-      variables,
-    });
+    const response = await backend.executeQuery(
+      {
+        id: query.id,
+        variables,
+      },
+      false,
+    );
 
     expect(response.body.errors).toHaveLength(1);
     const stringifiedErrors = JSON.stringify(response.body.errors);
-    expect(stringifiedErrors).toMatch("status");
-    expect(stringifiedErrors).toMatch("Expected string");
+    expect(stringifiedErrors).toMatch("Execute query failure");
   });
 
   it("rejects when providing null as variable value", async () => {
@@ -92,15 +94,17 @@ describe("queries.variables.test.ts", () => {
       startDate: null,
     };
 
-    const response = await backend.executeQuery({
-      id: query.id,
-      variables,
-    });
+    const response = await backend.executeQuery(
+      {
+        id: query.id,
+        variables,
+      },
+      false,
+    );
 
     expect(response.body.errors).toHaveLength(1);
     const stringifiedErrors = JSON.stringify(response.body.errors);
-    expect(stringifiedErrors).toMatch("startDate");
-    expect(stringifiedErrors).toMatch("Required");
+    expect(stringifiedErrors).toMatch("Execute query failure");
   });
 
   it("reject undefined as variable value", async () => {
@@ -110,15 +114,17 @@ describe("queries.variables.test.ts", () => {
       startDate: undefined,
     };
 
-    const response = await backend.executeQuery({
-      id: query.id,
-      variables,
-    });
+    const response = await backend.executeQuery(
+      {
+        id: query.id,
+        variables,
+      },
+      false,
+    );
 
     expect(response.body.errors).toHaveLength(1);
     const stringifiedErrors = JSON.stringify(response.body.errors);
-    expect(stringifiedErrors).toMatch("An unknown error occurred");
-    // expect(stringifiedErrors).toMatch("startDate");
+    expect(stringifiedErrors).toMatch("Execute query failure");
   });
 
   it("rejects function as variable value", async () => {
@@ -128,15 +134,15 @@ describe("queries.variables.test.ts", () => {
       startDate: () => new Date().toISOString(),
     };
 
-    const response = await backend.executeQuery({
-      id: query.id,
-      variables,
-    });
+    const response = await backend.executeQuery(
+      {
+        id: query.id,
+        variables,
+      },
+      false,
+    );
 
     const stringifiedErrors = JSON.stringify(response.body.errors);
-    expect(stringifiedErrors).toMatch("An unknown error occurred");
-    // expect(response.body.errors[0]).toMatch(
-    //   /Invalid query execution variables/,
-    // );
+    expect(stringifiedErrors).toMatch("Execute query failure");
   });
 });

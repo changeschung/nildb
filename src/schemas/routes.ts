@@ -1,9 +1,5 @@
 import { Router } from "express";
-import {
-  addSchemaController,
-  deleteSchemaController,
-  listSchemasController,
-} from "#/schemas/controllers";
+import { SchemasController } from "#/schemas/controllers";
 
 export const SchemasEndpointV1 = {
   Base: "/api/v1/schemas",
@@ -12,9 +8,9 @@ export const SchemasEndpointV1 = {
 export function buildSchemasRouter(): Router {
   const router = Router();
 
-  router.get(SchemasEndpointV1.Base, listSchemasController);
-  router.post(SchemasEndpointV1.Base, addSchemaController);
-  router.delete(SchemasEndpointV1.Base, deleteSchemaController);
+  router.get(SchemasEndpointV1.Base, SchemasController.listSchemas);
+  router.post(SchemasEndpointV1.Base, SchemasController.addSchema);
+  router.delete(SchemasEndpointV1.Base, SchemasController.deleteSchema);
 
   return router;
 }

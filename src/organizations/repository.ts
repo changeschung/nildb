@@ -7,7 +7,7 @@ import { CollectionName } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
 import type { Context } from "#/env";
 
-export function organizationsAddSchema(
+function addSchema(
   ctx: Context,
   owner: NilDid,
   schemaId: UUID,
@@ -26,14 +26,14 @@ export function organizationsAddSchema(
       return result.modifiedCount === 1 ? O.some(true) : O.none();
     }),
     succeedOrMapToRepositoryError({
-      operation: "organizationsAddSchema",
+      operation: "OrganizationRepository.addSchema",
       filter,
       update,
     }),
   );
 }
 
-export function organizationsRemoveSchema(
+function removeSchema(
   ctx: Context,
   orgId: NilDid,
   schemaId: UUID,
@@ -52,14 +52,14 @@ export function organizationsRemoveSchema(
       return result.modifiedCount === 1 ? O.some(true) : O.none();
     }),
     succeedOrMapToRepositoryError({
-      operation: "organizationsRemoveSchema",
+      operation: "OrganizationRepository.removeSchema",
       filter,
       update,
     }),
   );
 }
 
-export function organizationsAddQuery(
+function addQuery(
   ctx: Context,
   orgId: NilDid,
   queryId: UUID,
@@ -78,14 +78,14 @@ export function organizationsAddQuery(
       return result.modifiedCount === 1 ? O.some(true) : O.none();
     }),
     succeedOrMapToRepositoryError({
-      operation: "organizationsAddQuery",
+      operation: "OrganizationRepository.addQuery",
       filter,
       update,
     }),
   );
 }
 
-export function organizationsRemoveQuery(
+function removeQuery(
   ctx: Context,
   orgId: NilDid,
   queryId: UUID,
@@ -104,9 +104,16 @@ export function organizationsRemoveQuery(
       return result.modifiedCount === 1 ? O.some(true) : O.none();
     }),
     succeedOrMapToRepositoryError({
-      operation: "organizationsRemoveQuery",
+      operation: "OrganizationRepository.removeQuery",
       filter,
       update,
     }),
   );
 }
+
+export const OrganizationRepository = {
+  addSchema,
+  addQuery,
+  removeQuery,
+  removeSchema,
+};

@@ -1,10 +1,7 @@
 import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
 import { z } from "zod";
-import type {
-  AccountDocument,
-  RootAccountDocument,
-} from "#/accounts/repository";
+import type { AccountDocument, RootAccountDocument } from "#/admin/repository";
 import { Cache } from "#/common/cache";
 import { Identity } from "#/common/identity";
 import type { NilDid } from "#/common/nil-did";

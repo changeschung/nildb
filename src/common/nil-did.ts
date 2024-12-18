@@ -6,7 +6,7 @@ import type {
 } from "did-resolver";
 import { Effect as E, pipe } from "effect";
 import { z } from "zod";
-import { findAccountByDid } from "#/accounts/service";
+import { findAccountByIdWithCache } from "#/common/cache";
 import type { RepositoryError } from "#/common/error";
 import type { Context } from "#/env";
 
@@ -37,7 +37,7 @@ function findDocument(
   did: NilDid,
 ): E.Effect<DIDResolutionResult, RepositoryError> {
   return pipe(
-    findAccountByDid(ctx, did),
+    findAccountByIdWithCache(ctx, did),
     E.map((account) => ({
       didResolutionMetadata: {
         contentType: "application/did+json",

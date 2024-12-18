@@ -54,10 +54,13 @@ describe("schemas.datetime.test", async () => {
     ];
 
     for (const invalid of data) {
-      const response = await backend.uploadData({
-        schema: schema.id,
-        data: [invalid],
-      });
+      const response = await backend.uploadData(
+        {
+          schema: schema.id,
+          data: [invalid],
+        },
+        false,
+      );
       const result = response.body.errors.join(";");
       expect(result).toMatch(/failed schema validation/);
     }
