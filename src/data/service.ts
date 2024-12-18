@@ -16,7 +16,7 @@ import {
   type UpdateResult,
 } from "#/data/repository";
 import type { Context } from "#/env";
-import { schemasFindOne } from "#/schemas/repository";
+import { SchemasRepository } from "#/schemas/repository";
 
 function createRecords(
   ctx: Context,
@@ -27,7 +27,7 @@ function createRecords(
   return pipe(
     E.Do,
     E.bind("document", () => {
-      return schemasFindOne(ctx, {
+      return SchemasRepository.findOne(ctx, {
         _id: schemaId,
         owner: ownerId,
       });

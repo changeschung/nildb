@@ -1,7 +1,7 @@
 import { Effect as E, pipe } from "effect";
 import type { UUID } from "mongodb";
 import type { OrganizationAccountDocument } from "#/accounts/repository";
-import type { ServiceError } from "#/common/error";
+import { ServiceError } from "#/common/error";
 import { validateSchema } from "#/common/validator";
 import { DataRepository } from "#/data/repository";
 import type { Context } from "#/env";
@@ -10,24 +10,23 @@ import {
   organizationsRemoveSchema,
 } from "#/organizations/repository";
 import type { AddSchemaRequest } from "#/schemas/controllers";
-import {
-  type SchemaDocument,
-  schemasDeleteOne,
-  schemasFindMany,
-  schemasInsert,
-} from "#/schemas/repository";
+import { type SchemaDocument, SchemasRepository } from "#/schemas/repository";
 
-export function getOrganizationSchemas(
+function getOrganizationSchemas(
   ctx: Context,
   organization: OrganizationAccountDocument,
 ): E.Effect<SchemaDocument[], ServiceError> {
   return pipe(
     E.succeed(organization._id),
-    E.flatMap((owner) => schemasFindMany(ctx, { owner })),
+    E.flatMap((owner) => SchemasRepository.findMany(ctx, { owner })),
+    E.mapError((cause) => {
+      const message = `Get organization schemas failed: ${organization._id}`;
+      return new ServiceError({ message, cause });
+    }),
   );
 }
 
-export function addSchema(
+function addSchema(
   ctx: Context,
   request: AddSchemaRequest,
 ): E.Effect<UUID, ServiceError> {
@@ -40,7 +39,7 @@ export function addSchema(
         _created: now,
         _updated: now,
       };
-      return schemasInsert(ctx, document);
+      return SchemasRepository.insert(ctx, document);
     }),
     E.tap((schemaId) => {
       return DataRepository.createCollection(ctx, schemaId, request.keys);
@@ -48,20 +47,34 @@ export function addSchema(
     E.tap((schemaId) => {
       return organizationsAddSchema(ctx, request.owner, schemaId);
     }),
+    E.mapError((cause) => {
+      const message = `Add schema failed: ${request.schema.toString()}`;
+      return new ServiceError({ message, cause });
+    }),
   );
 }
 
-export function deleteSchema(
+function deleteSchema(
   ctx: Context,
   schemaId: UUID,
 ): E.Effect<SchemaDocument, ServiceError> {
   return pipe(
-    schemasDeleteOne(ctx, { _id: schemaId }),
+    SchemasRepository.deleteOne(ctx, { _id: schemaId }),
     E.tap((schema) => {
       return organizationsRemoveSchema(ctx, schema.owner, schemaId);
     }),
     E.tap((_orgId) => {
       return DataRepository.deleteCollection(ctx, schemaId);
     }),
+    E.mapError((cause) => {
+      const message = `Delete schema failed: ${schemaId.toString()}`;
+      return new ServiceError({ message, cause });
+    }),
   );
 }
+
+export const SchemasService = {
+  addSchema,
+  deleteSchema,
+  getOrganizationSchemas,
+};

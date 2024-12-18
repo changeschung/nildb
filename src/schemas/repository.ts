@@ -13,7 +13,7 @@ export type SchemaDocument = DocumentBase & {
   schema: Record<string, unknown>;
 };
 
-export function schemasInsert(
+function insert(
   ctx: Context,
   document: SchemaDocument,
 ): E.Effect<UUID, RepositoryError> {
@@ -26,13 +26,13 @@ export function schemasInsert(
       return result.insertedId;
     }),
     succeedOrMapToRepositoryError({
-      op: "schemasInsert",
-      params: { document },
+      op: "SchemasRepository.insert",
+      document,
     }),
   );
 }
 
-export function schemasFindMany(
+function findMany(
   ctx: Context,
   filter: StrictFilter<SchemaDocument>,
 ): E.Effect<SchemaDocument[], RepositoryError> {
@@ -44,13 +44,13 @@ export function schemasFindMany(
       return collection.find(filter).toArray();
     }),
     succeedOrMapToRepositoryError({
-      op: "schemasFindMany",
+      op: "SchemasRepository.findMany",
       filter,
     }),
   );
 }
 
-export function schemasFindOne(
+function findOne(
   ctx: Context,
   filter: StrictFilter<SchemaDocument>,
 ): E.Effect<SchemaDocument, RepositoryError> {
@@ -63,13 +63,13 @@ export function schemasFindOne(
       return O.fromNullable(result);
     }),
     succeedOrMapToRepositoryError({
-      op: "schemasFindOne",
+      op: "SchemasRepository.findOne",
       filter,
     }),
   );
 }
 
-export function schemasDeleteMany(
+function deleteMany(
   ctx: Context,
   filter: StrictFilter<SchemaDocument>,
 ): E.Effect<number, RepositoryError> {
@@ -82,13 +82,13 @@ export function schemasDeleteMany(
       return result.deletedCount;
     }),
     succeedOrMapToRepositoryError({
-      op: "schemasDeleteMany",
+      op: "SchemasRepository.deleteMany",
       filter,
     }),
   );
 }
 
-export function schemasDeleteOne(
+function deleteOne(
   ctx: Context,
   filter: StrictFilter<SchemaDocument>,
 ): E.Effect<SchemaDocument, RepositoryError> {
@@ -101,8 +101,16 @@ export function schemasDeleteOne(
       return O.fromNullable(result);
     }),
     succeedOrMapToRepositoryError({
-      op: "schemasDeleteOne",
+      op: "SchemasRepository.deleteOne",
       filter,
     }),
   );
 }
+
+export const SchemasRepository = {
+  deleteMany,
+  deleteOne,
+  findMany,
+  findOne,
+  insert,
+};

@@ -8,11 +8,11 @@ import { NilDid } from "#/common/nil-did";
 import { Uuid, type UuidDto } from "#/common/types";
 import { isAccountAllowedGuard } from "#/middleware/auth";
 import type { SchemaDocument } from "#/schemas/repository";
-import { addSchema, deleteSchema, getOrganizationSchemas } from "./service";
+import { SchemasService } from "./service";
 
 export type ListSchemasResponse = ApiResponse<SchemaDocument[]>;
 
-export const listSchemasController: RequestHandler<
+export const listSchemas: RequestHandler<
   EmptyObject,
   ListSchemasResponse
 > = async (req, res) => {
@@ -23,7 +23,9 @@ export const listSchemasController: RequestHandler<
 
   const response = await pipe(
     E.succeed(req.account as OrganizationAccountDocument),
-    E.flatMap((account) => getOrganizationSchemas(req.ctx, account)),
+    E.flatMap((account) =>
+      SchemasService.getOrganizationSchemas(req.ctx, account),
+    ),
     foldToApiResponse(req.ctx),
     E.runPromise,
   );
@@ -41,7 +43,7 @@ export const AddSchemaRequest = z.object({
 export type AddSchemaRequest = z.infer<typeof AddSchemaRequest>;
 export type AddSchemaResponse = ApiResponse<UuidDto>;
 
-export const addSchemaController: RequestHandler<
+const addSchema: RequestHandler<
   EmptyObject,
   AddSchemaResponse,
   AddSchemaRequest
@@ -56,7 +58,7 @@ export const addSchemaController: RequestHandler<
       try: () => AddSchemaRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-    E.flatMap((body) => addSchema(req.ctx, body)),
+    E.flatMap((body) => SchemasService.addSchema(req.ctx, body)),
     E.map((id) => id.toString() as UuidDto),
     foldToApiResponse(req.ctx),
     E.runPromise,
@@ -71,7 +73,7 @@ export const DeleteSchemaRequest = z.object({
 export type DeleteSchemaRequest = z.infer<typeof DeleteSchemaRequest>;
 export type DeleteSchemaResponse = ApiResponse<UuidDto>;
 
-export const deleteSchemaController: RequestHandler<
+const deleteSchema: RequestHandler<
   EmptyObject,
   DeleteSchemaResponse,
   DeleteSchemaRequest
@@ -86,11 +88,17 @@ export const deleteSchemaController: RequestHandler<
       try: () => DeleteSchemaRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-    E.flatMap((body) => deleteSchema(req.ctx, body.id)),
+    E.flatMap((body) => SchemasService.deleteSchema(req.ctx, body.id)),
     E.map((schema) => schema._id.toString() as UuidDto),
     foldToApiResponse(req.ctx),
     E.runPromise,
   );
 
   res.send(response);
+};
+
+export const SchemasController = {
+  addSchema,
+  deleteSchema,
+  listSchemas,
 };
