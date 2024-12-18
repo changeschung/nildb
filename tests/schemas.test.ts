@@ -85,7 +85,7 @@ describe("schemas.test.ts", () => {
 
   it("can delete schema", async () => {
     const id = schema.id;
-    const response = await organization.deleteSchema({
+    const response = await admin.deleteSchema({
       id,
     });
 
