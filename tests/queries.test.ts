@@ -17,11 +17,13 @@ describe("query.test.ts", () => {
   let fixture: AppFixture;
   let db: Context["db"];
   let organization: TestClient;
+  let admin: TestClient;
   const query = queryJson as unknown as QueryFixture;
 
   beforeAll(async () => {
     fixture = await buildFixture();
     db = fixture.ctx.db;
+    admin = fixture.users.admin;
     organization = fixture.users.organization;
     // placeholder schema id so addQuery passes validation
     query.schema = new UUID();
@@ -33,7 +35,7 @@ describe("query.test.ts", () => {
   });
 
   it("can add a query", async () => {
-    const response = await organization.addQuery({
+    const response = await admin.addQuery({
       _id: new UUID(),
       owner: organization.did,
       name: query.name,

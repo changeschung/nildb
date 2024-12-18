@@ -68,7 +68,7 @@ export const addQueryController: RequestHandler<
   AddQueryResponse,
   AddQueryRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  if (!isAccountAllowedGuard(req.ctx, ["admin"], req.account)) {
     res.sendStatus(401);
     return;
   }
