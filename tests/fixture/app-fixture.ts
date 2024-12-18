@@ -136,6 +136,7 @@ export async function registerSchemaAndQuery(
 
   {
     const response = await organization.addQuery({
+      _id: new UUID(),
       owner: organization.did,
       name: query.name,
       schema: query.schema,

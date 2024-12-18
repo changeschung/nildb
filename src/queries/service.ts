@@ -27,7 +27,13 @@ export function addQueryToOrganization(
   return pipe(
     validateData(pipelineSchema, request.pipeline),
     E.flatMap(() => {
-      return queriesInsert(ctx, request);
+      const now = new Date();
+      const document: QueryDocument = {
+        ...request,
+        _created: now,
+        _updated: now,
+      };
+      return queriesInsert(ctx, document);
     }),
     E.tap((queryId) => {
       return organizationsAddQuery(ctx, request.owner, queryId);

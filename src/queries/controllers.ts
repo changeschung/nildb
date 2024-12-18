@@ -53,6 +53,7 @@ export const QueryVariableValidator = z.union([
   }),
 ]);
 export const AddQueryRequest = z.object({
+  _id: Uuid,
   owner: NilDid,
   name: z.string(),
   schema: Uuid,

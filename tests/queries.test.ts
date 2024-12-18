@@ -34,6 +34,7 @@ describe("query.test.ts", () => {
 
   it("can add a query", async () => {
     const response = await organization.addQuery({
+      _id: new UUID(),
       owner: organization.did,
       name: query.name,
       schema: query.schema,
