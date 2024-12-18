@@ -1,17 +1,17 @@
 import { Router } from "express";
-import { aboutNodeController, healthCheckController } from "./controllers";
+import { SystemController } from "./controllers";
 
 export const SystemEndpoint = {
-  Health: "/health",
   About: "/about",
+  Health: "/health",
   Metrics: "/metrics",
 } as const;
 
 export function createSystemRouter(): Router {
   const router = Router();
 
-  router.get(SystemEndpoint.Health, healthCheckController);
-  router.get(SystemEndpoint.About, aboutNodeController);
+  router.get(SystemEndpoint.About, SystemController.aboutNodeController);
+  router.get(SystemEndpoint.Health, SystemController.healthCheckController);
 
   return router;
 }
