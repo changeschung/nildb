@@ -32,6 +32,7 @@ export const listSchemasController: RequestHandler<
 };
 
 export const AddSchemaRequest = z.object({
+  _id: Uuid,
   owner: NilDid,
   name: z.string().min(1),
   keys: z.array(z.string()),
@@ -45,6 +46,11 @@ export const addSchemaController: RequestHandler<
   AddSchemaResponse,
   AddSchemaRequest
 > = async (req, res) => {
+  if (!isAccountAllowedGuard(req.ctx, ["admin"], req.account)) {
+    res.sendStatus(401);
+    return;
+  }
+
   const response = await pipe(
     E.try({
       try: () => AddSchemaRequest.parse(req.body),

@@ -16,11 +16,13 @@ import type { TestClient } from "./fixture/client";
 
 describe("schemas.test.ts", () => {
   let fixture: AppFixture;
+  let admin: TestClient;
   let organization: TestClient;
   const schema = schemaJson as unknown as SchemaFixture;
 
   beforeAll(async () => {
     fixture = await buildFixture();
+    admin = fixture.users.admin;
     organization = fixture.users.organization;
   });
 
@@ -30,7 +32,8 @@ describe("schemas.test.ts", () => {
   });
 
   it("can add schema", async () => {
-    const response = await organization.addSchema({
+    const response = await admin.addSchema({
+      _id: new UUID(),
       owner: organization.did,
       name: schema.name,
       keys: schema.keys,

@@ -113,10 +113,11 @@ export async function registerSchemaAndQuery(
   schema: SchemaFixture,
   query: QueryFixture,
 ): Promise<void> {
-  const { organization } = fixture.users;
+  const { organization, admin } = fixture.users;
 
   {
-    const response = await organization.addSchema({
+    const response = await admin.addSchema({
+      _id: new UUID(),
       owner: organization.did,
       name: schema.name,
       keys: schema.keys,

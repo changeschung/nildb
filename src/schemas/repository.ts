@@ -1,5 +1,5 @@
 import { Effect as E, Option as O, pipe } from "effect";
-import { type StrictFilter, UUID } from "mongodb";
+import type { StrictFilter, UUID } from "mongodb";
 import type { RepositoryError } from "#/common/error";
 import { succeedOrMapToRepositoryError } from "#/common/errors";
 import { CollectionName, type DocumentBase } from "#/common/mongo";
@@ -15,16 +15,8 @@ export type SchemaDocument = DocumentBase & {
 
 export function schemasInsert(
   ctx: Context,
-  data: Omit<SchemaDocument, keyof DocumentBase>,
+  document: SchemaDocument,
 ): E.Effect<UUID, RepositoryError> {
-  const now = new Date();
-  const document: SchemaDocument = {
-    ...data,
-    _id: new UUID(),
-    _created: now,
-    _updated: now,
-  };
-
   return pipe(
     E.tryPromise(async () => {
       const collection = ctx.db.primary.collection<SchemaDocument>(

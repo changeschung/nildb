@@ -33,7 +33,15 @@ export function addSchema(
 ): E.Effect<UUID, ServiceError> {
   return pipe(
     validateSchema(request.schema),
-    E.flatMap(() => schemasInsert(ctx, request)),
+    E.flatMap(() => {
+      const now = new Date();
+      const document: SchemaDocument = {
+        ...request,
+        _created: now,
+        _updated: now,
+      };
+      return schemasInsert(ctx, document);
+    }),
     E.tap((schemaId) => {
       return dataCreateCollection(ctx, schemaId, request.keys);
     }),
