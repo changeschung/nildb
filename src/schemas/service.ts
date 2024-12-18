@@ -5,10 +5,7 @@ import { ServiceError } from "#/common/error";
 import { validateSchema } from "#/common/validator";
 import { DataRepository } from "#/data/repository";
 import type { Context } from "#/env";
-import {
-  organizationsAddSchema,
-  organizationsRemoveSchema,
-} from "#/organizations/repository";
+import { OrganizationRepository } from "#/organizations/repository";
 import type { AddSchemaRequest } from "#/schemas/controllers";
 import { type SchemaDocument, SchemasRepository } from "#/schemas/repository";
 
@@ -45,7 +42,7 @@ function addSchema(
       return DataRepository.createCollection(ctx, schemaId, request.keys);
     }),
     E.tap((schemaId) => {
-      return organizationsAddSchema(ctx, request.owner, schemaId);
+      return OrganizationRepository.addSchema(ctx, request.owner, schemaId);
     }),
     E.mapError((cause) => {
       const message = `Add schema failed: ${request.schema.toString()}`;
@@ -61,7 +58,7 @@ function deleteSchema(
   return pipe(
     SchemasRepository.deleteOne(ctx, { _id: schemaId }),
     E.tap((schema) => {
-      return organizationsRemoveSchema(ctx, schema.owner, schemaId);
+      return OrganizationRepository.removeSchema(ctx, schema.owner, schemaId);
     }),
     E.tap((_orgId) => {
       return DataRepository.deleteCollection(ctx, schemaId);

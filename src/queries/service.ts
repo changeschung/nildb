@@ -7,7 +7,7 @@ import type { DbError } from "#/common/errors";
 import { validateData } from "#/common/validator";
 import { DataRepository } from "#/data/repository";
 import type { Context } from "#/env";
-import { organizationsAddQuery } from "#/organizations/repository";
+import { OrganizationRepository } from "#/organizations/repository";
 import type {
   AddQueryRequest,
   ExecuteQueryRequest,
@@ -36,7 +36,7 @@ export function addQueryToOrganization(
       return queriesInsert(ctx, document);
     }),
     E.tap((queryId) => {
-      return organizationsAddQuery(ctx, request.owner, queryId);
+      return OrganizationRepository.addQuery(ctx, request.owner, queryId);
     }),
   );
 }

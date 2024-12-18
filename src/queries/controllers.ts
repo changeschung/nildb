@@ -6,7 +6,7 @@ import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { NilDid } from "#/common/nil-did";
 import { Uuid, type UuidDto } from "#/common/types";
 import { isAccountAllowedGuard } from "#/middleware/auth";
-import { organizationsRemoveQuery } from "#/organizations/repository";
+import { OrganizationRepository } from "#/organizations/repository";
 import {
   type QueryDocument,
   queriesDeleteOne,
@@ -113,7 +113,11 @@ export const deleteQueryController: RequestHandler<
       pipe(
         queriesDeleteOne(req.ctx, { _id: request.id }),
         E.flatMap((query) => {
-          return organizationsRemoveQuery(req.ctx, query.owner, request.id);
+          return OrganizationRepository.removeQuery(
+            req.ctx,
+            query.owner,
+            request.id,
+          );
         }),
       ),
     ),
