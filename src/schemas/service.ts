@@ -3,7 +3,7 @@ import type { UUID } from "mongodb";
 import type { OrganizationAccountDocument } from "#/accounts/repository";
 import type { ServiceError } from "#/common/error";
 import { validateSchema } from "#/common/validator";
-import { dataCreateCollection, dataDeleteCollection } from "#/data/repository";
+import { DataRepository } from "#/data/repository";
 import type { Context } from "#/env";
 import {
   organizationsAddSchema,
@@ -43,7 +43,7 @@ export function addSchema(
       return schemasInsert(ctx, document);
     }),
     E.tap((schemaId) => {
-      return dataCreateCollection(ctx, schemaId, request.keys);
+      return DataRepository.createCollection(ctx, schemaId, request.keys);
     }),
     E.tap((schemaId) => {
       return organizationsAddSchema(ctx, request.owner, schemaId);
@@ -61,7 +61,7 @@ export function deleteSchema(
       return organizationsRemoveSchema(ctx, schema.owner, schemaId);
     }),
     E.tap((_orgId) => {
-      return dataDeleteCollection(ctx, schemaId);
+      return DataRepository.deleteCollection(ctx, schemaId);
     }),
   );
 }

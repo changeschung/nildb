@@ -6,16 +6,9 @@ import { ControllerError } from "#/common/error";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import type { DocumentBase } from "#/common/mongo";
 import { Uuid, type UuidDto } from "#/common/types";
-import { createDataService, readData } from "#/data/service";
+import { DataService } from "#/data/service";
 import { isAccountAllowedGuard } from "#/middleware/auth";
-import {
-  type CreatedResult,
-  type UpdateResult,
-  dataDeleteMany,
-  dataFlushCollection,
-  dataTailCollection,
-  dataUpdateMany,
-} from "./repository";
+import type { CreatedResult, UpdateResult } from "./repository";
 
 export const MAX_RECORDS_LENGTH = 10_000;
 
@@ -56,7 +49,7 @@ export const createDataController: RequestHandler<
     }),
 
     E.flatMap((body) => {
-      return createDataService(
+      return DataService.createRecords(
         req.ctx,
         req.account._id,
         body.schema,
@@ -94,13 +87,9 @@ export const updateDataController: RequestHandler<
       try: () => UpdateDataRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-
-    E.flatMap((body) =>
-      dataUpdateMany(req.ctx, body.schema, body.filter, body.update),
-    ),
-
-    E.map((data) => data),
-
+    E.flatMap((body) => {
+      return DataService.updateRecords(req.ctx, body);
+    }),
     foldToApiResponse(req.ctx),
     E.runPromise,
   );
@@ -130,11 +119,7 @@ export const readDataController: RequestHandler<
       try: () => ReadDataRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-
-    E.flatMap((body) => readData(req.ctx, body)),
-
-    E.map((data) => data),
-
+    E.flatMap((body) => DataService.readRecords(req.ctx, body)),
     foldToApiResponse(req.ctx),
     E.runPromise,
   );
@@ -168,18 +153,15 @@ export const deleteDataController: RequestHandler<
     E.flatMap((request) => {
       if (Object.keys(request.filter).length === 0)
         return E.fail(
-          new Error(
-            "Filter cannot be empty. Use /data/flush to remove all records from a collection.",
-          ),
+          new ControllerError({
+            message:
+              "Filter cannot be empty. Use /data/flush to remove all records from a collection.",
+          }),
         );
 
       return E.succeed(request);
     }),
-
-    E.flatMap((request) =>
-      dataDeleteMany(req.ctx, request.schema, request.filter),
-    ),
-
+    E.flatMap((request) => DataService.deleteRecords(req.ctx, request)),
     foldToApiResponse(req.ctx),
     E.runPromise,
   );
@@ -208,9 +190,9 @@ export const flushDataController: RequestHandler<
       try: () => FlushDataRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-
-    E.flatMap((request) => dataFlushCollection(req.ctx, request.schema)),
-
+    E.flatMap((request) =>
+      DataService.flushCollection(req.ctx, request.schema),
+    ),
     foldToApiResponse(req.ctx),
     E.runPromise,
   );
@@ -239,7 +221,7 @@ export const tailDataController: RequestHandler<
       try: () => TailDataRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-    E.flatMap((body) => dataTailCollection(req.ctx, body.schema)),
+    E.flatMap((body) => DataService.tailData(req.ctx, body.schema)),
     E.map((data) => data as JsonArray),
     foldToApiResponse(req.ctx),
     E.runPromise,

@@ -5,7 +5,7 @@ import type { JsonObject, JsonValue } from "type-fest";
 import { z } from "zod";
 import type { DbError } from "#/common/errors";
 import { validateData } from "#/common/validator";
-import { dataRunAggregation } from "#/data/repository";
+import { DataRepository } from "#/data/repository";
 import type { Context } from "#/env";
 import { organizationsAddQuery } from "#/organizations/repository";
 import type {
@@ -55,7 +55,7 @@ export function executeQuery(
       injectVariablesIntoAggregation(query.pipeline, variables),
     ),
     E.flatMap(({ query, pipeline }) =>
-      dataRunAggregation(ctx, query, pipeline),
+      DataRepository.runAggregation(ctx, query, pipeline),
     ),
   );
 }

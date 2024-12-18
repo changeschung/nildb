@@ -4,19 +4,21 @@ import { ServiceError } from "#/common/error";
 import type { NilDid } from "#/common/nil-did";
 import { validateData } from "#/common/validator";
 import type {
+  DeleteDataRequest,
   PartialDataDocumentDto,
   ReadDataRequest,
+  UpdateDataRequest,
 } from "#/data/controllers";
 import {
   type CreatedResult,
   type DataDocument,
-  dataFindMany,
-  dataInsert,
+  DataRepository,
+  type UpdateResult,
 } from "#/data/repository";
 import type { Context } from "#/env";
 import { schemasFindOne } from "#/schemas/repository";
 
-export function createDataService(
+function createRecords(
   ctx: Context,
   ownerId: NilDid,
   schemaId: UUID,
@@ -34,7 +36,7 @@ export function createDataService(
       return validateData<PartialDataDocumentDto[]>(document.schema, data);
     }),
     E.flatMap(({ document, data }) => {
-      return dataInsert(ctx, document, data);
+      return DataRepository.insert(ctx, document, data);
     }),
     E.mapError((cause) => {
       return new ServiceError({ message: "Failed to create data", cause });
@@ -42,7 +44,25 @@ export function createDataService(
   );
 }
 
-export function readData(
+function updateRecords(
+  ctx: Context,
+  request: UpdateDataRequest,
+): E.Effect<UpdateResult, ServiceError> {
+  return pipe(
+    DataRepository.updateMany(
+      ctx,
+      request.schema,
+      request.filter,
+      request.update,
+    ),
+    E.mapError((cause) => {
+      const message = `Update records failed: ${request.schema.toString()}`;
+      return new ServiceError({ message, cause });
+    }),
+  );
+}
+
+function readRecords(
   ctx: Context,
   request: ReadDataRequest,
 ): E.Effect<DataDocument[], ServiceError> {
@@ -87,6 +107,56 @@ export function readData(
         });
       },
     }),
-    E.flatMap(({ schema, filter }) => dataFindMany(ctx, schema, filter)),
+    E.flatMap(({ schema, filter }) =>
+      DataRepository.findMany(ctx, schema, filter),
+    ),
   );
 }
+
+function deleteRecords(
+  ctx: Context,
+  request: DeleteDataRequest,
+): E.Effect<number, ServiceError> {
+  return pipe(
+    DataRepository.deleteMany(ctx, request.schema, request.filter),
+    E.mapError((cause) => {
+      const message = `Delete records failed: ${request.schema.toString()}`;
+      return new ServiceError({ message, cause });
+    }),
+  );
+}
+
+function flushCollection(
+  ctx: Context,
+  schema: UUID,
+): E.Effect<number, ServiceError> {
+  return pipe(
+    DataRepository.flushCollection(ctx, schema),
+    E.mapError((cause) => {
+      const message = `Flush collection failed: ${schema.toString()}`;
+      return new ServiceError({ message, cause });
+    }),
+  );
+}
+
+function tailData(
+  ctx: Context,
+  schema: UUID,
+): E.Effect<DataDocument[], ServiceError> {
+  return pipe(
+    DataRepository.tailCollection(ctx, schema),
+    E.mapError((cause) => {
+      const message = `Tail collection failed: ${schema.toString()}`;
+      return new ServiceError({ message, cause });
+    }),
+  );
+}
+
+export const DataService = {
+  createRecords,
+  deleteRecords,
+  flushCollection,
+  readRecords,
+  tailData,
+  updateRecords,
+};
