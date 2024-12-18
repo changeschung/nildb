@@ -20,12 +20,15 @@ describe("access-management.test.ts", () => {
   });
 
   it("organizations cannot create accounts", async () => {
-    const response = await organization.registerAccount({
-      type: "organization",
-      did: organization.did,
-      publicKey: organization.publicKey,
-      name: "organization account",
-    });
+    const response = await organization.registerAccount(
+      {
+        type: "organization",
+        did: organization.did,
+        publicKey: organization.publicKey,
+        name: "organization account",
+      },
+      false,
+    );
 
     expect(response.status).toBe(401);
   });

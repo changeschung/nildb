@@ -74,10 +74,13 @@ describe("queries.variables.test.ts", () => {
       startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     };
 
-    const response = await backend.executeQuery({
-      id: query.id,
-      variables,
-    });
+    const response = await backend.executeQuery(
+      {
+        id: query.id,
+        variables,
+      },
+      false,
+    );
 
     expect(response.body.errors).toHaveLength(1);
     const stringifiedErrors = JSON.stringify(response.body.errors);
@@ -92,10 +95,13 @@ describe("queries.variables.test.ts", () => {
       startDate: null,
     };
 
-    const response = await backend.executeQuery({
-      id: query.id,
-      variables,
-    });
+    const response = await backend.executeQuery(
+      {
+        id: query.id,
+        variables,
+      },
+      false,
+    );
 
     expect(response.body.errors).toHaveLength(1);
     const stringifiedErrors = JSON.stringify(response.body.errors);
@@ -110,10 +116,13 @@ describe("queries.variables.test.ts", () => {
       startDate: undefined,
     };
 
-    const response = await backend.executeQuery({
-      id: query.id,
-      variables,
-    });
+    const response = await backend.executeQuery(
+      {
+        id: query.id,
+        variables,
+      },
+      false,
+    );
 
     expect(response.body.errors).toHaveLength(1);
     const stringifiedErrors = JSON.stringify(response.body.errors);
@@ -128,10 +137,13 @@ describe("queries.variables.test.ts", () => {
       startDate: () => new Date().toISOString(),
     };
 
-    const response = await backend.executeQuery({
-      id: query.id,
-      variables,
-    });
+    const response = await backend.executeQuery(
+      {
+        id: query.id,
+        variables,
+      },
+      false,
+    );
 
     const stringifiedErrors = JSON.stringify(response.body.errors);
     expect(stringifiedErrors).toMatch("An unknown error occurred");

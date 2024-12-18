@@ -147,10 +147,13 @@ describe("data.test.ts", () => {
       },
     ];
 
-    const response = await organization.uploadData({
-      schema: schema.id,
-      data,
-    });
+    const response = await organization.uploadData(
+      {
+        schema: schema.id,
+        data,
+      },
+      false,
+    );
 
     const result = response.body.errors.join(";");
     expect(result).toMatch(/failed schema validation/);

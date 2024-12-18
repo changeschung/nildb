@@ -42,10 +42,13 @@ describe("queries.array.variables.test.ts", () => {
       values: [1, "string"],
     };
 
-    const response = await backend.executeQuery({
-      id: query.id,
-      variables,
-    });
+    const response = await backend.executeQuery(
+      {
+        id: query.id,
+        variables,
+      },
+      false,
+    );
 
     expect(response.body.errors).toHaveLength(1);
   });

@@ -35,10 +35,13 @@ describe("upload.max.data.test", () => {
       nextDocument(),
     );
 
-    const response = await backend.uploadData({
-      schema: schema.id,
-      data,
-    });
+    const response = await backend.uploadData(
+      {
+        schema: schema.id,
+        data,
+      },
+      false,
+    );
 
     expect(response.body.errors[0]).toMatch(
       `Max data length is ${MAX_RECORDS_LENGTH} elements`,
