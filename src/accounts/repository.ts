@@ -5,28 +5,7 @@ import { succeedOrMapToRepositoryError } from "#/common/errors";
 import { CollectionName } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
 import type { Context } from "#/env";
-
-export type AccountDocument =
-  | RootAccountDocument
-  | AdminAccountDocument
-  | OrganizationAccountDocument;
-
-export type AccountType = "root" | "admin" | "organization";
-
-export type RootAccountDocument = {
-  _id: NilDid;
-  _type: "root";
-  publicKey: string;
-};
-
-export type AdminAccountDocument = {
-  _id: NilDid;
-  _type: "admin";
-  _created: Date;
-  _updated: Date;
-  publicKey: string;
-  name: string;
-};
+import type { RegisterAccountRequest } from "./controllers";
 
 export type OrganizationAccountDocument = {
   _id: NilDid;
@@ -39,31 +18,9 @@ export type OrganizationAccountDocument = {
   queries: UUID[];
 };
 
-export function toAdminAccountDocument(data: {
-  type: "admin";
-  did: NilDid;
-  publicKey: string;
-  name: string;
-}): AdminAccountDocument {
-  const { did, publicKey, name } = data;
-  const now = new Date();
-
-  return {
-    _id: did,
-    _type: "admin",
-    _created: now,
-    _updated: now,
-    publicKey,
-    name,
-  };
-}
-
-export function toOrganizationAccountDocument(data: {
-  type: "organization";
-  did: NilDid;
-  publicKey: string;
-  name: string;
-}): OrganizationAccountDocument {
+function toOrganizationAccountDocument(
+  data: RegisterAccountRequest,
+): OrganizationAccountDocument {
   const { did, publicKey, name } = data;
   const now = new Date();
 
@@ -79,40 +36,44 @@ export function toOrganizationAccountDocument(data: {
   };
 }
 
-export function accountsInsert(
+function insert(
   ctx: Context,
-  document: AdminAccountDocument | OrganizationAccountDocument,
+  document: OrganizationAccountDocument,
 ): E.Effect<NilDid, RepositoryError> {
   return pipe(
     E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<AccountDocument>(
+      const collection = ctx.db.primary.collection<OrganizationAccountDocument>(
         CollectionName.Accounts,
       );
       const result = await collection.insertOne(document);
       return result.insertedId;
     }),
     succeedOrMapToRepositoryError({
-      op: "accountsInsert",
+      op: "AccountRepository.insert",
       document,
     }),
   );
 }
 
-export function accountsFindOne(
+function findOne(
   ctx: Context,
-  filter: StrictFilter<AccountDocument>,
-): E.Effect<AccountDocument, RepositoryError> {
+  filter: StrictFilter<OrganizationAccountDocument>,
+): E.Effect<OrganizationAccountDocument, RepositoryError> {
   return pipe(
     E.tryPromise(async () => {
       const accountsCache = ctx.cache.accounts;
+      filter._type = "organization";
+
       // Try cache to avoid db query
       if (filter._id) {
         const account = accountsCache.get(filter._id as NilDid);
-        if (account) return O.some(account);
+        if (account && account._type === "organization") {
+          return O.some(account);
+        }
       }
 
       // Cache miss search database
-      const collection = ctx.db.primary.collection<AccountDocument>(
+      const collection = ctx.db.primary.collection<OrganizationAccountDocument>(
         CollectionName.Accounts,
       );
       const result = await collection.findOne(filter);
@@ -124,46 +85,39 @@ export function accountsFindOne(
       return O.fromNullable(result);
     }),
     succeedOrMapToRepositoryError({
-      op: "accountsFindOne",
+      op: "AccountRepository.findOne",
       filter,
     }),
   );
 }
 
-export function accountsFind(
+function deleteOneById(
   ctx: Context,
-  filter: StrictFilter<AccountDocument>,
-): E.Effect<AccountDocument[], RepositoryError> {
-  return pipe(
-    E.tryPromise(() => {
-      // Skip cache.accounts check because this isn't perf sensitive
-      const collection = ctx.db.primary.collection<AccountDocument>(
-        CollectionName.Accounts,
-      );
-      return collection.find(filter).toArray();
-    }),
-    succeedOrMapToRepositoryError({
-      op: "accountsFind",
-      filter,
-    }),
-  );
-}
+  _id: NilDid,
+): E.Effect<NilDid, RepositoryError> {
+  const filter: StrictFilter<OrganizationAccountDocument> = {
+    _id,
+    _type: "organization",
+  };
 
-export function accountsDeleteOne(
-  ctx: Context,
-  filter: StrictFilter<AccountDocument>,
-): E.Effect<AccountDocument, RepositoryError> {
   return pipe(
     E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<AccountDocument>(
+      const collection = ctx.db.primary.collection<OrganizationAccountDocument>(
         CollectionName.Accounts,
       );
-      const result = await collection.findOneAndDelete(filter);
-      return O.fromNullable(result);
+      const result = await collection.deleteOne(filter);
+      return result.deletedCount === 1 ? O.some(_id) : O.none();
     }),
     succeedOrMapToRepositoryError({
-      name: "accountsDeleteOne",
-      params: { filter },
+      name: "AccountRepository.deleteOne",
+      filter,
     }),
   );
 }
+
+export const AccountRepository = {
+  toOrganizationAccountDocument,
+  deleteOneById,
+  findOne,
+  insert,
+};

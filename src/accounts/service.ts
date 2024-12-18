@@ -5,20 +5,16 @@ import { Identity } from "#/common/identity";
 import type { NilDid } from "#/common/nil-did";
 import type { Context } from "#/env";
 import {
-  type AccountDocument,
-  accountsFind,
-  accountsFindOne,
-  accountsInsert,
-  toAdminAccountDocument,
-  toOrganizationAccountDocument,
+  AccountRepository,
+  type OrganizationAccountDocument,
 } from "./repository";
 
-export function findAccountByDid(
+export function find(
   ctx: Context,
   did: NilDid,
-): E.Effect<AccountDocument, ServiceError> {
+): E.Effect<OrganizationAccountDocument, ServiceError> {
   return pipe(
-    accountsFindOne(ctx, { _id: did }),
+    AccountRepository.findOne(ctx, { _id: did }),
     E.mapError(
       (error) =>
         new ServiceError({
@@ -35,19 +31,7 @@ export function findAccountByDid(
   );
 }
 
-export function listAccounts(
-  ctx: Context,
-): E.Effect<AccountDocument[], ServiceError> {
-  return pipe(
-    accountsFind(ctx, {}),
-    E.mapError(
-      (error) =>
-        new ServiceError({ message: "Failed to list accounts", cause: error }),
-    ),
-  );
-}
-
-export function registerAccount(
+export function register(
   ctx: Context,
   data: RegisterAccountRequest,
 ): E.Effect<NilDid, ServiceError> {
@@ -75,28 +59,39 @@ export function registerAccount(
       return E.succeed(data);
     }),
     E.flatMap((data) => {
-      if (data.type === "admin") {
-        const document = toAdminAccountDocument(data);
-        return accountsInsert(ctx, document);
-      }
-
-      if (data.type === "organization") {
-        const document = toOrganizationAccountDocument(data);
-        return accountsInsert(ctx, document);
-      }
-
-      return E.fail(
-        new ServiceError({
-          message: "Cannot register root account",
-          context: { data },
-        }),
-      );
+      const document = AccountRepository.toOrganizationAccountDocument(data);
+      return AccountRepository.insert(ctx, document);
     }),
     E.mapError((cause) => {
       return new ServiceError({
-        message: "Account registration failure",
+        message: "Register organization failure",
         cause,
       });
     }),
   );
 }
+
+export function remove(
+  ctx: Context,
+  id: NilDid,
+): E.Effect<NilDid, ServiceError> {
+  return pipe(
+    AccountRepository.deleteOneById(ctx, id),
+    E.mapError(
+      (error) =>
+        new ServiceError({
+          message: `Failed to delete account: ${id}`,
+          cause: error,
+        }),
+    ),
+    E.tap((id) => {
+      ctx.log.debug(`Removed organization account: ${id}`);
+    }),
+  );
+}
+
+export const AccountService = {
+  find,
+  register,
+  remove,
+};

@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "tsx --watch src/main.ts",
     "start": "tsx src/main.ts",
-    "test": "vitest --run tests",
+    "test": "vitest --run tests/",
     "install-hooks": "lefthook install"
   },
   "dependencies": {

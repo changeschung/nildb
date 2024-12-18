@@ -1,3 +1,4 @@
+import { faker } from "@faker-js/faker";
 import { beforeAll, describe, expect, it } from "vitest";
 import { AccountsEndpointV1 } from "#/accounts/routes";
 import { type AppFixture, buildFixture } from "./fixture/app-fixture";
@@ -19,13 +20,12 @@ describe("access-management.test.ts", () => {
     expect(response.status).toBe(401);
   });
 
-  it("organizations cannot create accounts", async () => {
-    const response = await organization.registerAccount(
+  it("organizations cannot create admin accounts", async () => {
+    const response = await organization.createAdminAccount(
       {
-        type: "organization",
         did: organization.did,
         publicKey: organization.publicKey,
-        name: "organization account",
+        name: faker.person.fullName(),
       },
       false,
     );
@@ -34,7 +34,7 @@ describe("access-management.test.ts", () => {
   });
 
   it("organizations cannot list accounts", async () => {
-    const response = await organization.listAccounts();
+    const response = await organization.listAccounts(false);
     expect(response.status).toBe(401);
   });
 });

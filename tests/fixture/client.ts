@@ -5,6 +5,8 @@ import type {
   RemoveAccountRequest,
 } from "#/accounts/controllers";
 import { AccountsEndpointV1 } from "#/accounts/routes";
+import type { CreateAdminAccountRequest } from "#/admin/controllers";
+import { AdminEndpointV1 } from "#/admin/routes";
 import type { Identity } from "#/common/identity";
 import type {
   CreateDataRequest,
@@ -68,20 +70,40 @@ export class TestClient {
   async listAccounts(expectSuccess = true): Promise<Test> {
     const token = await this.jwt();
     const response = await this.request
-      .get(AccountsEndpointV1.Base)
+      .get(AdminEndpointV1.Accounts)
       .set("Authorization", `Bearer ${token}`);
 
     return checkResponse(expectSuccess, response, "listAccounts");
+  }
+
+  async getAccount(expectSuccess = true): Promise<Test> {
+    const token = await this.jwt();
+    const response = await this.request
+      .get(AccountsEndpointV1.Base)
+      .set("Authorization", `Bearer ${token}`);
+
+    return checkResponse(expectSuccess, response, "getAccount");
+  }
+
+  async createAdminAccount(
+    body: CreateAdminAccountRequest,
+    expectSuccess = true,
+  ): Promise<Test> {
+    const token = await this.jwt();
+    const response = await this.request
+      .post(AdminEndpointV1.Accounts)
+      .set("Authorization", `Bearer ${token}`)
+      .send(body);
+
+    return checkResponse(expectSuccess, response, "createAdminAccount");
   }
 
   async registerAccount(
     body: RegisterAccountRequest,
     expectSuccess = true,
   ): Promise<Test> {
-    const token = await this.jwt();
     const response = await this.request
-      .post(AccountsEndpointV1.Base)
-      .set("Authorization", `Bearer ${token}`)
+      .post(AccountsEndpointV1.Register)
       .send(body);
 
     return checkResponse(expectSuccess, response, "registerAccount");
@@ -254,6 +276,11 @@ function checkResponse(
   method: string,
 ): Response | never {
   if (response.body.errors && expectSuccess) {
+    const message = `Unexpected request failure: method=${method}, status=${response.statusCode}`;
+    throw new Error(message, { cause: response });
+  }
+
+  if (response.statusCode >= 400 && expectSuccess) {
     const message = `Unexpected request failure: method=${method}, status=${response.statusCode}`;
     throw new Error(message, { cause: response });
   }

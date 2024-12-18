@@ -1,3 +1,4 @@
+import { faker } from "@faker-js/faker";
 import { beforeAll, describe, expect, it } from "vitest";
 import type { OrganizationAccountDocument } from "#/accounts/repository";
 import { Identity } from "#/common/identity";
@@ -23,17 +24,16 @@ describe("accounts.test.ts", () => {
       node: root._options.node,
     });
 
-    const response = await root.registerAccount({
-      type: "admin",
+    const response = await root.createAdminAccount({
       did: admin.did,
       publicKey: admin.publicKey,
-      name: "admin account",
+      name: faker.person.fullName(),
     });
 
     expect(response.body).toMatchObject({ data: admin.did });
   });
 
-  it("admin can create organization account", async () => {
+  it("admin can register an organization account", async () => {
     organization = new TestClient({
       request: root.request,
       identity: Identity.new(),
@@ -41,10 +41,33 @@ describe("accounts.test.ts", () => {
     });
 
     const response = await admin.registerAccount({
-      type: "organization",
       did: organization.did,
       publicKey: organization.publicKey,
-      name: "organization account",
+      name: faker.company.name(),
+    });
+
+    expect(response.body).toMatchObject({ data: organization.did });
+  });
+
+  it("organization can get its own profile", async () => {
+    const response = await organization.getAccount();
+    expect(response.body.data).toMatchObject({
+      _id: organization.did,
+      _type: "organization",
+    });
+  });
+
+  it("an organization can self register", async () => {
+    const organization = new TestClient({
+      request: root.request,
+      identity: Identity.new(),
+      node: root._options.node,
+    });
+
+    const response = await organization.registerAccount({
+      did: organization.did,
+      publicKey: organization.publicKey,
+      name: faker.company.name(),
     });
 
     expect(response.body).toMatchObject({ data: organization.did });

@@ -1,3 +1,11 @@
+import { Effect as E, Option as O, pipe } from "effect";
+import type { AccountDocument } from "#/admin/repository";
+import type { RepositoryError } from "#/common/error";
+import { succeedOrMapToRepositoryError } from "#/common/errors";
+import { CollectionName } from "#/common/mongo";
+import type { NilDid } from "#/common/nil-did";
+import type { Context } from "#/env";
+
 type CacheValue<V> = {
   value: V;
   expires: number;
@@ -38,4 +46,37 @@ export class Cache<K, V> {
       }
     }
   }
+}
+
+export function findAccountByIdWithCache(
+  ctx: Context,
+  _id: NilDid,
+): E.Effect<AccountDocument, RepositoryError> {
+  return pipe(
+    E.tryPromise(async () => {
+      const accountsCache = ctx.cache.accounts;
+
+      const account = accountsCache.get(_id as NilDid);
+      if (account) {
+        return O.some(account);
+      }
+
+      // Cache miss search database
+      const collection = ctx.db.primary.collection<AccountDocument>(
+        CollectionName.Accounts,
+      );
+      const result = await collection.findOne({ _id });
+
+      if (result) {
+        accountsCache.set(result._id, result);
+        O.some(result);
+      }
+
+      return O.fromNullable(result);
+    }),
+    succeedOrMapToRepositoryError({
+      op: "AuthMiddleware.findAccountById",
+      _id,
+    }),
+  );
 }

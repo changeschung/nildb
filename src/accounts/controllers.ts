@@ -2,27 +2,23 @@ import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
 import type { EmptyObject } from "type-fest";
 import { z } from "zod";
-import { listAccounts, registerAccount } from "#/accounts/service";
+import type { OrganizationAccountDocument } from "#/accounts/repository";
+import { AccountService } from "#/accounts/service";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { NilDid } from "#/common/nil-did";
-import type { UuidDto } from "#/common/types";
 import { PUBLIC_KEY_LENGTH } from "#/env";
 import { isAccountAllowedGuard } from "#/middleware/auth";
-import { type AccountDocument, accountsDeleteOne } from "./repository";
 
-export type ListAccountsResponse = ApiResponse<AccountDocument[]>;
+export type GetAccountRequest = EmptyObject;
+export type GetAccountResponse = ApiResponse<OrganizationAccountDocument>;
 
-export const listAccountsController: RequestHandler<
+const get: RequestHandler<
   EmptyObject,
-  ListAccountsResponse
+  GetAccountResponse,
+  GetAccountRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["root", "admin"], req.account)) {
-    res.sendStatus(401);
-    return;
-  }
-
-  const response: ListAccountsResponse = await pipe(
-    listAccounts(req.ctx),
+  const response: GetAccountResponse = await pipe(
+    AccountService.find(req.ctx, req.account._id),
     foldToApiResponse(req.ctx),
     E.runPromise,
   );
@@ -30,45 +26,26 @@ export const listAccountsController: RequestHandler<
   res.send(response);
 };
 
-export const RegisterAccountRequest = z.union([
-  z.object({
-    type: z.enum(["admin"]),
-    did: NilDid,
-    publicKey: z.string().length(PUBLIC_KEY_LENGTH),
-    name: z.string(),
-  }),
-  z.object({
-    type: z.enum(["organization"]),
-    did: NilDid,
-    publicKey: z.string().length(PUBLIC_KEY_LENGTH),
-    name: z.string(),
-  }),
-]);
+export const RegisterAccountRequest = z.object({
+  did: NilDid,
+  publicKey: z.string().length(PUBLIC_KEY_LENGTH),
+  name: z.string(),
+});
 export type RegisterAccountRequest = z.infer<typeof RegisterAccountRequest>;
-export type RegisterAccountResponse = ApiResponse<UuidDto>;
+export type RegisterAccountResponse = ApiResponse<NilDid>;
 
-export const registerAccountController: RequestHandler<
+const register: RequestHandler<
   EmptyObject,
   RegisterAccountResponse,
   RegisterAccountRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["root", "admin"], req.account)) {
-    res.sendStatus(401);
-    return;
-  }
-
   const response: RegisterAccountResponse = await pipe(
     E.try({
       try: () => RegisterAccountRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-
-    E.flatMap((data) => registerAccount(req.ctx, data)),
-
-    E.map((id) => id.toString() as UuidDto),
-
+    E.flatMap((data) => AccountService.register(req.ctx, data)),
     foldToApiResponse(req.ctx),
-
     E.runPromise,
   );
 
@@ -81,7 +58,7 @@ export const RemoveAccountRequest = z.object({
 export type RemoveAccountRequest = z.infer<typeof RemoveAccountRequest>;
 export type RemoveAccountResponse = ApiResponse<string>;
 
-export const removeAccountController: RequestHandler = async (req, res) => {
+const remove: RequestHandler = async (req, res) => {
   if (!isAccountAllowedGuard(req.ctx, ["root", "admin"], req.account)) {
     res.sendStatus(401);
     return;
@@ -92,14 +69,16 @@ export const removeAccountController: RequestHandler = async (req, res) => {
       try: () => RemoveAccountRequest.parse(req.body),
       catch: (error) => error as z.ZodError,
     }),
-
-    E.flatMap(({ id }) => accountsDeleteOne(req.ctx, { _id: id })),
-
-    E.map((document) => document._id),
-
+    E.flatMap(({ id }) => AccountService.remove(req.ctx, id)),
     foldToApiResponse(req.ctx),
     E.runPromise,
   );
 
   res.send(response);
+};
+
+export const AccountController = {
+  get,
+  register,
+  remove,
 };

@@ -3,9 +3,10 @@ import * as didJwt from "did-jwt";
 import { Resolver } from "did-resolver";
 import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
-import type { AccountDocument, AccountType } from "#/accounts/repository";
-import { findAccountByDid } from "#/accounts/service";
-import { type NilDid, buildNilMethodResolver } from "#/common/nil-did";
+import { AccountsEndpointV1 } from "#/accounts/routes";
+import type { AccountDocument, AccountType } from "#/admin/repository";
+import { findAccountByIdWithCache } from "#/common/cache";
+import { NilDid, buildNilMethodResolver } from "#/common/nil-did";
 import { ApiDocsEndpoint } from "#/docs/routes";
 import type { Context } from "#/env";
 import { SystemEndpoint } from "#/system/routes";
@@ -27,6 +28,7 @@ export function useAuthMiddleware(ctx: Context): RequestHandler {
     SystemEndpoint.Health,
     SystemEndpoint.About,
     ApiDocsEndpoint.Docs,
+    AccountsEndpointV1.Register,
   ];
 
   const resolver = new Resolver({ nil: buildNilMethodResolver(ctx).resolve });
@@ -59,13 +61,13 @@ export function useAuthMiddleware(ctx: Context): RequestHandler {
 
       // this should be a cache hit
       const account = await pipe(
-        findAccountByDid(ctx, payload.iss as NilDid),
+        findAccountByIdWithCache(ctx, NilDid.parse(payload.iss)),
         E.runPromise,
       );
       req.auth = payload;
       req.account = account;
 
-      // individual routes are expected to apply acls from this point
+      // individual routes to apply Acls from this point
       next();
     } catch (error) {
       console.error(error);

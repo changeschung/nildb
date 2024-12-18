@@ -2,6 +2,7 @@ import compression from "compression";
 import * as express from "express";
 import promBundle from "express-prom-bundle";
 import prometheus from "prom-client";
+import { buildAdminRouter } from "#/admin/routes";
 import { apiRequestsCounter } from "#/middleware/request-counter";
 import { buildAccountsRouter } from "./accounts/routes";
 import { buildDataRouter } from "./data/routes";
@@ -45,6 +46,7 @@ export function buildApp(ctx: Context): App {
   app.use(buildApiDocsRoutes());
   app.use(express.json({ limit: "17mb" }));
 
+  app.use(buildAdminRouter());
   app.use(buildAccountsRouter());
   app.use(buildSchemasRouter());
 

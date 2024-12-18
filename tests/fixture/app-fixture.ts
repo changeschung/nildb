@@ -52,12 +52,19 @@ export async function buildFixture(): Promise<AppFixture> {
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
   const fixture = { app, ctx, users };
-  await createAccount("admin", users.admin._options.identity, users.root);
-  await createAccount(
-    "organization",
-    users.organization._options.identity,
-    users.root,
-  );
+
+  await users.root.createAdminAccount({
+    did: users.admin._options.identity.did,
+    publicKey: users.admin._options.identity.publicKey,
+    name: faker.company.name(),
+  });
+
+  await users.organization.registerAccount({
+    did: users.organization._options.identity.did,
+    publicKey: users.organization._options.identity.publicKey,
+    name: faker.company.name(),
+  });
+
   return fixture;
 }
 
@@ -94,19 +101,6 @@ export type QueryFixture = {
   variables: Record<string, QueryVariable>;
   pipeline: JsonObject[];
 };
-
-export async function createAccount(
-  type: "admin" | "organization",
-  identity: Identity,
-  root: TestClient,
-): Promise<void> {
-  await root.registerAccount({
-    type,
-    did: identity.did,
-    publicKey: identity.publicKey,
-    name: type === "admin" ? faker.person.fullName() : faker.company.name(),
-  });
-}
 
 export async function registerSchemaAndQuery(
   fixture: AppFixture,
