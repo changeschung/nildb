@@ -243,53 +243,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-    post:
-      summary: Register an organization
-      security:
-        - jwt: []
-      tags:
-        - Accounts
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - did
-                - publicKey
-                - name
-              properties:
-                did:
-                  type: string
-                  description: The organization's decentralised identifier (DID)
-                  example: "did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc"
-                publicKey:
-                  type: string
-                name:
-                  type: string
-      responses:
-        '200':
-          description: The organization was successfully registered
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - data
-                properties:
-                  data:
-                    type: string
-                    description: The organization's decentralised identifier (DID)
-                    example: "did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc"
-        '400':
-          description: Validation or processing errors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Missing or invalid JWT
 
   /api/v1/schemas:
     get:
