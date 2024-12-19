@@ -21,22 +21,26 @@ declare global {
   }
 }
 
-type Routes = string[];
+type Routes = {
+  path: string;
+  method: "GET" | "POST" | "DELETE";
+}[];
 
 export function useAuthMiddleware(ctx: Context): RequestHandler {
   const publicPaths: Routes = [
-    SystemEndpoint.Health,
-    SystemEndpoint.About,
-    ApiDocsEndpoint.Docs,
-    AccountsEndpointV1.Register,
+    { path: SystemEndpoint.Health, method: "GET" },
+    { path: SystemEndpoint.About, method: "GET" },
+    { path: ApiDocsEndpoint.Docs, method: "GET" },
+    { path: AccountsEndpointV1.Base, method: "POST" },
   ];
 
   const resolver = new Resolver({ nil: buildNilMethodResolver(ctx).resolve });
 
   return async (req, res, next) => {
     try {
-      const path = req.path;
-      const isPublic = publicPaths.some((p) => path.startsWith(p));
+      const isPublic = publicPaths.some(({ path, method }) => {
+        return method === req.method && req.path.startsWith(path);
+      });
       if (isPublic) {
         next();
         return;
