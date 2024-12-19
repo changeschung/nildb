@@ -18,7 +18,7 @@ const ConfigSchema = z.object({
   env: z.enum(["testnet", "mainnet"]),
   logLevel: z.enum(["debug", "info", "warn", "error"]),
   nodeSecretKey: z.string().min(PRIVATE_KEY_LENGTH),
-  nodePublicEndpoint: z.string().url(),
+  nodePublicUrl: z.string().url(),
   rootAccountSecretKey: z.string().min(PRIVATE_KEY_LENGTH),
   metricsPort: z.number().int().positive(),
   webPort: z.number().int().positive(),
