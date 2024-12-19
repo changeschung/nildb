@@ -59,7 +59,7 @@ export async function createContext(): Promise<Context> {
   const node = {
     identity: Identity.fromSk(config.nodeSecretKey),
     root: Identity.fromSk(config.rootAccountSecretKey),
-    url: config.nodePublicEndpoint,
+    url: config.nodePublicUrl,
   };
 
   // Hydrate with non-expiring root account
