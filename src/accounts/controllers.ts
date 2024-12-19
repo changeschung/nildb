@@ -17,6 +17,11 @@ const get: RequestHandler<
   GetAccountResponse,
   GetAccountRequest
 > = async (req, res) => {
+  if (!isAccountAllowedGuard(req.ctx, ["admin", "organization"], req.account)) {
+    res.sendStatus(401);
+    return;
+  }
+
   const response: GetAccountResponse = await pipe(
     AccountService.find(req.ctx, req.account._id),
     foldToApiResponse(req.ctx),

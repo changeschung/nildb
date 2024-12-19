@@ -1,12 +1,5 @@
 import { Router } from "express";
-import {
-  createDataController,
-  deleteDataController,
-  flushDataController,
-  readDataController,
-  tailDataController,
-  updateDataController,
-} from "./controllers";
+import { DataController } from "#/data/controllers";
 
 export const DataEndpointV1 = {
   Create: "/api/v1/data/create",
@@ -20,13 +13,13 @@ export const DataEndpointV1 = {
 export function buildDataRouter(): Router {
   const router = Router();
 
-  router.post(DataEndpointV1.Create, createDataController);
-  router.post(DataEndpointV1.Read, readDataController);
-  router.post(DataEndpointV1.Update, updateDataController);
-  router.post(DataEndpointV1.Delete, deleteDataController);
+  router.post(DataEndpointV1.Create, DataController.createData);
+  router.post(DataEndpointV1.Read, DataController.readData);
+  router.post(DataEndpointV1.Update, DataController.updateData);
+  router.post(DataEndpointV1.Delete, DataController.deleteData);
 
-  router.post(DataEndpointV1.Flush, flushDataController);
-  router.post(DataEndpointV1.Tail, tailDataController);
+  router.post(DataEndpointV1.Flush, DataController.flushData);
+  router.post(DataEndpointV1.Tail, DataController.tailData);
 
   return router;
 }

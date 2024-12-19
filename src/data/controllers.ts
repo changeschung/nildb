@@ -22,7 +22,7 @@ export type PartialDataDocumentDto = CreateDataRequest["data"] & {
 };
 export type CreateDataResponse = ApiResponse<CreatedResult>;
 
-export const createDataController: RequestHandler<
+const createData: RequestHandler<
   EmptyObject,
   CreateDataResponse,
   CreateDataRequest
@@ -72,7 +72,7 @@ export const UpdateDataRequest = z.object({
 export type UpdateDataRequest = z.infer<typeof UpdateDataRequest>;
 export type UpdateDataResponse = ApiResponse<UpdateResult>;
 
-export const updateDataController: RequestHandler<
+const updateData: RequestHandler<
   EmptyObject,
   UpdateDataResponse,
   UpdateDataRequest
@@ -104,7 +104,7 @@ export const ReadDataRequest = z.object({
 export type ReadDataRequest = z.infer<typeof ReadDataRequest>;
 export type ReadDataResponse = ApiResponse<DocumentBase[]>;
 
-export const readDataController: RequestHandler<
+const readData: RequestHandler<
   EmptyObject,
   ReadDataResponse,
   ReadDataRequest
@@ -134,7 +134,7 @@ export const DeleteDataRequest = z.object({
 export type DeleteDataRequest = z.infer<typeof DeleteDataRequest>;
 export type DeleteDataResponse = ApiResponse<number>;
 
-export const deleteDataController: RequestHandler<
+const deleteData: RequestHandler<
   EmptyObject,
   DeleteDataResponse,
   DeleteDataRequest
@@ -175,7 +175,7 @@ export const FlushDataRequest = z.object({
 export type FlushDataRequest = z.infer<typeof FlushDataRequest>;
 export type FlushDataResponse = ApiResponse<number>;
 
-export const flushDataController: RequestHandler<
+const flushData: RequestHandler<
   EmptyObject,
   FlushDataResponse,
   FlushDataRequest
@@ -206,7 +206,7 @@ export const TailDataRequest = z.object({
 export type TailDataRequest = z.infer<typeof TailDataRequest>;
 export type TailDataResponse = ApiResponse<JsonArray>;
 
-export const tailDataController: RequestHandler<
+const tailData: RequestHandler<
   EmptyObject,
   TailDataResponse,
   TailDataRequest
@@ -228,4 +228,13 @@ export const tailDataController: RequestHandler<
   );
 
   res.send(response);
+};
+
+export const DataController = {
+  createData,
+  deleteData,
+  flushData,
+  readData,
+  tailData,
+  updateData,
 };

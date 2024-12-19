@@ -18,7 +18,7 @@ const ConfigSchema = z.object({
   env: z.enum(["testnet", "mainnet"]),
   logLevel: z.enum(["debug", "info", "warn", "error"]),
   nodeSecretKey: z.string().min(PRIVATE_KEY_LENGTH),
-  nodePublicEndpoint: z.string().url(),
+  nodePublicUrl: z.string().url(),
   rootAccountSecretKey: z.string().min(PRIVATE_KEY_LENGTH),
   metricsPort: z.number().int().positive(),
   webPort: z.number().int().positive(),
@@ -37,7 +37,7 @@ export interface Context {
   };
   log: Logger;
   node: {
-    endpoint: string;
+    url: string;
     identity: Identity;
   };
 }
@@ -50,7 +50,7 @@ export async function createContext(): Promise<Context> {
     env: process.env.APP_ENV,
     logLevel: process.env.APP_LOG_LEVEL,
     nodeSecretKey: process.env.APP_NODE_SECRET_KEY,
-    nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
+    nodePublicUrl: process.env.APP_NODE_PUBLIC_ENDPOINT,
     rootAccountSecretKey: process.env.APP_ROOT_USER_SECRET_KEY,
     metricsPort: Number(process.env.APP_METRICS_PORT),
     webPort: Number(process.env.APP_PORT),
@@ -59,7 +59,7 @@ export async function createContext(): Promise<Context> {
   const node = {
     identity: Identity.fromSk(config.nodeSecretKey),
     root: Identity.fromSk(config.rootAccountSecretKey),
-    endpoint: config.nodePublicEndpoint,
+    url: config.nodePublicUrl,
   };
 
   // Hydrate with non-expiring root account

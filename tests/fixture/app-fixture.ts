@@ -26,7 +26,7 @@ export async function buildFixture(): Promise<AppFixture> {
 
   const node = {
     identity: Identity.fromSk(ctx.config.nodeSecretKey),
-    endpoint: ctx.config.nodePublicEndpoint,
+    endpoint: ctx.config.nodePublicUrl,
   };
 
   const users = {

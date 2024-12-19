@@ -103,7 +103,7 @@ export class TestClient {
     expectSuccess = true,
   ): Promise<Test> {
     const response = await this.request
-      .post(AccountsEndpointV1.Register)
+      .post(AccountsEndpointV1.Base)
       .send(body);
 
     return checkResponse(expectSuccess, response, "registerAccount");
