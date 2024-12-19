@@ -139,12 +139,12 @@ components:
               type: string
               example: "did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc"
             keys:
-              description: The schema's keys which must be unique within the asssociated collection (e.g. primary keys)
+              description: The schema's keys which must be unique within the associated schema collection (e.g. primary keys)
               type: array
               items:
                 type: string
             schema:
-              description: The json schema used to validate data before insertion into the collection
+              description: The json schema used to validate data before insertion into the schema collection
               type: object
     Query:
       allOf:
@@ -164,7 +164,7 @@ components:
               type: string
               example: "did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc"
             schema:
-              description: The starting collection for this query's aggregation pipeline
+              description: The starting schema collection for this query's aggregation pipeline
               type: string
               format: uuid
             variables:
@@ -277,11 +277,11 @@ paths:
 
   /api/v1/queries:
     get:
-      summary: "List the account's queries"
+      summary: "List the organization's queries"
       security:
         - jwt: []
       tags:
-        - Data
+        - Query
       responses:
         '200':
           description: "The account's queries"
@@ -311,7 +311,7 @@ paths:
       security:
         - jwt: []
       tags:
-        - Data
+        - Query
       requestBody:
         required: true
         content:
@@ -353,7 +353,7 @@ paths:
 
   /api/v1/data/create:
     post:
-      summary: Upload data to the specified collection
+      summary: Upload data to the specified schema collection
       security:
         - jwt: []
       tags:
@@ -461,7 +461,7 @@ paths:
 
   /api/v1/data/update:
     post:
-      summary: Update documents within a collection that match the given filter
+      summary: Update documents within a schema collection that match the given filter
       security:
         - jwt: []
       tags:
@@ -515,7 +515,7 @@ paths:
 
   /api/v1/data/tail:
     post:
-      summary: Retrieve recently added documents from a collection
+      summary: Retrieve recently added documents from a schema collection
       security:
         - jwt: []
       tags:
@@ -532,7 +532,7 @@ paths:
                   $ref: '#/components/schemas/UUID'
       responses:
         '200':
-          description: The last 25 latest documents added to the collection
+          description: The last 25 latest documents added to the schema collection
           content:
             application/json:
               schema:
@@ -593,7 +593,7 @@ paths:
 
   /api/v1/data/flush:
     post:
-      summary: Remove all documents in a collection
+      summary: Remove all documents in a schema collection
       security:
         - jwt: []
       tags:
