@@ -9,7 +9,7 @@ export type AboutNode = {
   build: BuildInfo;
   did: NilDid;
   publicKey: string;
-  endpoint: string;
+  url: string;
 };
 
 type BuildInfo = {
@@ -27,7 +27,7 @@ export function getNodeInfo(ctx: Context): AboutNode {
     build: getBuildInfo(ctx),
     did: ctx.node.identity.did,
     publicKey: ctx.node.identity.publicKey,
-    endpoint: ctx.node.endpoint,
+    url: ctx.node.url,
   };
 }
 
