@@ -6,7 +6,7 @@ import type { OrganizationAccountDocument } from "#/accounts/repository";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { NilDid } from "#/common/nil-did";
 import { Uuid, type UuidDto } from "#/common/types";
-import { isAccountAllowedGuard } from "#/middleware/auth";
+import { isRoleAllowed } from "#/middleware/auth";
 import type { SchemaDocument } from "#/schemas/repository";
 import { SchemasService } from "./service";
 
@@ -16,7 +16,7 @@ export const listSchemas: RequestHandler<
   EmptyObject,
   ListSchemasResponse
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  if (!isRoleAllowed(req, ["organization"], req.account)) {
     res.sendStatus(401);
     return;
   }
@@ -48,7 +48,7 @@ const addSchema: RequestHandler<
   AddSchemaResponse,
   AddSchemaRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["admin"], req.account)) {
+  if (!isRoleAllowed(req, ["admin"], req.account)) {
     res.sendStatus(401);
     return;
   }
@@ -78,7 +78,7 @@ const deleteSchema: RequestHandler<
   DeleteSchemaResponse,
   DeleteSchemaRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["admin"], req.account)) {
+  if (!isRoleAllowed(req, ["admin"], req.account)) {
     res.sendStatus(401);
     return;
   }

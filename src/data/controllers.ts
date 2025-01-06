@@ -7,7 +7,7 @@ import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import type { DocumentBase } from "#/common/mongo";
 import { Uuid, type UuidDto } from "#/common/types";
 import { DataService } from "#/data/service";
-import { isAccountAllowedGuard } from "#/middleware/auth";
+import { isRoleAllowed } from "#/middleware/auth";
 import type { CreatedResult, UpdateResult } from "./repository";
 
 export const MAX_RECORDS_LENGTH = 10_000;
@@ -27,7 +27,7 @@ const createData: RequestHandler<
   CreateDataResponse,
   CreateDataRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  if (!isRoleAllowed(req, ["organization"], req.account)) {
     res.sendStatus(401);
     return;
   }
@@ -77,7 +77,7 @@ const updateData: RequestHandler<
   UpdateDataResponse,
   UpdateDataRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  if (!isRoleAllowed(req, ["organization"], req.account)) {
     res.sendStatus(401);
     return;
   }
@@ -109,7 +109,7 @@ const readData: RequestHandler<
   ReadDataResponse,
   ReadDataRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  if (!isRoleAllowed(req, ["organization"], req.account)) {
     res.sendStatus(401);
     return;
   }
@@ -139,7 +139,7 @@ const deleteData: RequestHandler<
   DeleteDataResponse,
   DeleteDataRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  if (!isRoleAllowed(req, ["organization"], req.account)) {
     res.sendStatus(401);
     return;
   }
@@ -180,7 +180,7 @@ const flushData: RequestHandler<
   FlushDataResponse,
   FlushDataRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  if (!isRoleAllowed(req, ["organization"], req.account)) {
     res.sendStatus(401);
     return;
   }
@@ -211,7 +211,7 @@ const tailData: RequestHandler<
   TailDataResponse,
   TailDataRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  if (!isRoleAllowed(req, ["organization"], req.account)) {
     res.sendStatus(401);
     return;
   }

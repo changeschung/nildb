@@ -6,7 +6,7 @@ import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { NilDid } from "#/common/nil-did";
 import type { UuidDto } from "#/common/types";
 import { PUBLIC_KEY_LENGTH } from "#/env";
-import { isAccountAllowedGuard } from "#/middleware/auth";
+import { isRoleAllowed } from "#/middleware/auth";
 import type { AccountDocument } from "./repository";
 import { AdminService } from "./services";
 
@@ -25,7 +25,7 @@ const createAdminAccount: RequestHandler<
   CreateAdminAccountResponse,
   CreateAdminAccountRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["root", "admin"], req.account)) {
+  if (!isRoleAllowed(req, ["root", "admin"], req.account)) {
     res.sendStatus(401);
     return;
   }
@@ -50,7 +50,7 @@ const listAccounts: RequestHandler<EmptyObject, ListAccountsResponse> = async (
   req,
   res,
 ) => {
-  if (!isAccountAllowedGuard(req.ctx, ["root", "admin"], req.account)) {
+  if (!isRoleAllowed(req, ["root", "admin"], req.account)) {
     res.sendStatus(401);
     return;
   }
@@ -71,7 +71,7 @@ const removeAccount: RequestHandler<
   RemoveAccountRequestParams,
   RemoveAccountResponse
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["root", "admin"], req.account)) {
+  if (!isRoleAllowed(req, ["root", "admin"], req.account)) {
     res.sendStatus(401);
     return;
   }

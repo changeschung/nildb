@@ -7,7 +7,7 @@ import { AccountService } from "#/accounts/service";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { NilDid } from "#/common/nil-did";
 import { PUBLIC_KEY_LENGTH } from "#/env";
-import { isAccountAllowedGuard } from "#/middleware/auth";
+import { isRoleAllowed } from "#/middleware/auth";
 
 export type GetAccountRequest = EmptyObject;
 export type GetAccountResponse = ApiResponse<OrganizationAccountDocument>;
@@ -17,7 +17,7 @@ const get: RequestHandler<
   GetAccountResponse,
   GetAccountRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["admin", "organization"], req.account)) {
+  if (!isRoleAllowed(req, ["admin", "organization"], req.account)) {
     res.sendStatus(401);
     return;
   }
@@ -64,7 +64,7 @@ export type RemoveAccountRequest = z.infer<typeof RemoveAccountRequest>;
 export type RemoveAccountResponse = ApiResponse<string>;
 
 const remove: RequestHandler = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["root", "admin"], req.account)) {
+  if (!isRoleAllowed(req, ["root", "admin"], req.account)) {
     res.sendStatus(401);
     return;
   }

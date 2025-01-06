@@ -5,7 +5,7 @@ import { z } from "zod";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { NilDid } from "#/common/nil-did";
 import { Uuid, type UuidDto } from "#/common/types";
-import { isAccountAllowedGuard } from "#/middleware/auth";
+import { isRoleAllowed } from "#/middleware/auth";
 import type { QueryDocument } from "./repository";
 import { QueriesService } from "./service";
 
@@ -16,7 +16,7 @@ const listQueries: RequestHandler<
   ListQueriesResponse,
   EmptyObject
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  if (!isRoleAllowed(req, ["organization"], req.account)) {
     res.sendStatus(401);
     return;
   }
@@ -63,7 +63,7 @@ const addQuery: RequestHandler<
   AddQueryResponse,
   AddQueryRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["admin"], req.account)) {
+  if (!isRoleAllowed(req, ["admin"], req.account)) {
     res.sendStatus(401);
     return;
   }
@@ -93,7 +93,7 @@ const deleteQuery: RequestHandler<
   DeleteQueryResponse,
   DeleteQueryRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  if (!isRoleAllowed(req, ["organization"], req.account)) {
     res.sendStatus(401);
     return;
   }
@@ -125,7 +125,7 @@ const executeQuery: RequestHandler<
   ExecuteQueryResponse,
   ExecuteQueryRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  if (!isRoleAllowed(req, ["organization"], req.account)) {
     res.sendStatus(401);
     return;
   }
