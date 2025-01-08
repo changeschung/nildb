@@ -91,7 +91,7 @@ describe("schemas.test.ts", () => {
 
     const schemaDocument = await fixture.ctx.db.primary
       .collection<SchemaDocument>(CollectionName.Schemas)
-      .findOne({ _id: new UUID(response.body.data) });
+      .findOne({ _id: new UUID(response.body.data._id) });
 
     expect(schemaDocument).toBeNull();
 
