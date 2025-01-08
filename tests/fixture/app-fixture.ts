@@ -56,13 +56,13 @@ export async function buildFixture(): Promise<AppFixture> {
   await users.root.createAdminAccount({
     did: users.admin._options.identity.did,
     publicKey: users.admin._options.identity.publicKey,
-    name: faker.company.name(),
+    name: faker.person.fullName(),
   });
 
   await users.organization.registerAccount({
     did: users.organization._options.identity.did,
     publicKey: users.organization._options.identity.publicKey,
-    name: faker.company.name(),
+    name: faker.person.fullName(),
   });
 
   return fixture;

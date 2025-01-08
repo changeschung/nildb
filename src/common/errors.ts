@@ -2,7 +2,7 @@ import util from "node:util";
 import { Effect as E, Option as O, pipe } from "effect";
 import { isUnknownException } from "effect/Cause";
 import type { MongoError } from "mongodb";
-import { RepositoryError } from "#/common/error";
+import { RepositoryError } from "#/common/app-error";
 
 export type DbErrorContext = {
   name: string;
@@ -74,7 +74,7 @@ export function succeedOrMapToDbError<T, E extends Error = Error>(
 
         const errorContext = {
           ...context,
-          message: error.message,
+          reason: [error.message],
         };
 
         if (isMongoError(error)) {
@@ -106,7 +106,7 @@ export function succeedOrMapToRepositoryError<T, E extends Error = Error>(
             O.match({
               onNone: () => {
                 const error = new RepositoryError({
-                  message: "Document not found",
+                  reason: "Document not found",
                   context,
                 });
                 return E.fail(error);
@@ -119,7 +119,7 @@ export function succeedOrMapToRepositoryError<T, E extends Error = Error>(
         if (!result) {
           return E.fail(
             new RepositoryError({
-              message: "Result is null",
+              reason: "Result is null",
               context,
             }),
           );
@@ -138,7 +138,7 @@ export function succeedOrMapToRepositoryError<T, E extends Error = Error>(
 
         if (isMongoError(error)) {
           return new RepositoryError({
-            message: sanitizedMongoDbErrorMessage(error.code),
+            reason: [sanitizedMongoDbErrorMessage(error.code)],
             cause: error,
             context: {
               ...context,
@@ -148,7 +148,7 @@ export function succeedOrMapToRepositoryError<T, E extends Error = Error>(
         }
 
         return new RepositoryError({
-          message: "Unexpected repository error",
+          reason: ["Unexpected repository error"],
           cause: error,
           context,
         });

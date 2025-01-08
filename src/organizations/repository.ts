@@ -1,7 +1,7 @@
 import { Effect as E, Option as O, pipe } from "effect";
 import type { StrictFilter, StrictUpdateFilter, UUID } from "mongodb";
 import type { OrganizationAccountDocument } from "#/accounts/repository";
-import type { RepositoryError } from "#/common/error";
+import type { RepositoryError } from "#/common/app-error";
 import { succeedOrMapToRepositoryError } from "#/common/errors";
 import { CollectionName } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";

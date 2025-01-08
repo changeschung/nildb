@@ -1,6 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import { UUID } from "mongodb";
-import { ServiceError } from "#/common/error";
+import { type DataValidationError, ServiceError } from "#/common/app-error";
 import type { NilDid } from "#/common/nil-did";
 import { validateData } from "#/common/validator";
 import type {
@@ -23,7 +23,7 @@ function createRecords(
   ownerId: NilDid,
   schemaId: UUID,
   data: Record<string, unknown>[],
-): E.Effect<CreatedResult, ServiceError> {
+): E.Effect<CreatedResult, DataValidationError | ServiceError> {
   return pipe(
     E.Do,
     E.bind("document", () => {
@@ -36,10 +36,15 @@ function createRecords(
       return validateData<PartialDataDocumentDto[]>(document.schema, data);
     }),
     E.flatMap(({ document, data }) => {
-      return DataRepository.insert(ctx, document, data);
-    }),
-    E.mapError((cause) => {
-      return new ServiceError({ message: "Failed to create data", cause });
+      return pipe(
+        DataRepository.insert(ctx, document, data),
+        E.mapError(
+          (error) =>
+            new ServiceError({
+              reason: ["Create records failed", ...error.reason],
+            }),
+        ),
+      );
     }),
   );
 }
@@ -56,8 +61,8 @@ function updateRecords(
       request.update,
     ),
     E.mapError((cause) => {
-      const message = `Update records failed: ${request.schema.toString()}`;
-      return new ServiceError({ message, cause });
+      const reason = ["Update records failed", request.schema.toString()];
+      return new ServiceError({ reason, cause });
     }),
   );
 }
@@ -102,7 +107,7 @@ function readRecords(
       },
       catch: (cause) => {
         return new ServiceError({
-          message: "Failure while converting filter._id to UUID",
+          reason: ["Failure converting filter._id to UUID"],
           cause,
         });
       },
@@ -120,8 +125,8 @@ function deleteRecords(
   return pipe(
     DataRepository.deleteMany(ctx, request.schema, request.filter),
     E.mapError((cause) => {
-      const message = `Delete records failed: ${request.schema.toString()}`;
-      return new ServiceError({ message, cause });
+      const reason = [`Delete records failed: ${request.schema.toString()}`];
+      return new ServiceError({ reason, cause });
     }),
   );
 }
@@ -133,8 +138,8 @@ function flushCollection(
   return pipe(
     DataRepository.flushCollection(ctx, schema),
     E.mapError((cause) => {
-      const message = `Flush collection failed: ${schema.toString()}`;
-      return new ServiceError({ message, cause });
+      const reason = ["Flush collection failed", schema.toString()];
+      return new ServiceError({ reason, cause });
     }),
   );
 }
@@ -146,8 +151,8 @@ function tailData(
   return pipe(
     DataRepository.tailCollection(ctx, schema),
     E.mapError((cause) => {
-      const message = `Tail collection failed: ${schema.toString()}`;
-      return new ServiceError({ message, cause });
+      const reason = ["Tail collection failed", schema.toString()];
+      return new ServiceError({ reason, cause });
     }),
   );
 }

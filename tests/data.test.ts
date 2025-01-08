@@ -155,8 +155,7 @@ describe("data.test.ts", () => {
       false,
     );
 
-    const result = response.body.errors.join(";");
-    expect(result).toMatch(/failed schema validation/);
+    expect(response.body.errors).toContain("Schema validation failed");
   });
 
   it("can run a query", async () => {

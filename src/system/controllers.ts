@@ -8,7 +8,8 @@ export const aboutNodeController: RequestHandler<
   AboutNodeControllerResponse,
   EmptyObject
 > = (req: Request, res: Response): void => {
-  const aboutNode = SystemService.getNodeInfo(req.ctx);
+  const { ctx } = req;
+  const aboutNode = SystemService.getNodeInfo(ctx);
   res.json(aboutNode);
 };
 

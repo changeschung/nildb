@@ -80,21 +80,14 @@ export function useAuthMiddleware(ctx: Context): RequestHandler {
   };
 }
 
-export function isRoleAllowed(
-  req: Request,
-  permitted: AccountType[],
-  account: AccountDocument,
-): boolean {
+export function isRoleAllowed(req: Request, permitted: AccountType[]): boolean {
+  const { ctx, account, path } = req;
+
   if (permitted.includes(account._type)) {
     return true;
   }
 
-  const {
-    ctx: { log },
-    path,
-  } = req;
-
-  log.warn(
+  ctx.log.warn(
     `Unauthorized(account=${account._id},type=${account._type},path=${path}`,
   );
   return false;

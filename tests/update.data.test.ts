@@ -18,7 +18,7 @@ import type { TestClient } from "./fixture/client";
 describe("update.data.test", () => {
   let fixture: AppFixture;
   let db: Context["db"];
-  let backend: TestClient;
+  let organization: TestClient;
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
 
@@ -31,9 +31,9 @@ describe("update.data.test", () => {
   beforeAll(async () => {
     fixture = await buildFixture();
     db = fixture.ctx.db;
-    backend = fixture.users.organization;
+    organization = fixture.users.organization;
     await registerSchemaAndQuery(fixture, schema, query);
-    const _response = await backend.uploadData({
+    const _response = await organization.uploadData({
       schema: schema.id,
       data,
     });
@@ -44,7 +44,7 @@ describe("update.data.test", () => {
 
     const filter = { name: record.name };
     const update = { $set: { name: "foo" } };
-    const response = await backend.updateData({
+    const response = await organization.updateData({
       schema: schema.id,
       filter,
       update,

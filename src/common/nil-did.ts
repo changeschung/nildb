@@ -6,8 +6,8 @@ import type {
 } from "did-resolver";
 import { Effect as E, pipe } from "effect";
 import { z } from "zod";
+import type { RepositoryError } from "#/common/app-error";
 import { findAccountByIdWithCache } from "#/common/cache";
-import type { RepositoryError } from "#/common/error";
 import type { Context } from "#/env";
 
 export const NilDidRegex = /^did:nil:(mainnet|testnet):nillion1[a-z0-9]{38}$/;

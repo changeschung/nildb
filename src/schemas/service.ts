@@ -1,7 +1,7 @@
 import { Effect as E, pipe } from "effect";
 import type { UUID } from "mongodb";
 import type { OrganizationAccountDocument } from "#/accounts/repository";
-import { ServiceError } from "#/common/error";
+import { ServiceError } from "#/common/app-error";
 import { validateSchema } from "#/common/validator";
 import { DataRepository } from "#/data/repository";
 import type { Context } from "#/env";
@@ -17,8 +17,8 @@ function getOrganizationSchemas(
     E.succeed(organization._id),
     E.flatMap((owner) => SchemasRepository.findMany(ctx, { owner })),
     E.mapError((cause) => {
-      const message = `Get organization schemas failed: ${organization._id}`;
-      return new ServiceError({ message, cause });
+      const reason = [`Get organization schemas failed: ${organization._id}`];
+      return new ServiceError({ reason, cause });
     }),
   );
 }
@@ -45,8 +45,8 @@ function addSchema(
       return OrganizationRepository.addSchema(ctx, request.owner, schemaId);
     }),
     E.mapError((cause) => {
-      const message = `Add schema failed: ${request.schema.toString()}`;
-      return new ServiceError({ message, cause });
+      const reason = [`Add schema failed: ${request.schema.toString()}`];
+      return new ServiceError({ reason, cause });
     }),
   );
 }
@@ -64,8 +64,8 @@ function deleteSchema(
       return DataRepository.deleteCollection(ctx, schemaId);
     }),
     E.mapError((cause) => {
-      const message = `Delete schema failed: ${schemaId.toString()}`;
-      return new ServiceError({ message, cause });
+      const reason = [`Delete schema failed: ${schemaId.toString()}`];
+      return new ServiceError({ reason, cause });
     }),
   );
 }

@@ -1,6 +1,6 @@
 import { Effect as E, Option as O, pipe } from "effect";
 import type { AccountDocument } from "#/admin/repository";
-import type { RepositoryError } from "#/common/error";
+import type { RepositoryError } from "#/common/app-error";
 import { succeedOrMapToRepositoryError } from "#/common/errors";
 import { CollectionName } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
