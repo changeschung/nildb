@@ -6,8 +6,9 @@ import type { OrganizationAccountDocument } from "#/accounts/repository";
 import { AccountService } from "#/accounts/service";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { NilDid } from "#/common/nil-did";
+import { parseUserData } from "#/common/zod-utils";
 import { PUBLIC_KEY_LENGTH } from "#/env";
-import { isAccountAllowedGuard } from "#/middleware/auth";
+import { isRoleAllowed } from "#/middleware/auth";
 
 export type GetAccountRequest = EmptyObject;
 export type GetAccountResponse = ApiResponse<OrganizationAccountDocument>;
@@ -17,18 +18,18 @@ const get: RequestHandler<
   GetAccountResponse,
   GetAccountRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["admin", "organization"], req.account)) {
+  const { ctx, account } = req;
+
+  if (!isRoleAllowed(req, ["admin", "organization"])) {
     res.sendStatus(401);
     return;
   }
 
-  const response: GetAccountResponse = await pipe(
-    AccountService.find(req.ctx, req.account._id),
-    foldToApiResponse(req.ctx),
+  await pipe(
+    AccountService.find(ctx, account._id),
+    foldToApiResponse(req, res),
     E.runPromise,
   );
-
-  res.send(response);
 };
 
 export const RegisterAccountRequest = z.object({
@@ -44,17 +45,16 @@ const register: RequestHandler<
   RegisterAccountResponse,
   RegisterAccountRequest
 > = async (req, res) => {
-  const response: RegisterAccountResponse = await pipe(
-    E.try({
-      try: () => RegisterAccountRequest.parse(req.body),
-      catch: (error) => error as z.ZodError,
-    }),
-    E.flatMap((data) => AccountService.register(req.ctx, data)),
-    foldToApiResponse(req.ctx),
+  const { ctx, body } = req;
+
+  await pipe(
+    parseUserData<RegisterAccountRequest>(() =>
+      RegisterAccountRequest.parse(body),
+    ),
+    E.flatMap((payload) => AccountService.register(ctx, payload)),
+    foldToApiResponse(req, res),
     E.runPromise,
   );
-
-  res.send(response);
 };
 
 export const RemoveAccountRequest = z.object({
@@ -63,23 +63,24 @@ export const RemoveAccountRequest = z.object({
 export type RemoveAccountRequest = z.infer<typeof RemoveAccountRequest>;
 export type RemoveAccountResponse = ApiResponse<string>;
 
-const remove: RequestHandler = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["root", "admin"], req.account)) {
+const remove: RequestHandler<
+  EmptyObject,
+  RemoveAccountResponse,
+  RemoveAccountRequest
+> = async (req, res) => {
+  const { ctx, body } = req;
+
+  if (!isRoleAllowed(req, ["root", "admin"])) {
     res.sendStatus(401);
     return;
   }
 
-  const response: RemoveAccountResponse = await pipe(
-    E.try({
-      try: () => RemoveAccountRequest.parse(req.body),
-      catch: (error) => error as z.ZodError,
-    }),
-    E.flatMap(({ id }) => AccountService.remove(req.ctx, id)),
-    foldToApiResponse(req.ctx),
+  await pipe(
+    parseUserData<RemoveAccountRequest>(() => RemoveAccountRequest.parse(body)),
+    E.flatMap((payload) => AccountService.remove(ctx, payload.id)),
+    foldToApiResponse(req, res),
     E.runPromise,
   );
-
-  res.send(response);
 };
 
 export const AccountController = {

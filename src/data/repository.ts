@@ -6,7 +6,7 @@ import {
   type UpdateFilter,
 } from "mongodb/lib/beta";
 import type { JsonObject } from "type-fest";
-import type { RepositoryError } from "#/common/error";
+import type { RepositoryError } from "#/common/app-error";
 import { succeedOrMapToRepositoryError } from "#/common/errors";
 import type { DocumentBase } from "#/common/mongo";
 import type { UuidDto } from "#/common/types";

@@ -55,7 +55,9 @@ describe("Schemas delete by filter", () => {
       false,
     );
 
-    expect(response.body.errors).toHaveLength(1);
+    expect(response.body.errors).toContain(
+      "key=filter, reason=Filter cannot be empty",
+    );
   });
 
   it("can remove a single match", async () => {

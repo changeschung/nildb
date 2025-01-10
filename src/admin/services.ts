@@ -3,7 +3,7 @@ import {
   type AccountDocument,
   AdminAccountRepository,
 } from "#/admin/repository";
-import { ServiceError } from "#/common/error";
+import { ServiceError } from "#/common/app-error";
 import { Identity } from "#/common/identity";
 import type { NilDid } from "#/common/nil-did";
 import type { Context } from "#/env";
@@ -19,7 +19,7 @@ function createAdminAccount(
       if (data.did === ctx.node.identity.did) {
         return E.fail(
           new ServiceError({
-            message: "DID prohibited",
+            reason: "DID prohibited",
             context: { data },
           }),
         );
@@ -28,7 +28,7 @@ function createAdminAccount(
       if (!Identity.isDidFromPublicKey(data.did, data.publicKey)) {
         return E.fail(
           new ServiceError({
-            message: "DID not derived from provided public key",
+            reason: "DID not derived from provided public key",
             context: { data },
           }),
         );
@@ -42,7 +42,7 @@ function createAdminAccount(
     }),
     E.mapError((cause) => {
       return new ServiceError({
-        message: "Create admin account failure",
+        reason: "Create admin account failure",
         cause,
       });
     }),
@@ -54,10 +54,12 @@ export function listAllAccounts(
 ): E.Effect<AccountDocument[], ServiceError> {
   return pipe(
     AdminAccountRepository.listAll(ctx),
-    E.mapError(
-      (error) =>
-        new ServiceError({ message: "Failed to list accounts", cause: error }),
-    ),
+    E.mapError((error) => {
+      return new ServiceError({
+        reason: "Failed to list accounts",
+        cause: error,
+      });
+    }),
   );
 }
 
@@ -67,10 +69,12 @@ export function removeAccount(
 ): E.Effect<NilDid, ServiceError> {
   return pipe(
     AdminAccountRepository.deleteOneById(ctx, id),
-    E.mapError(
-      (error) =>
-        new ServiceError({ message: "Failed to list accounts", cause: error }),
-    ),
+    E.mapError((error) => {
+      return new ServiceError({
+        reason: "Failed to list accounts",
+        cause: error,
+      });
+    }),
   );
 }
 

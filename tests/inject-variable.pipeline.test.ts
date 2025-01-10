@@ -1,3 +1,4 @@
+import { Effect as E, Either, pipe } from "effect";
 import { describe, expect, it } from "vitest";
 import { injectVariablesIntoAggregation } from "#/queries/service";
 
@@ -9,7 +10,10 @@ describe("inject.variable.pipeline.test", () => {
       },
     ];
     const variables = { address: "abc123" };
-    const actual = injectVariablesIntoAggregation(pipeline, variables);
+    const actual = pipe(
+      injectVariablesIntoAggregation(pipeline, variables),
+      E.runSync,
+    );
     const expected = [
       {
         $match: { wallet: "abc123" },
@@ -34,7 +38,10 @@ describe("inject.variable.pipeline.test", () => {
       value: 1000,
       isActive: false,
     };
-    const actual = injectVariablesIntoAggregation(pipeline, variables);
+    const actual = pipe(
+      injectVariablesIntoAggregation(pipeline, variables),
+      E.runSync,
+    );
     const expected = [
       {
         $match: {
@@ -55,10 +62,19 @@ describe("inject.variable.pipeline.test", () => {
       },
     ];
     const variables = {};
-
-    expect(() => injectVariablesIntoAggregation(pipeline, variables)).toThrow(
-      "Missing pipeline variable: ##address",
+    const result = pipe(
+      injectVariablesIntoAggregation(pipeline, variables),
+      E.either,
+      E.runSync,
     );
+
+    expect(Either.isLeft(result)).toBeTruthy();
+
+    if (Either.isLeft(result)) {
+      const error = result.left;
+      expect(error.reason).toContain("Missing pipeline variable");
+      expect(error.reason).toContain("##address");
+    }
   });
 
   it("handles complex pipeline with multiple stages", () => {
@@ -95,7 +111,10 @@ describe("inject.variable.pipeline.test", () => {
       groupField: "category",
       valueField: 1,
     };
-    const actual = injectVariablesIntoAggregation(pipeline, variables);
+    const actual = pipe(
+      injectVariablesIntoAggregation(pipeline, variables),
+      E.runSync,
+    );
     const expected = [
       {
         $match: {
@@ -155,7 +174,10 @@ describe("inject.variable.pipeline.test", () => {
       status: "active",
       deepValue: "nested-value",
     };
-    const actual = injectVariablesIntoAggregation(pipeline, variables);
+    const actual = pipe(
+      injectVariablesIntoAggregation(pipeline, variables),
+      E.runSync,
+    );
     const expected = [
       {
         $match: {

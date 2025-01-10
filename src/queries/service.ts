@@ -1,12 +1,11 @@
 import { Effect as E, pipe } from "effect";
-import type { UnknownException } from "effect/Cause";
 import type { Document, UUID } from "mongodb";
 import type { JsonObject, JsonValue } from "type-fest";
 import { z } from "zod";
-import { ServiceError } from "#/common/error";
-import type { DbError } from "#/common/errors";
+import { DataValidationError, ServiceError } from "#/common/app-error";
 import type { NilDid } from "#/common/nil-did";
 import { validateData } from "#/common/validator";
+import { flattenZodError } from "#/common/zod-utils";
 import { DataRepository } from "#/data/repository";
 import type { Context } from "#/env";
 import { OrganizationRepository } from "#/organizations/repository";
@@ -24,7 +23,7 @@ import {
 export function addQuery(
   ctx: Context,
   request: AddQueryRequest,
-): E.Effect<UUID, Error | DbError> {
+): E.Effect<UUID, ServiceError> {
   return pipe(
     validateData(pipelineSchema, request.pipeline),
     E.flatMap(() => {
@@ -41,7 +40,7 @@ export function addQuery(
     }),
     E.mapError((cause) => {
       return new ServiceError({
-        message: "Add organization query failure",
+        reason: ["Add organization query failure"],
         cause,
       });
     }),
@@ -51,24 +50,26 @@ export function addQuery(
 function executeQuery(
   ctx: Context,
   request: ExecuteQueryRequest,
-): E.Effect<JsonValue, z.ZodError | DbError | Error> {
+): E.Effect<JsonValue, DataValidationError | ServiceError> {
   return pipe(
     E.Do,
     E.bind("query", () => QueriesRepository.findOne(ctx, { _id: request.id })),
     E.bind("variables", ({ query }) =>
       validateVariables(query.variables, request.variables),
     ),
-    E.let("pipeline", ({ query, variables }) =>
+    E.bind("pipeline", ({ query, variables }) =>
       injectVariablesIntoAggregation(query.pipeline, variables),
     ),
-    E.flatMap(({ query, pipeline }) =>
-      DataRepository.runAggregation(ctx, query, pipeline),
-    ),
-    E.mapError((cause) => {
-      return new ServiceError({
-        message: "Execute query failure",
-        cause,
-      });
+    E.flatMap(({ query, pipeline }) => {
+      return pipe(
+        DataRepository.runAggregation(ctx, query, pipeline),
+        E.mapError(
+          (error) =>
+            new ServiceError({
+              reason: ["Execute query failed", ...error.reason],
+            }),
+        ),
+      );
     }),
   );
 }
@@ -81,7 +82,7 @@ function findQueries(
     QueriesRepository.findMany(ctx, { owner }),
     E.mapError((cause) => {
       return new ServiceError({
-        message: "Find queries failure",
+        reason: ["Find queries failure"],
         cause,
       });
     }),
@@ -100,7 +101,7 @@ function removeQuery(
     }),
     E.mapError((cause) => {
       return new ServiceError({
-        message: "Remove query failed",
+        reason: ["Remove query failed"],
         cause,
       });
     }),
@@ -124,27 +125,34 @@ export type QueryRuntimeVariables = Record<
 function validateVariables(
   template: QueryDocument["variables"],
   provided: ExecuteQueryRequest["variables"],
-): E.Effect<QueryRuntimeVariables, z.ZodError | Error | UnknownException> {
+): E.Effect<QueryRuntimeVariables, DataValidationError> {
   const permittedTypes = ["array", "string", "number", "boolean", "date"];
   const providedKeys = Object.keys(provided);
   const permittedKeys = Object.keys(template);
 
   if (providedKeys.length !== permittedKeys.length) {
-    const error = new Error(
-      `Invalid query execution variables, expected: ${JSON.stringify(template)}`,
-    );
+    const error = new DataValidationError({
+      reason: [
+        "Query execution variables count mismatch",
+        `expected=${permittedKeys.length}, received=${providedKeys.length}`,
+      ],
+    });
     return E.fail(error);
   }
 
   return pipe(
     providedKeys,
-    // biome-ignore lint/complexity/noForEach: biome mistake Effect.forEach for conventional for ... each
+    // biome-ignore lint/complexity/noForEach: biome mistakes `Effect.forEach` for a conventional `for ... each`
     E.forEach((key) => {
       const variableTemplate = template[key];
 
       const type = variableTemplate.type.toLowerCase();
       if (!permittedTypes.includes(type)) {
-        return E.fail(new Error(`Unsupported variable type: ${type}`));
+        return E.fail(
+          new DataValidationError({
+            reason: ["Unsupported type", `type=${type}`],
+          }),
+        );
       }
 
       if (type === "array") {
@@ -170,7 +178,7 @@ function parsePrimitiveVariable(
   key: string,
   value: unknown,
   type: QueryPrimitive,
-): E.Effect<QueryPrimitive, z.ZodError | Error> {
+): E.Effect<QueryPrimitive, DataValidationError> {
   let result:
     | { data: QueryPrimitive; success: true }
     | { success: false; error: z.ZodError };
@@ -200,47 +208,64 @@ function parsePrimitiveVariable(
       break;
     }
     default: {
-      return E.fail(new Error(`Unexpected primitive type: ${type}`));
+      const error = new DataValidationError({
+        reason: ["Unsupported type", `type=${type}`],
+      });
+      return E.fail(error);
     }
   }
 
-  return result.success ? E.succeed(result.data) : E.fail(result.error);
+  if (result.success) {
+    return E.succeed(result.data);
+  }
+
+  const error = new DataValidationError({
+    reason: flattenZodError(result.error),
+  });
+  return E.fail(error);
 }
 
 export function injectVariablesIntoAggregation(
   aggregation: Record<string, unknown>[],
   variables: QueryRuntimeVariables,
-): Document[] {
+): E.Effect<Document[], ServiceError> {
   const prefixIdentifier = "##";
 
-  const traverse = (current: unknown): JsonValue => {
+  const traverse = (current: unknown): E.Effect<JsonValue, ServiceError> => {
     // if item is a string and has prefix identifier then attempt inplace injection
     if (typeof current === "string" && current.startsWith(prefixIdentifier)) {
       const key = current.split(prefixIdentifier)[1];
 
       if (key in variables) {
-        return variables[key] as JsonValue;
+        return E.succeed(variables[key] as JsonValue);
       }
-      throw new Error(`Missing pipeline variable: ${current}`);
+      return E.fail(
+        new ServiceError({
+          reason: ["Missing pipeline variable", current],
+        }),
+      );
     }
 
     // if item is an array then traverse each array element
     if (Array.isArray(current)) {
-      return current.map((e) => traverse(e));
+      return E.forEach(current, (e) => traverse(e));
     }
 
-    // if item is an object then recursively traverse
+    // if item is an object then recursively traverse it
     if (typeof current === "object" && current !== null) {
-      const result: JsonObject = {};
-      for (const [key, value] of Object.entries(current)) {
-        result[key] = traverse(value);
-      }
-      return result;
+      return E.forEach(Object.entries(current), ([key, value]) =>
+        pipe(
+          traverse(value),
+          E.map((traversedValue) => [key, traversedValue] as const),
+        ),
+      ).pipe(E.map((entries) => Object.fromEntries(entries) as JsonObject));
     }
 
     // remaining types are primitives and therefore do not need traversal
-    return current as JsonValue;
+    return E.succeed(current as JsonValue);
   };
 
-  return traverse(aggregation as JsonValue) as Document[];
+  return traverse(aggregation as JsonValue).pipe(
+    E.map((result) => result as Document[]),
+  );
 }

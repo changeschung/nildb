@@ -15,14 +15,14 @@ import type { TestClient } from "./fixture/client";
 describe("schemas.datetime.test", async () => {
   let fixture: AppFixture;
   let db: Context["db"];
-  let backend: TestClient;
+  let organization: TestClient;
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
 
   beforeAll(async () => {
     fixture = await buildFixture();
     db = fixture.ctx.db;
-    backend = fixture.users.organization;
+    organization = fixture.users.organization;
     await registerSchemaAndQuery(fixture, schema, query);
   });
 
@@ -33,7 +33,7 @@ describe("schemas.datetime.test", async () => {
       { _id: createUuidDto(), datetime: "2024-03-19T14:30:00+01:00" },
     ];
 
-    const response = await backend.uploadData({
+    const response = await organization.uploadData({
       schema: schema.id,
       data,
     });
@@ -54,20 +54,19 @@ describe("schemas.datetime.test", async () => {
     ];
 
     for (const invalid of data) {
-      const response = await backend.uploadData(
+      const response = await organization.uploadData(
         {
           schema: schema.id,
           data: [invalid],
         },
         false,
       );
-      const result = response.body.errors.join(";");
-      expect(result).toMatch(/failed schema validation/);
+      expect(response.body.errors).toContain("Schema validation failed");
     }
   });
 
   it("can run query with datetime data", async () => {
-    const response = await backend.executeQuery({
+    const response = await organization.executeQuery({
       id: query.id,
       variables: query.variables,
     });

@@ -13,7 +13,7 @@ async function main() {
   metrics.listen(ctx.config.metricsPort);
 
   ctx.log.info(`Node public address ${ctx.node.identity.address}`);
-  ctx.log.info(`Node public endpoint ${ctx.node.url}`);
+  ctx.log.info(`Node public endpoint ${ctx.node.endpoint}`);
   ctx.log.info(`App on :${ctx.config.webPort}`);
   ctx.log.info(`System on :${ctx.config.metricsPort}`);
 }

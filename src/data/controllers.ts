@@ -2,19 +2,25 @@ import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
 import type { EmptyObject, JsonArray } from "type-fest";
 import { z } from "zod";
-import { ControllerError } from "#/common/error";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import type { DocumentBase } from "#/common/mongo";
 import { Uuid, type UuidDto } from "#/common/types";
+import { parseUserData } from "#/common/zod-utils";
 import { DataService } from "#/data/service";
-import { isAccountAllowedGuard } from "#/middleware/auth";
+import { isRoleAllowed } from "#/middleware/auth";
 import type { CreatedResult, UpdateResult } from "./repository";
 
 export const MAX_RECORDS_LENGTH = 10_000;
 
 export const CreateDataRequest = z.object({
   schema: Uuid,
-  data: z.array(z.record(z.string(), z.unknown())),
+  data: z
+    .array(z.record(z.string(), z.unknown()))
+    .refine(
+      (elements) =>
+        elements.length > 0 && elements.length <= MAX_RECORDS_LENGTH,
+      { message: `Length must be non zero and lte ${MAX_RECORDS_LENGTH}` },
+    ),
 });
 export type CreateDataRequest = z.infer<typeof CreateDataRequest>;
 export type PartialDataDocumentDto = CreateDataRequest["data"] & {
@@ -27,41 +33,26 @@ const createData: RequestHandler<
   CreateDataResponse,
   CreateDataRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  const { ctx, body, account } = req;
+
+  if (!isRoleAllowed(req, ["organization"])) {
     res.sendStatus(401);
     return;
   }
 
-  const response = await pipe(
-    E.try({
-      try: () => CreateDataRequest.parse(req.body),
-      catch: (error) => error as z.ZodError,
-    }),
-
-    E.flatMap((body) => {
-      return body.data.length <= MAX_RECORDS_LENGTH
-        ? E.succeed(body)
-        : E.fail(
-            new ControllerError({
-              message: `Max data length is ${MAX_RECORDS_LENGTH} elements`,
-            }),
-          );
-    }),
-
-    E.flatMap((body) => {
+  await pipe(
+    parseUserData<CreateDataRequest>(() => CreateDataRequest.parse(body)),
+    E.flatMap((payload) => {
       return DataService.createRecords(
-        req.ctx,
-        req.account._id,
-        body.schema,
-        body.data,
+        ctx,
+        account._id,
+        payload.schema,
+        payload.data,
       );
     }),
-
-    foldToApiResponse(req.ctx),
+    foldToApiResponse(req, res),
     E.runPromise,
   );
-
-  res.send(response);
 };
 
 export const UpdateDataRequest = z.object({
@@ -77,24 +68,21 @@ const updateData: RequestHandler<
   UpdateDataResponse,
   UpdateDataRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  const { ctx, body } = req;
+
+  if (!isRoleAllowed(req, ["organization"])) {
     res.sendStatus(401);
     return;
   }
 
-  const response = await pipe(
-    E.try({
-      try: () => UpdateDataRequest.parse(req.body),
-      catch: (error) => error as z.ZodError,
-    }),
+  await pipe(
+    parseUserData<UpdateDataRequest>(() => UpdateDataRequest.parse(body)),
     E.flatMap((body) => {
-      return DataService.updateRecords(req.ctx, body);
+      return DataService.updateRecords(ctx, body);
     }),
-    foldToApiResponse(req.ctx),
+    foldToApiResponse(req, res),
     E.runPromise,
   );
-
-  res.send(response);
 };
 
 export const ReadDataRequest = z.object({
@@ -109,27 +97,27 @@ const readData: RequestHandler<
   ReadDataResponse,
   ReadDataRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  const { ctx, body } = req;
+  if (!isRoleAllowed(req, ["organization"])) {
     res.sendStatus(401);
     return;
   }
 
-  const response = await pipe(
-    E.try({
-      try: () => ReadDataRequest.parse(req.body),
-      catch: (error) => error as z.ZodError,
-    }),
-    E.flatMap((body) => DataService.readRecords(req.ctx, body)),
-    foldToApiResponse(req.ctx),
+  await pipe(
+    parseUserData<ReadDataRequest>(() => ReadDataRequest.parse(body)),
+    E.flatMap((payload) => DataService.readRecords(ctx, payload)),
+    foldToApiResponse(req, res),
     E.runPromise,
   );
-
-  res.send(response);
 };
 
 export const DeleteDataRequest = z.object({
   schema: Uuid,
-  filter: z.record(z.string(), z.unknown()),
+  filter: z
+    .record(z.string(), z.unknown())
+    .refine((obj) => Object.keys(obj).length > 0, {
+      message: "Filter cannot be empty",
+    }),
 });
 export type DeleteDataRequest = z.infer<typeof DeleteDataRequest>;
 export type DeleteDataResponse = ApiResponse<number>;
@@ -139,34 +127,19 @@ const deleteData: RequestHandler<
   DeleteDataResponse,
   DeleteDataRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  const { ctx, body } = req;
+
+  if (!isRoleAllowed(req, ["organization"])) {
     res.sendStatus(401);
     return;
   }
 
-  const response = await pipe(
-    E.try({
-      try: () => DeleteDataRequest.parse(req.body),
-      catch: (error) => error as z.ZodError,
-    }),
-
-    E.flatMap((request) => {
-      if (Object.keys(request.filter).length === 0)
-        return E.fail(
-          new ControllerError({
-            message:
-              "Filter cannot be empty. Use /data/flush to remove all records from a collection.",
-          }),
-        );
-
-      return E.succeed(request);
-    }),
-    E.flatMap((request) => DataService.deleteRecords(req.ctx, request)),
-    foldToApiResponse(req.ctx),
+  await pipe(
+    parseUserData<DeleteDataRequest>(() => DeleteDataRequest.parse(body)),
+    E.flatMap((payload) => DataService.deleteRecords(ctx, payload)),
+    foldToApiResponse(req, res),
     E.runPromise,
   );
-
-  res.send(response);
 };
 
 export const FlushDataRequest = z.object({
@@ -180,24 +153,19 @@ const flushData: RequestHandler<
   FlushDataResponse,
   FlushDataRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  const { ctx, body } = req;
+
+  if (!isRoleAllowed(req, ["organization"])) {
     res.sendStatus(401);
     return;
   }
 
-  const response = await pipe(
-    E.try({
-      try: () => FlushDataRequest.parse(req.body),
-      catch: (error) => error as z.ZodError,
-    }),
-    E.flatMap((request) =>
-      DataService.flushCollection(req.ctx, request.schema),
-    ),
-    foldToApiResponse(req.ctx),
+  await pipe(
+    parseUserData<FlushDataRequest>(() => TailDataRequest.parse(body)),
+    E.flatMap((payload) => DataService.flushCollection(ctx, payload.schema)),
+    foldToApiResponse(req, res),
     E.runPromise,
   );
-
-  res.send(response);
 };
 
 export const TailDataRequest = z.object({
@@ -211,23 +179,19 @@ const tailData: RequestHandler<
   TailDataResponse,
   TailDataRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  const { ctx, body } = req;
+
+  if (!isRoleAllowed(req, ["organization"])) {
     res.sendStatus(401);
     return;
   }
 
-  const response = await pipe(
-    E.try({
-      try: () => TailDataRequest.parse(req.body),
-      catch: (error) => error as z.ZodError,
-    }),
-    E.flatMap((body) => DataService.tailData(req.ctx, body.schema)),
-    E.map((data) => data as JsonArray),
-    foldToApiResponse(req.ctx),
+  await pipe(
+    parseUserData<TailDataRequest>(() => TailDataRequest.parse(body)),
+    E.flatMap((payload) => DataService.tailData(ctx, payload.schema)),
+    foldToApiResponse(req, res),
     E.runPromise,
   );
-
-  res.send(response);
 };
 
 export const DataController = {

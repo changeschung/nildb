@@ -1,6 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import type { RegisterAccountRequest } from "#/accounts/controllers";
-import { ServiceError } from "#/common/error";
+import { ServiceError } from "#/common/app-error";
 import { Identity } from "#/common/identity";
 import type { NilDid } from "#/common/nil-did";
 import type { Context } from "#/env";
@@ -18,7 +18,7 @@ export function find(
     E.mapError(
       (error) =>
         new ServiceError({
-          message: "Failed to find account by DID",
+          reason: "Failed to find account by DID",
           cause: error,
           context: {
             did,
@@ -41,7 +41,7 @@ export function register(
       if (data.did === ctx.node.identity.did) {
         return E.fail(
           new ServiceError({
-            message: "DID prohibited",
+            reason: "DID prohibited",
             context: { data },
           }),
         );
@@ -50,7 +50,7 @@ export function register(
       if (!Identity.isDidFromPublicKey(data.did, data.publicKey)) {
         return E.fail(
           new ServiceError({
-            message: "DID not derived from provided public key",
+            reason: "DID not derived from provided public key",
             context: { data },
           }),
         );
@@ -64,7 +64,7 @@ export function register(
     }),
     E.mapError((cause) => {
       return new ServiceError({
-        message: "Register organization failure",
+        reason: "Register organization failure",
         cause,
       });
     }),
@@ -80,7 +80,7 @@ export function remove(
     E.mapError(
       (error) =>
         new ServiceError({
-          message: `Failed to delete account: ${id}`,
+          reason: `Failed to delete account: ${id}`,
           cause: error,
         }),
     ),

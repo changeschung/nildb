@@ -2,7 +2,7 @@ import type { JWTPayload } from "did-jwt";
 import * as didJwt from "did-jwt";
 import { Resolver } from "did-resolver";
 import { Effect as E, pipe } from "effect";
-import type { RequestHandler } from "express";
+import type { Request, RequestHandler } from "express";
 import { AccountsEndpointV1 } from "#/accounts/routes";
 import type { AccountDocument, AccountType } from "#/admin/repository";
 import { findAccountByIdWithCache } from "#/common/cache";
@@ -80,15 +80,15 @@ export function useAuthMiddleware(ctx: Context): RequestHandler {
   };
 }
 
-export function isAccountAllowedGuard(
-  ctx: Context,
-  permitted: AccountType[],
-  account: AccountDocument,
-): boolean {
+export function isRoleAllowed(req: Request, permitted: AccountType[]): boolean {
+  const { ctx, account, path } = req;
+
   if (permitted.includes(account._type)) {
     return true;
   }
-  ctx.log.warn(`Unauthorized: ${account._id}`);
 
+  ctx.log.warn(
+    `Unauthorized(account=${account._id},type=${account._type},path=${path}`,
+  );
   return false;
 }

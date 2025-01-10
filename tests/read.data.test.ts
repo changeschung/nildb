@@ -15,7 +15,7 @@ import type { TestClient } from "./fixture/client";
 
 describe("read.data.test", () => {
   let fixture: AppFixture;
-  let backend: TestClient;
+  let organization: TestClient;
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
 
@@ -27,17 +27,17 @@ describe("read.data.test", () => {
 
   beforeAll(async () => {
     fixture = await buildFixture();
-    backend = fixture.users.organization;
+    organization = fixture.users.organization;
     await registerSchemaAndQuery(fixture, schema, query);
 
-    const _response = await backend.uploadData({
+    const _response = await organization.uploadData({
       schema: schema.id,
       data,
     });
   });
 
   it("can tail a collection", async () => {
-    const response = await backend.tailData({ schema: schema.id });
+    const response = await organization.tailData({ schema: schema.id });
 
     expect(response.body.data).toHaveLength(TAIL_DATA_LIMIT);
   });
@@ -46,7 +46,7 @@ describe("read.data.test", () => {
     const record = data[Math.floor(Math.random() * collectionSize)];
 
     const filter = { name: record.name };
-    const response = await backend.readData({ schema: schema.id, filter });
+    const response = await organization.readData({ schema: schema.id, filter });
     const result = response.body.data as { _id: UuidDto; name: string }[];
 
     expect(result).toHaveLength(1);

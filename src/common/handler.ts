@@ -1,10 +1,10 @@
 import { ValidationError } from "ajv";
 import { Effect as E, pipe } from "effect";
 import { UnknownException } from "effect/Cause";
+import type { Request, Response } from "express";
 import type { JsonArray } from "type-fest";
 import { ZodError } from "zod";
-import { AppError } from "#/common/error";
-import type { Context } from "#/env";
+import { AppError } from "#/common/app-error";
 import { DbError } from "./errors";
 
 export type ApiPath = `/api/v1/${string}`;
@@ -32,30 +32,29 @@ export type Handler<T extends HandlerParams> = {
   response: ApiResponse<T["response"]>;
 };
 
-export function foldToApiResponse<T>(c: Context) {
-  return (effect: E.Effect<T, Error>): E.Effect<ApiResponse<T>> =>
+export function foldToApiResponse<T>(req: Request, res: Response) {
+  const { ctx } = req;
+  return (effect: E.Effect<T, AppError>): E.Effect<void> =>
     pipe(
       effect,
       E.match({
-        onFailure: (e) => {
-          c.log.debug("foldToApiResponse failure: %O", e);
-          const errors = transformError(e) as JsonArray;
-
-          return {
-            errors,
+        onFailure: (error: AppError) => {
+          ctx.log.debug("Request failed: %O", error);
+          res.send({
+            errors: error.reason,
             ts: new Date(),
-          };
+          });
         },
         onSuccess: (data) => {
-          return {
+          res.send({
             data,
-          };
+          });
         },
       }),
     );
 }
 
-const transformError = (error: unknown): unknown[] => {
+export const transformError = (error: unknown): unknown[] => {
   if (error instanceof ZodError) {
     return [error.flatten()];
   }

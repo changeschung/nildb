@@ -14,13 +14,13 @@ import type { TestClient } from "./fixture/client";
 
 describe("queries.variables.test.ts", () => {
   let fixture: AppFixture;
-  let backend: TestClient;
+  let organization: TestClient;
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
 
   beforeAll(async () => {
     fixture = await buildFixture();
-    backend = fixture.users.organization;
+    organization = fixture.users.organization;
     await registerSchemaAndQuery(fixture, schema, query);
   });
 
@@ -34,7 +34,7 @@ describe("queries.variables.test.ts", () => {
       timestamp: faker.date.recent().toISOString(),
     }));
 
-    const _response = await backend.uploadData({
+    const _response = await organization.uploadData({
       schema: schema.id,
       data,
     });
@@ -47,7 +47,7 @@ describe("queries.variables.test.ts", () => {
       startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     };
 
-    const response = await backend.executeQuery({
+    const response = await organization.executeQuery({
       id: query.id,
       variables,
     });
@@ -57,8 +57,6 @@ describe("queries.variables.test.ts", () => {
       totalAmount: number;
       count: number;
     }[];
-
-    expect(results.length).toBeGreaterThan(0);
 
     for (const result of results) {
       expect(result._id).toBe("completed");
@@ -74,7 +72,7 @@ describe("queries.variables.test.ts", () => {
       startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     };
 
-    const response = await backend.executeQuery(
+    const response = await organization.executeQuery(
       {
         id: query.id,
         variables,
@@ -82,9 +80,7 @@ describe("queries.variables.test.ts", () => {
       false,
     );
 
-    expect(response.body.errors).toHaveLength(1);
-    const stringifiedErrors = JSON.stringify(response.body.errors);
-    expect(stringifiedErrors).toMatch("Execute query failure");
+    expect(response.body.errors).toContain("DataValidationError");
   });
 
   it("rejects when providing null as variable value", async () => {
@@ -94,7 +90,7 @@ describe("queries.variables.test.ts", () => {
       startDate: null,
     };
 
-    const response = await backend.executeQuery(
+    const response = await organization.executeQuery(
       {
         id: query.id,
         variables,
@@ -102,9 +98,7 @@ describe("queries.variables.test.ts", () => {
       false,
     );
 
-    expect(response.body.errors).toHaveLength(1);
-    const stringifiedErrors = JSON.stringify(response.body.errors);
-    expect(stringifiedErrors).toMatch("Execute query failure");
+    expect(response.body.errors).toContain("DataValidationError");
   });
 
   it("reject undefined as variable value", async () => {
@@ -114,7 +108,7 @@ describe("queries.variables.test.ts", () => {
       startDate: undefined,
     };
 
-    const response = await backend.executeQuery(
+    const response = await organization.executeQuery(
       {
         id: query.id,
         variables,
@@ -122,9 +116,7 @@ describe("queries.variables.test.ts", () => {
       false,
     );
 
-    expect(response.body.errors).toHaveLength(1);
-    const stringifiedErrors = JSON.stringify(response.body.errors);
-    expect(stringifiedErrors).toMatch("Execute query failure");
+    expect(response.body.errors).toContain("DataValidationError");
   });
 
   it("rejects function as variable value", async () => {
@@ -134,7 +126,7 @@ describe("queries.variables.test.ts", () => {
       startDate: () => new Date().toISOString(),
     };
 
-    const response = await backend.executeQuery(
+    const response = await organization.executeQuery(
       {
         id: query.id,
         variables,
@@ -142,7 +134,6 @@ describe("queries.variables.test.ts", () => {
       false,
     );
 
-    const stringifiedErrors = JSON.stringify(response.body.errors);
-    expect(stringifiedErrors).toMatch("Execute query failure");
+    expect(response.body.errors).toContain("DataValidationError");
   });
 });

@@ -5,8 +5,9 @@ import { z } from "zod";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { NilDid } from "#/common/nil-did";
 import type { UuidDto } from "#/common/types";
+import { parseUserData } from "#/common/zod-utils";
 import { PUBLIC_KEY_LENGTH } from "#/env";
-import { isAccountAllowedGuard } from "#/middleware/auth";
+import { isRoleAllowed } from "#/middleware/auth";
 import type { AccountDocument } from "./repository";
 import { AdminService } from "./services";
 
@@ -25,23 +26,22 @@ const createAdminAccount: RequestHandler<
   CreateAdminAccountResponse,
   CreateAdminAccountRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["root", "admin"], req.account)) {
+  const { ctx, body } = req;
+
+  if (!isRoleAllowed(req, ["root", "admin"])) {
     res.sendStatus(401);
     return;
   }
 
-  const response: CreateAdminAccountResponse = await pipe(
-    E.try({
-      try: () => CreateAdminAccountRequest.parse(req.body),
-      catch: (error) => error as z.ZodError,
-    }),
-    E.flatMap((data) => AdminService.createAdminAccount(req.ctx, data)),
+  await pipe(
+    parseUserData<CreateAdminAccountRequest>(() =>
+      CreateAdminAccountRequest.parse(body),
+    ),
+    E.flatMap((payload) => AdminService.createAdminAccount(ctx, payload)),
     E.map((id) => id.toString() as UuidDto),
-    foldToApiResponse(req.ctx),
+    foldToApiResponse(req, res),
     E.runPromise,
   );
-
-  res.send(response);
 };
 
 export type ListAccountsResponse = ApiResponse<AccountDocument[]>;
@@ -50,18 +50,18 @@ const listAccounts: RequestHandler<EmptyObject, ListAccountsResponse> = async (
   req,
   res,
 ) => {
-  if (!isAccountAllowedGuard(req.ctx, ["root", "admin"], req.account)) {
+  const { ctx } = req;
+
+  if (!isRoleAllowed(req, ["root", "admin"])) {
     res.sendStatus(401);
     return;
   }
 
-  const response: ListAccountsResponse = await pipe(
-    AdminService.listAllAccounts(req.ctx),
-    foldToApiResponse(req.ctx),
+  await pipe(
+    AdminService.listAllAccounts(ctx),
+    foldToApiResponse(req, res),
     E.runPromise,
   );
-
-  res.send(response);
 };
 
 export type RemoveAccountRequestParams = { accountDid: NilDid };
@@ -71,24 +71,21 @@ const removeAccount: RequestHandler<
   RemoveAccountRequestParams,
   RemoveAccountResponse
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["root", "admin"], req.account)) {
+  const { ctx, body } = req;
+
+  if (!isRoleAllowed(req, ["root", "admin"])) {
     res.sendStatus(401);
     return;
   }
 
-  const response: RemoveAccountResponse = await pipe(
-    E.try({
-      try: () => NilDid.parse(req.params.accountDid),
-      catch: (error) => error as z.ZodError,
-    }),
+  await pipe(
+    parseUserData<NilDid>(() => NilDid.parse(body)),
     E.flatMap((id) => {
-      return AdminService.removeAccount(req.ctx, id);
+      return AdminService.removeAccount(ctx, id);
     }),
-    foldToApiResponse(req.ctx),
+    foldToApiResponse(req, res),
     E.runPromise,
   );
-
-  res.send(response);
 };
 
 export const AdminController = {

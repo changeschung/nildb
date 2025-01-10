@@ -14,7 +14,7 @@ import type { TestClient } from "./fixture/client";
 
 describe("queries.array.variables.test.ts", () => {
   let fixture: AppFixture;
-  let backend: TestClient;
+  let organization: TestClient;
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
 
@@ -26,12 +26,12 @@ describe("queries.array.variables.test.ts", () => {
 
   beforeAll(async () => {
     fixture = await buildFixture();
-    backend = fixture.users.organization;
+    organization = fixture.users.organization;
     await registerSchemaAndQuery(fixture, schema, query);
   });
 
   it("creates records", async () => {
-    const _response = await backend.uploadData({
+    const _response = await organization.uploadData({
       schema: schema.id,
       data,
     });
@@ -42,7 +42,7 @@ describe("queries.array.variables.test.ts", () => {
       values: [1, "string"],
     };
 
-    const response = await backend.executeQuery(
+    const response = await organization.executeQuery(
       {
         id: query.id,
         variables,
@@ -50,7 +50,9 @@ describe("queries.array.variables.test.ts", () => {
       false,
     );
 
-    expect(response.body.errors).toHaveLength(1);
+    expect(response.body.errors).toContain(
+      "key=values, reason=Expected number, received string",
+    );
   });
 
   it("can execute with empty array", async () => {
@@ -58,7 +60,7 @@ describe("queries.array.variables.test.ts", () => {
       values: [],
     };
 
-    const response = await backend.executeQuery({
+    const response = await organization.executeQuery({
       id: query.id,
       variables,
     });
@@ -78,7 +80,7 @@ describe("queries.array.variables.test.ts", () => {
       values: actual.values,
     };
 
-    const response = await backend.executeQuery({
+    const response = await organization.executeQuery({
       id: query.id,
       variables,
     });

@@ -14,13 +14,13 @@ import type { TestClient } from "./fixture/client";
 
 describe("upload.max.data.test", () => {
   let fixture: AppFixture;
-  let backend: TestClient;
+  let organization: TestClient;
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
 
   beforeAll(async () => {
     fixture = await buildFixture();
-    backend = fixture.users.organization;
+    organization = fixture.users.organization;
     await registerSchemaAndQuery(fixture, schema, query);
   });
 
@@ -35,7 +35,7 @@ describe("upload.max.data.test", () => {
       nextDocument(),
     );
 
-    const response = await backend.uploadData(
+    const response = await organization.uploadData(
       {
         schema: schema.id,
         data,
@@ -43,8 +43,8 @@ describe("upload.max.data.test", () => {
       false,
     );
 
-    expect(response.body.errors[0]).toMatch(
-      `Max data length is ${MAX_RECORDS_LENGTH} elements`,
+    expect(response.body.errors).toContain(
+      "key=data, reason=Length must be non zero and lte 10000",
     );
   });
 
@@ -53,7 +53,7 @@ describe("upload.max.data.test", () => {
       nextDocument(),
     );
 
-    const response = await backend.uploadData({
+    const response = await organization.uploadData({
       schema: schema.id,
       data,
     });

@@ -24,7 +24,14 @@ export function loggerMiddleware(env: Config): HttpLogger {
 }
 
 export function createLogger(env: Config): Logger {
+  const transport = process.env.TEST
+    ? {
+        target: "pino-pretty",
+      }
+    : undefined;
+
   return pino({
     level: env.logLevel,
+    transport,
   });
 }

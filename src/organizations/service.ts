@@ -1,5 +1,5 @@
 import { Effect as E, pipe } from "effect";
-import type { ServiceError } from "#/common/error";
+import type { ServiceError } from "#/common/app-error";
 import type { Context } from "#/env";
 
 export function registerSchema(_ctx: Context): E.Effect<null, ServiceError> {

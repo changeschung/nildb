@@ -5,7 +5,8 @@ import { z } from "zod";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { NilDid } from "#/common/nil-did";
 import { Uuid, type UuidDto } from "#/common/types";
-import { isAccountAllowedGuard } from "#/middleware/auth";
+import { parseUserData } from "#/common/zod-utils";
+import { isRoleAllowed } from "#/middleware/auth";
 import type { QueryDocument } from "./repository";
 import { QueriesService } from "./service";
 
@@ -16,21 +17,18 @@ const listQueries: RequestHandler<
   ListQueriesResponse,
   EmptyObject
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  const { ctx, account } = req;
+
+  if (!isRoleAllowed(req, ["organization"])) {
     res.sendStatus(401);
     return;
   }
 
-  const response = await pipe(
-    E.fromNullable(req.account._id),
-    E.flatMap((owner) => {
-      return QueriesService.findQueries(req.ctx, owner);
-    }),
-    foldToApiResponse(req.ctx),
+  await pipe(
+    QueriesService.findQueries(ctx, account._id),
+    foldToApiResponse(req, res),
     E.runPromise,
   );
-
-  res.send(response);
 };
 
 const VariablePrimitive = z.enum(["string", "number", "boolean", "date"]);
@@ -63,23 +61,19 @@ const addQuery: RequestHandler<
   AddQueryResponse,
   AddQueryRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["admin"], req.account)) {
+  const { ctx, body } = req;
+
+  if (!isRoleAllowed(req, ["admin"])) {
     res.sendStatus(401);
     return;
   }
 
-  const response = await pipe(
-    E.try({
-      try: () => AddQueryRequest.parse(req.body),
-      catch: (error) => error as z.ZodError,
-    }),
-    E.flatMap((body) => QueriesService.addQuery(req.ctx, body)),
-    E.map((id) => id.toString() as UuidDto),
-    foldToApiResponse(req.ctx),
+  await pipe(
+    parseUserData<AddQueryRequest>(() => AddQueryRequest.parse(body)),
+    E.flatMap((payload) => QueriesService.addQuery(ctx, payload)),
+    foldToApiResponse(req, res),
     E.runPromise,
   );
-
-  res.send(response);
 };
 
 export const DeleteQueryRequest = z.object({
@@ -93,24 +87,21 @@ const deleteQuery: RequestHandler<
   DeleteQueryResponse,
   DeleteQueryRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  const { ctx, body, account } = req;
+
+  if (!isRoleAllowed(req, ["organization"])) {
     res.sendStatus(401);
     return;
   }
 
-  const response = await pipe(
-    E.try({
-      try: () => DeleteQueryRequest.parse(req.body),
-      catch: (error) => error as z.ZodError,
+  await pipe(
+    parseUserData<DeleteQueryRequest>(() => DeleteQueryRequest.parse(body)),
+    E.flatMap((payload) => {
+      return QueriesService.removeQuery(ctx, account._id, payload.id);
     }),
-    E.flatMap((request) => {
-      return QueriesService.removeQuery(req.ctx, req.account._id, request.id);
-    }),
-    foldToApiResponse(req.ctx),
+    foldToApiResponse(req, res),
     E.runPromise,
   );
-
-  res.send(response);
 };
 
 export const ExecuteQueryRequest = z.object({
@@ -125,24 +116,21 @@ const executeQuery: RequestHandler<
   ExecuteQueryResponse,
   ExecuteQueryRequest
 > = async (req, res) => {
-  if (!isAccountAllowedGuard(req.ctx, ["organization"], req.account)) {
+  const { ctx, body } = req;
+
+  if (!isRoleAllowed(req, ["organization"])) {
     res.sendStatus(401);
     return;
   }
 
-  const response = await pipe(
-    E.try({
-      try: () => ExecuteQueryRequest.parse(req.body),
-      catch: (error) => error as z.ZodError,
+  await pipe(
+    parseUserData<ExecuteQueryRequest>(() => ExecuteQueryRequest.parse(body)),
+    E.flatMap((payload) => {
+      return QueriesService.executeQuery(ctx, payload);
     }),
-    E.flatMap((request) => {
-      return QueriesService.executeQuery(req.ctx, request);
-    }),
-    foldToApiResponse(req.ctx),
+    foldToApiResponse(req, res),
     E.runPromise,
   );
-
-  res.send(response);
 };
 
 export const QueriesController = {
