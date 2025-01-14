@@ -40,6 +40,11 @@ function insert(
       const result = await collection.insertOne(document);
       return result.insertedId;
     }),
+    E.tap(() =>
+      E.sync(() => {
+        ctx.cache.accounts.taint(document.owner);
+      }),
+    ),
     succeedOrMapToRepositoryError({
       op: "QueriesRepository.insert",
       document,
@@ -96,6 +101,11 @@ function deleteMany(
       const result = await collection.deleteMany(filter);
       return result.deletedCount;
     }),
+    E.tap(() =>
+      E.sync(() => {
+        ctx.cache.accounts.taint(filter.owner as NilDid);
+      }),
+    ),
     succeedOrMapToRepositoryError({
       op: "QueriesRepository.deleteMany",
       filter,
@@ -115,6 +125,11 @@ function deleteOne(
       const result = await collection.deleteOne(filter);
       return O.fromNullable(result.deletedCount === 1);
     }),
+    E.tap(() =>
+      E.sync(() => {
+        ctx.cache.accounts.taint(filter.owner as NilDid);
+      }),
+    ),
     succeedOrMapToRepositoryError({
       op: "QueriesRepository.deleteOne",
       filter,

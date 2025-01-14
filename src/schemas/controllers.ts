@@ -17,16 +17,16 @@ export const listSchemas: RequestHandler<
   EmptyObject,
   ListSchemasResponse
 > = async (req, res) => {
-  const { ctx, account } = req;
+  const { ctx } = req;
 
   if (!isRoleAllowed(req, ["organization"])) {
     res.sendStatus(401);
     return;
   }
+  const account = req.account as OrganizationAccountDocument;
 
   await pipe(
-    E.succeed(account as OrganizationAccountDocument),
-    E.flatMap((account) => SchemasService.getOrganizationSchemas(ctx, account)),
+    SchemasService.getOrganizationSchemas(ctx, account),
     foldToApiResponse(req, res),
     E.runPromise,
   );

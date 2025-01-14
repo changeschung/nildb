@@ -39,11 +39,14 @@ export class Cache<K, V> {
     return entry.value;
   }
 
-  cleanup(): void {
-    for (const [key, entry] of this.cache.entries()) {
-      if (Date.now() > entry.expires) {
-        this.cache.delete(key);
-      }
+  delete(key: K): boolean {
+    return this.cache.delete(key);
+  }
+
+  taint(key: K): void {
+    const entry = this.cache.get(key);
+    if (entry) {
+      entry.expires = Date.now() - 1;
     }
   }
 }

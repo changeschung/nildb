@@ -108,6 +108,11 @@ function deleteOneById(
       const result = await collection.deleteOne(filter);
       return result.deletedCount === 1 ? O.some(_id) : O.none();
     }),
+    E.tap(() =>
+      E.sync(() => {
+        ctx.cache.accounts.delete(_id);
+      }),
+    ),
     succeedOrMapToRepositoryError({
       name: "AccountRepository.deleteOne",
       filter,
