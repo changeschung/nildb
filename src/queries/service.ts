@@ -2,6 +2,7 @@ import { Effect as E, pipe } from "effect";
 import type { Document, UUID } from "mongodb";
 import type { JsonObject, JsonValue } from "type-fest";
 import { z } from "zod";
+import type { AddQueryRequest } from "#/admin/controllers";
 import { DataValidationError, ServiceError } from "#/common/app-error";
 import type { NilDid } from "#/common/nil-did";
 import { validateData } from "#/common/validator";
@@ -9,10 +10,7 @@ import { flattenZodError } from "#/common/zod-utils";
 import { DataRepository } from "#/data/repository";
 import type { Context } from "#/env";
 import { OrganizationRepository } from "#/organizations/repository";
-import type {
-  AddQueryRequest,
-  ExecuteQueryRequest,
-} from "#/queries/controllers";
+import type { ExecuteQueryRequest } from "#/queries/controllers";
 import pipelineSchema from "#/queries/mongodb_pipeline.json";
 import {
   QueriesRepository,

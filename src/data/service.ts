@@ -10,10 +10,10 @@ import type {
   UpdateDataRequest,
 } from "#/data/controllers";
 import {
-  type CreatedResult,
   type DataDocument,
   DataRepository,
   type UpdateResult,
+  type UploadResult,
 } from "#/data/repository";
 import type { Context } from "#/env";
 import { SchemasRepository } from "#/schemas/repository";
@@ -23,7 +23,7 @@ function createRecords(
   ownerId: NilDid,
   schemaId: UUID,
   data: Record<string, unknown>[],
-): E.Effect<CreatedResult, DataValidationError | ServiceError> {
+): E.Effect<UploadResult, DataValidationError | ServiceError> {
   return pipe(
     E.Do,
     E.bind("document", () => {

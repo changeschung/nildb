@@ -5,28 +5,27 @@ import type {
   RemoveAccountRequest,
 } from "#/accounts/controllers";
 import { AccountsEndpointV1 } from "#/accounts/routes";
-import type { CreateAdminAccountRequest } from "#/admin/controllers";
+import type {
+  AddQueryRequest,
+  AddSchemaRequest,
+  CreateAdminAccountRequest,
+  DeleteQueryRequest,
+  DeleteSchemaRequest,
+} from "#/admin/controllers";
 import { AdminEndpointV1 } from "#/admin/routes";
 import type { Identity } from "#/common/identity";
 import type {
-  CreateDataRequest,
   DeleteDataRequest,
   FlushDataRequest,
   ReadDataRequest,
   TailDataRequest,
   UpdateDataRequest,
+  UploadDataRequest,
 } from "#/data/controllers";
 import { DataEndpointV1 } from "#/data/routes";
-import type {
-  AddQueryRequest,
-  DeleteQueryRequest,
-  ExecuteQueryRequest,
-} from "#/queries/controllers";
+import type { ExecuteQueryRequest } from "#/queries/controllers";
 import { QueriesEndpointV1 } from "#/queries/routes";
-import type {
-  AddSchemaRequest,
-  DeleteSchemaRequest,
-} from "#/schemas/controllers";
+import type {} from "#/schemas/controllers";
 import { SchemasEndpointV1 } from "#/schemas/routes";
 import { SystemEndpoint } from "#/system/routes";
 
@@ -134,7 +133,7 @@ export class TestClient {
   async addSchema(body: AddSchemaRequest, expectSuccess = true): Promise<Test> {
     const token = await this.jwt();
     const response = await this.request
-      .post(SchemasEndpointV1.Base)
+      .post(AdminEndpointV1.Schemas.Base)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
 
@@ -147,7 +146,7 @@ export class TestClient {
   ): Promise<Test> {
     const token = await this.jwt();
     const response = await this.request
-      .delete(SchemasEndpointV1.Base)
+      .delete(AdminEndpointV1.Schemas.Base)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
 
@@ -166,7 +165,7 @@ export class TestClient {
   async addQuery(body: AddQueryRequest, expectSuccess = true): Promise<Test> {
     const token = await this.jwt();
     const response = await this.request
-      .post(QueriesEndpointV1.Base)
+      .post(AdminEndpointV1.Queries.Base)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
 
@@ -179,7 +178,7 @@ export class TestClient {
   ): Promise<Test> {
     const token = await this.jwt();
     const response = await this.request
-      .delete(QueriesEndpointV1.Base)
+      .delete(AdminEndpointV1.Queries.Base)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
 
@@ -200,13 +199,13 @@ export class TestClient {
   }
 
   async uploadData(
-    body: CreateDataRequest,
+    body: UploadDataRequest,
     expectSuccess = true,
   ): Promise<Test> {
     const token = await this.jwt();
 
     const response = await this.request
-      .post(DataEndpointV1.Create)
+      .post(DataEndpointV1.Upload)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
 

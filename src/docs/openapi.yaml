@@ -4,15 +4,12 @@ info:
   version: 0.2.2
 
 servers:
-  - url: https://nildb-node-a50d.sandbox.app-cluster.sandbox.nilogy.xyz
-    description: node-a50d
-  - url: https://nildb-node-dvml.sandbox.app-cluster.sandbox.nilogy.xyz
-    description: node-dvml
-  - url: https://nildb-node-guue.sandbox.app-cluster.sandbox.nilogy.xyz
-    description: node-guue
-
-security:
-  - jwt: []
+  - url: https://nildb-a50d.nillion.network
+    description: nildb-a50d
+  - url: https://nildb-dvml.nillion.network
+    description: nildb-dvml
+  - url: https://nildb-guue.nillion.network
+    description: nildb-guue
 
 components:
   securitySchemes:

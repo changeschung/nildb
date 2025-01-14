@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { createUuidDto } from "#/common/types";
-import type { CreatedResult, DataDocument } from "#/data/repository";
+import type { DataDocument, UploadResult } from "#/data/repository";
 import type { Context } from "#/env";
 import queryJson from "./data/wallet.query.json";
 import schemaJson from "./data/wallet.schema.json";
@@ -77,7 +77,7 @@ describe("data.test.ts", () => {
       schema: schema.id,
       data,
     });
-    const result = response.body.data as CreatedResult;
+    const result = response.body.data as UploadResult;
     expect(result.errors).toHaveLength(1);
 
     const cursor = db.data.collection(schema.id.toString()).find({});
@@ -106,7 +106,7 @@ describe("data.test.ts", () => {
       data,
     });
 
-    const result = response.body.data as CreatedResult;
+    const result = response.body.data as UploadResult;
     expect(result.errors).toHaveLength(1);
     expect(result.created).toHaveLength(1);
   });

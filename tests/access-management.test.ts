@@ -54,7 +54,7 @@ describe("access-management.test.ts", () => {
     expect(response.status).toBe(401);
   });
 
-  describe.skip("it enforces data ownership", () => {
+  describe("enforces cross org access restrictions", () => {
     const collectionSize = 10;
     const data = Array.from({ length: collectionSize }, () => ({
       _id: createUuidDto(),
@@ -80,18 +80,91 @@ describe("access-management.test.ts", () => {
       });
     });
 
-    it("prevents cross organization reads", async () => {
-      const record = data[Math.floor(Math.random() * collectionSize)];
-      const filter = { name: record.name };
-      const response = await organizationB.readData({
-        schema: schema.id,
-        filter,
-      });
+    it("prevents data upload", async () => {
+      const response = await organizationB.uploadData(
+        {
+          schema: schema.id,
+          data: [
+            {
+              _id: createUuidDto(),
+              name: faker.person.fullName(),
+            },
+          ],
+        },
+        false,
+      );
 
       const errors = response.body.errors as string[];
-      expect(errors).toEqual(
-        "UserErrorMessage.ResourceNotFound.reasons(schema.id.toString()),",
+      expect(errors).toContain("Schema not found");
+    });
+
+    it("prevents data reads", async () => {
+      const response = await organizationB.readData(
+        {
+          schema: schema.id,
+          filter: {},
+        },
+        false,
       );
+
+      const errors = response.body.errors as string[];
+      expect(errors).toContain("Schema not found");
+    });
+
+    it("prevents data updates", async () => {
+      const record = data[Math.floor(Math.random() * collectionSize)];
+      const filter = { name: record.name };
+      const update = { name: "foo" };
+      const response = await organizationB.updateData(
+        {
+          schema: schema.id,
+          filter,
+          update,
+        },
+        false,
+      );
+
+      const errors = response.body.errors as string[];
+      expect(errors).toContain("Schema not found");
+    });
+
+    it("prevents data deletes", async () => {
+      const record = data[Math.floor(Math.random() * collectionSize)];
+      const filter = { name: record.name };
+      const response = await organizationB.deleteData(
+        {
+          schema: schema.id,
+          filter,
+        },
+        false,
+      );
+
+      const errors = response.body.errors as string[];
+      expect(errors).toContain("Schema not found");
+    });
+
+    it("prevents data flush", async () => {
+      const response = await organizationB.flushData(
+        {
+          schema: schema.id,
+        },
+        false,
+      );
+
+      const errors = response.body.errors as string[];
+      expect(errors).toContain("Schema not found");
+    });
+
+    it("prevents data tail", async () => {
+      const response = await organizationB.tailData(
+        {
+          schema: schema.id,
+        },
+        false,
+      );
+
+      const errors = response.body.errors as string[];
+      expect(errors).toContain("Schema not found");
     });
   });
 });

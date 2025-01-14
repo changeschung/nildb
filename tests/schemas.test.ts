@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import type { OrganizationAccountDocument } from "#/accounts/repository";
 import { CollectionName } from "#/common/mongo";
 import { createUuidDto } from "#/common/types";
-import type { CreatedResult } from "#/data/repository";
+import type { UploadResult } from "#/data/repository";
 import type { SchemaDocument } from "#/schemas/repository";
 import schemaJson from "./data/wallet.schema.json";
 import {
@@ -66,7 +66,7 @@ describe("schemas.test.ts", () => {
       ],
     });
 
-    const result = response.body.data as CreatedResult;
+    const result = response.body.data as UploadResult;
     expect(result.created).toHaveLength(1);
 
     const data = await fixture.ctx.db.data

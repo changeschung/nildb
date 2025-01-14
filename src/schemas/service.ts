@@ -1,12 +1,12 @@
 import { Effect as E, pipe } from "effect";
 import type { UUID } from "mongodb";
 import type { OrganizationAccountDocument } from "#/accounts/repository";
+import type { AddSchemaRequest } from "#/admin/controllers";
 import { ServiceError } from "#/common/app-error";
 import { validateSchema } from "#/common/validator";
 import { DataRepository } from "#/data/repository";
 import type { Context } from "#/env";
 import { OrganizationRepository } from "#/organizations/repository";
-import type { AddSchemaRequest } from "#/schemas/controllers";
 import { type SchemaDocument, SchemasRepository } from "#/schemas/repository";
 
 function getOrganizationSchemas(
