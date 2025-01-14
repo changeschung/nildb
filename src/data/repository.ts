@@ -106,7 +106,7 @@ export type CreateFailure = {
   document: unknown;
 };
 
-export type CreatedResult = {
+export type UploadResult = {
   created: UuidDto[];
   errors: CreateFailure[];
 };
@@ -115,7 +115,7 @@ function insert(
   ctx: Context,
   schema: SchemaDocument,
   data: PartialDataDocumentDto[],
-): E.Effect<CreatedResult, RepositoryError> {
+): E.Effect<UploadResult, RepositoryError> {
   return pipe(
     E.tryPromise(async () => {
       const created = new Set<UuidDto>();

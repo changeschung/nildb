@@ -15,12 +15,12 @@ import type {
 import { AdminEndpointV1 } from "#/admin/routes";
 import type { Identity } from "#/common/identity";
 import type {
-  CreateDataRequest,
   DeleteDataRequest,
   FlushDataRequest,
   ReadDataRequest,
   TailDataRequest,
   UpdateDataRequest,
+  UploadDataRequest,
 } from "#/data/controllers";
 import { DataEndpointV1 } from "#/data/routes";
 import type { ExecuteQueryRequest } from "#/queries/controllers";
@@ -199,13 +199,13 @@ export class TestClient {
   }
 
   async uploadData(
-    body: CreateDataRequest,
+    body: UploadDataRequest,
     expectSuccess = true,
   ): Promise<Test> {
     const token = await this.jwt();
 
     const response = await this.request
-      .post(DataEndpointV1.Create)
+      .post(DataEndpointV1.Upload)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
 

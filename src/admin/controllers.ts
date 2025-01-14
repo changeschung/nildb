@@ -9,7 +9,7 @@ import { NilDid } from "#/common/nil-did";
 import { Uuid, type UuidDto } from "#/common/types";
 import { parseUserData } from "#/common/zod-utils";
 import { MAX_RECORDS_LENGTH } from "#/data/controllers";
-import type { CreatedResult, UpdateResult } from "#/data/repository";
+import type { UpdateResult, UploadResult } from "#/data/repository";
 import { DataService } from "#/data/service";
 import { PUBLIC_KEY_LENGTH } from "#/env";
 import { isRoleAllowed } from "#/middleware/auth";
@@ -218,7 +218,7 @@ export type UploadDataRequest = z.infer<typeof UploadDataRequest>;
 export type PartialDataDocumentDto = UploadDataRequest["data"] & {
   _id: UuidDto;
 };
-export type UploadDataResponse = ApiResponse<CreatedResult>;
+export type UploadDataResponse = ApiResponse<UploadResult>;
 
 const uploadData: RequestHandler<
   EmptyObject,

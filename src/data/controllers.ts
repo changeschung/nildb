@@ -11,11 +11,11 @@ import { Uuid, type UuidDto } from "#/common/types";
 import { parseUserData } from "#/common/zod-utils";
 import { DataService } from "#/data/service";
 import { isRoleAllowed } from "#/middleware/auth";
-import type { CreatedResult, UpdateResult } from "./repository";
+import type { UpdateResult, UploadResult } from "./repository";
 
 export const MAX_RECORDS_LENGTH = 10_000;
 
-export const CreateDataRequest = z.object({
+export const UploadDataRequest = z.object({
   schema: Uuid,
   data: z
     .array(z.record(z.string(), z.unknown()))
@@ -25,16 +25,16 @@ export const CreateDataRequest = z.object({
       { message: `Length must be non zero and lte ${MAX_RECORDS_LENGTH}` },
     ),
 });
-export type CreateDataRequest = z.infer<typeof CreateDataRequest>;
-export type PartialDataDocumentDto = CreateDataRequest["data"] & {
+export type UploadDataRequest = z.infer<typeof UploadDataRequest>;
+export type PartialDataDocumentDto = UploadDataRequest["data"] & {
   _id: UuidDto;
 };
-export type CreateDataResponse = ApiResponse<CreatedResult>;
+export type UploadDataResponse = ApiResponse<UploadResult>;
 
-const createData: RequestHandler<
+const uploadData: RequestHandler<
   EmptyObject,
-  CreateDataResponse,
-  CreateDataRequest
+  UploadDataResponse,
+  UploadDataRequest
 > = async (req, res) => {
   const { ctx, body } = req;
 
@@ -45,7 +45,7 @@ const createData: RequestHandler<
   const account = req.account as OrganizationAccountDocument;
 
   await pipe(
-    parseUserData<CreateDataRequest>(() => CreateDataRequest.parse(body)),
+    parseUserData<UploadDataRequest>(() => UploadDataRequest.parse(body)),
     E.flatMap((payload) =>
       enforceSchemaOwnership(account, payload.schema, payload),
     ),
@@ -240,7 +240,7 @@ function enforceSchemaOwnership<T>(
 }
 
 export const DataController = {
-  createData,
+  uploadData,
   deleteData,
   flushData,
   readData,
