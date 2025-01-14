@@ -32,12 +32,12 @@ jobs:
         env:
           TF_VAR_deployment_dir: infra/node-dvml
           TF_VAR_deployment_image_tag: ${{ inputs.tag }}
-          TF_VAR_deployment_image_repo: 767397865113.dkr.ecr.eu-west-1.amazonaws.com/nildb-api
+          TF_VAR_deployment_image_repo: 470421895671.dkr.ecr.eu-west-1.amazonaws.com/nildb-api
         with:
           framework: ecs_service
-          deploy_env: sandbox
+          deploy_env: production
           deploy_roles: |
-            { "sandbox": "arn:aws:iam::767397865113:role/nil-db-github" }
+            { "production": "arn:aws:iam::470421895671:role/nil-db-github" }
           gha_app_id: ${{ secrets.NILLION_GITHUB_ACTIONS_APP_ID }}
           gha_app_private_key: ${{ secrets.NILLION_GITHUB_ACTIONS_APP_PRIVATE_KEY }}
           tf_secrets_master_password: ${{ secrets.SECRETS_MASTER_PASSWORD }}
