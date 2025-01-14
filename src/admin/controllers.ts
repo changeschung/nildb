@@ -14,6 +14,7 @@ import { DataService } from "#/data/service";
 import { PUBLIC_KEY_LENGTH } from "#/env";
 import { isRoleAllowed } from "#/middleware/auth";
 import { QueriesService } from "#/queries/service";
+import { SchemasService } from "#/schemas/service";
 import type { AccountDocument } from "./repository";
 import { AdminService } from "./services";
 
@@ -380,6 +381,62 @@ const executeQuery: RequestHandler<
   );
 };
 
+export const AddSchemaRequest = z.object({
+  _id: Uuid,
+  owner: NilDid,
+  name: z.string().min(1),
+  keys: z.array(z.string()),
+  schema: z.record(z.string(), z.unknown()),
+});
+export type AddSchemaRequest = z.infer<typeof AddSchemaRequest>;
+export type AddSchemaResponse = ApiResponse<UuidDto>;
+
+const addSchema: RequestHandler<
+  EmptyObject,
+  AddSchemaResponse,
+  AddSchemaRequest
+> = async (req, res) => {
+  const { ctx, body } = req;
+
+  if (!isRoleAllowed(req, ["admin"])) {
+    res.sendStatus(401);
+    return;
+  }
+
+  await pipe(
+    parseUserData<AddSchemaRequest>(() => AddSchemaRequest.parse(body)),
+    E.flatMap((payload) => SchemasService.addSchema(ctx, payload)),
+    foldToApiResponse(req, res),
+    E.runPromise,
+  );
+};
+
+export const DeleteSchemaRequest = z.object({
+  id: Uuid,
+});
+export type DeleteSchemaRequest = z.infer<typeof DeleteSchemaRequest>;
+export type DeleteSchemaResponse = ApiResponse<UuidDto>;
+
+const deleteSchema: RequestHandler<
+  EmptyObject,
+  DeleteSchemaResponse,
+  DeleteSchemaRequest
+> = async (req, res) => {
+  const { ctx, body } = req;
+
+  if (!isRoleAllowed(req, ["admin"])) {
+    res.sendStatus(401);
+    return;
+  }
+
+  await pipe(
+    parseUserData<DeleteSchemaRequest>(() => DeleteSchemaRequest.parse(body)),
+    E.flatMap((payload) => SchemasService.deleteSchema(ctx, payload.id)),
+    foldToApiResponse(req, res),
+    E.runPromise,
+  );
+};
+
 export const AdminController = {
   createAdminAccount,
   listAccounts,
@@ -394,4 +451,7 @@ export const AdminController = {
   addQuery,
   deleteQuery,
   executeQuery,
+
+  addSchema,
+  deleteSchema,
 };

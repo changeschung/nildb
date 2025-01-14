@@ -7,8 +7,10 @@ import type {
 import { AccountsEndpointV1 } from "#/accounts/routes";
 import type {
   AddQueryRequest,
+  AddSchemaRequest,
   CreateAdminAccountRequest,
   DeleteQueryRequest,
+  DeleteSchemaRequest,
 } from "#/admin/controllers";
 import { AdminEndpointV1 } from "#/admin/routes";
 import type { Identity } from "#/common/identity";
@@ -23,10 +25,7 @@ import type {
 import { DataEndpointV1 } from "#/data/routes";
 import type { ExecuteQueryRequest } from "#/queries/controllers";
 import { QueriesEndpointV1 } from "#/queries/routes";
-import type {
-  AddSchemaRequest,
-  DeleteSchemaRequest,
-} from "#/schemas/controllers";
+import type {} from "#/schemas/controllers";
 import { SchemasEndpointV1 } from "#/schemas/routes";
 import { SystemEndpoint } from "#/system/routes";
 
@@ -134,7 +133,7 @@ export class TestClient {
   async addSchema(body: AddSchemaRequest, expectSuccess = true): Promise<Test> {
     const token = await this.jwt();
     const response = await this.request
-      .post(SchemasEndpointV1.Base)
+      .post(AdminEndpointV1.Schemas.Base)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
 
@@ -147,7 +146,7 @@ export class TestClient {
   ): Promise<Test> {
     const token = await this.jwt();
     const response = await this.request
-      .delete(SchemasEndpointV1.Base)
+      .delete(AdminEndpointV1.Schemas.Base)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
 
