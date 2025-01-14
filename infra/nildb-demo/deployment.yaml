@@ -22,8 +22,8 @@ deployment:
     headers:
       insert:
         "Access-Control-Allow-Origin": "https://docs.nillion.com"
-        "Access-Control-Allow-Methods": "GET, POST, DELETE"
-        "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept"
+        "Access-Control-Allow-Methods": "GET,POST,DELETE"
+        "Access-Control-Allow-Headers": "Authorization,Content-Type,Accept"
         "Access-Control-Max-Age": "3600"
         "Access-Control-Allow-Credentials": "true"
 
