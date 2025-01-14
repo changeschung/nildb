@@ -1,36 +1,29 @@
-import * as crypto from "node:crypto";
+import { ripemd160 } from "@noble/hashes/ripemd160";
+import { sha256 } from "@noble/hashes/sha256";
+import * as secp256k1 from "@noble/secp256k1";
 import { bech32 } from "bech32";
 import * as didJwt from "did-jwt";
-import Elliptic from "elliptic";
 import { type NilChainAddress, NilDid } from "#/common/nil-did";
 
-type KeyPair = Elliptic.ec.KeyPair;
-// init once for efficiency
-const ec = new Elliptic.ec("secp256k1");
 // 10 minutes
 const DEFAULT_JWT_TTL = 1000 * 60 * 10;
 
 export class Identity {
-  private constructor(private keypair: KeyPair) {}
+  private constructor(public _sk: Uint8Array) {}
 
-  get publicKey(): string {
-    return this.keypair.getPublic(true, "hex");
+  get pk(): string {
+    const pubKey = secp256k1.getPublicKey(this._sk, true);
+    return Buffer.from(pubKey).toString("hex");
   }
 
-  get secretKey(): string {
-    return this.keypair.getPrivate("hex");
+  get sk(): string {
+    return Buffer.from(this._sk).toString("hex").padStart(64, "0");
   }
 
   get address(): NilChainAddress {
-    const sha256Hash = crypto
-      .createHash("sha256")
-      .update(Buffer.from(this.publicKey, "hex"))
-      .digest();
-
-    const ripemd160Hash = crypto
-      .createHash("ripemd160")
-      .update(sha256Hash)
-      .digest();
+    const pubKeyBytes = Buffer.from(this.pk, "hex");
+    const sha256Hash = sha256(pubKeyBytes);
+    const ripemd160Hash = ripemd160(sha256Hash);
 
     const prefix = "nillion";
     const address = bech32.encode(prefix, bech32.toWords(ripemd160Hash));
@@ -44,7 +37,7 @@ export class Identity {
   }
 
   createJwt(payload: { aud: NilDid }): Promise<string> {
-    const signer = didJwt.ES256KSigner(Buffer.from(this.secretKey, "hex"));
+    const signer = didJwt.ES256KSigner(Buffer.from(this.sk, "hex"));
     return didJwt.createJWT(payload, {
       signer,
       issuer: this.did,
@@ -53,28 +46,24 @@ export class Identity {
   }
 
   static fromSk(skAsHex: string): Identity {
-    const keys = ec.keyFromPrivate(skAsHex);
-    return new Identity(keys);
+    const secretKey = Buffer.from(skAsHex, "hex");
+    if (!secp256k1.utils.isValidPrivateKey(secretKey)) {
+      throw new Error("Invalid private key");
+    }
+    return new Identity(secretKey);
   }
 
   static new(): Identity {
-    const ec = new Elliptic.ec("secp256k1");
-    const keys = ec.genKeyPair();
-    return new Identity(keys);
+    const secretKey = secp256k1.utils.randomPrivateKey();
+    return new Identity(secretKey);
   }
 
   static isDidFromPublicKey(did: NilDid, publicKeyAsHex: string): boolean {
     const address = did.split(":")[3];
+    const pubKeyBytes = Buffer.from(publicKeyAsHex, "hex");
 
-    const sha256Hash = crypto
-      .createHash("sha256")
-      .update(Buffer.from(publicKeyAsHex, "hex"))
-      .digest();
-
-    const ripemd160Hash = crypto
-      .createHash("ripemd160")
-      .update(sha256Hash)
-      .digest();
+    const sha256Hash = sha256(pubKeyBytes);
+    const ripemd160Hash = ripemd160(sha256Hash);
 
     const prefix = "nillion";
     const expected = bech32.encode(prefix, bech32.toWords(ripemd160Hash));
@@ -83,15 +72,9 @@ export class Identity {
   }
 
   static didFromPk(pkAsHex: string): NilDid {
-    const sha256Hash = crypto
-      .createHash("sha256")
-      .update(Buffer.from(pkAsHex, "hex"))
-      .digest();
-
-    const ripemd160Hash = crypto
-      .createHash("ripemd160")
-      .update(sha256Hash)
-      .digest();
+    const pubKeyBytes = Buffer.from(pkAsHex, "hex");
+    const sha256Hash = sha256(pubKeyBytes);
+    const ripemd160Hash = ripemd160(sha256Hash);
 
     const prefix = "nillion";
     const address = bech32.encode(prefix, bech32.toWords(ripemd160Hash));

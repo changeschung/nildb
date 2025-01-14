@@ -51,8 +51,8 @@ async function main(): Promise<void> {
     ? Identity.fromSk(options.secretKey)
     : Identity.new();
   result.client = {
-    sk: identity.secretKey,
-    pk: identity.publicKey,
+    sk: identity.sk,
+    pk: identity.pk,
     did: identity.did,
   };
 
