@@ -26,9 +26,9 @@ jobs:
           TF_VAR_name: nildb-api
         with:
           framework: ecr_repo
-          deploy_env: sandbox
+          deploy_env: production
           deploy_roles: |
-            { "sandbox": "arn:aws:iam::767397865113:role/nil-db-github" }
+            { "production": "arn:aws:iam::470421895671:role/nil-db-github" }
           gha_app_id: ${{ secrets.NILLION_GITHUB_ACTIONS_APP_ID }}
           gha_app_private_key: ${{ secrets.NILLION_GITHUB_ACTIONS_APP_PRIVATE_KEY }}
           tf_secrets_master_password: ${{ secrets.SECRETS_MASTER_PASSWORD }}
@@ -36,7 +36,7 @@ jobs:
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: "arn:aws:iam::767397865113:role/nil-db-github"
+          role-to-assume: "arn:aws:iam::470421895671:role/nil-db-github"
           aws-region: "eu-west-1"
 
       - uses: aws-actions/amazon-ecr-login@v2
