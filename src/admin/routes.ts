@@ -13,6 +13,7 @@ export const AdminEndpointV1 = {
   },
   Queries: {
     Base: "/api/v1/admin/queries",
+    Execute: "/api/v1/admin/queries/execute",
   },
 } as const;
 
@@ -35,6 +36,7 @@ export function buildAdminRouter(): Router {
 
   router.post(AdminEndpointV1.Queries.Base, AdminController.addQuery);
   router.delete(AdminEndpointV1.Queries.Base, AdminController.deleteQuery);
+  router.post(AdminEndpointV1.Queries.Execute, AdminController.executeQuery);
 
   return router;
 }

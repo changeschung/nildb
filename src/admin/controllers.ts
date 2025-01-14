@@ -1,6 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
-import type { EmptyObject, JsonArray } from "type-fest";
+import type { EmptyObject, JsonArray, JsonValue } from "type-fest";
 import { z } from "zod";
 import type { OrganizationAccountDocument } from "#/accounts/repository";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
@@ -351,6 +351,35 @@ const deleteQuery: RequestHandler<
   );
 };
 
+export const ExecuteQueryRequest = z.object({
+  id: Uuid,
+  variables: z.record(z.string(), z.unknown()),
+});
+export type ExecuteQueryRequest = z.infer<typeof ExecuteQueryRequest>;
+export type ExecuteQueryResponse = ApiResponse<JsonValue>;
+
+const executeQuery: RequestHandler<
+  EmptyObject,
+  ExecuteQueryResponse,
+  ExecuteQueryRequest
+> = async (req, res) => {
+  const { ctx, body } = req;
+
+  if (!isRoleAllowed(req, ["admin"])) {
+    res.sendStatus(401);
+    return;
+  }
+
+  await pipe(
+    parseUserData<ExecuteQueryRequest>(() => ExecuteQueryRequest.parse(body)),
+    E.flatMap((payload) => {
+      return QueriesService.executeQuery(ctx, payload);
+    }),
+    foldToApiResponse(req, res),
+    E.runPromise,
+  );
+};
+
 export const AdminController = {
   createAdminAccount,
   listAccounts,
@@ -364,4 +393,5 @@ export const AdminController = {
 
   addQuery,
   deleteQuery,
+  executeQuery,
 };
