@@ -18,6 +18,7 @@ deployment:
       metrics_port: 9091
       metrics_path: /metrics
 
+  network:
     headers:
       insert:
         "Access-Control-Allow-Origin": "https://docs.nillion.com"
