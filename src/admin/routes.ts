@@ -11,6 +11,9 @@ export const AdminEndpointV1 = {
     Update: "/api/v1/admin/data/update",
     Upload: "/api/v1/admin/data/upload",
   },
+  Queries: {
+    Base: "/api/v1/admin/queries",
+  },
 } as const;
 
 export function buildAdminRouter(): Router {
@@ -29,6 +32,9 @@ export function buildAdminRouter(): Router {
   router.post(AdminEndpointV1.Data.Tail, AdminController.tailData);
   router.post(AdminEndpointV1.Data.Update, AdminController.updateData);
   router.post(AdminEndpointV1.Data.Upload, AdminController.uploadData);
+
+  router.post(AdminEndpointV1.Queries.Base, AdminController.addQuery);
+  router.delete(AdminEndpointV1.Queries.Base, AdminController.deleteQuery);
 
   return router;
 }

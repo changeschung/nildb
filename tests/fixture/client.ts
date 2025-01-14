@@ -5,7 +5,11 @@ import type {
   RemoveAccountRequest,
 } from "#/accounts/controllers";
 import { AccountsEndpointV1 } from "#/accounts/routes";
-import type { CreateAdminAccountRequest } from "#/admin/controllers";
+import type {
+  AddQueryRequest,
+  CreateAdminAccountRequest,
+  DeleteQueryRequest,
+} from "#/admin/controllers";
 import { AdminEndpointV1 } from "#/admin/routes";
 import type { Identity } from "#/common/identity";
 import type {
@@ -17,11 +21,7 @@ import type {
   UpdateDataRequest,
 } from "#/data/controllers";
 import { DataEndpointV1 } from "#/data/routes";
-import type {
-  AddQueryRequest,
-  DeleteQueryRequest,
-  ExecuteQueryRequest,
-} from "#/queries/controllers";
+import type { ExecuteQueryRequest } from "#/queries/controllers";
 import { QueriesEndpointV1 } from "#/queries/routes";
 import type {
   AddSchemaRequest,
@@ -166,7 +166,7 @@ export class TestClient {
   async addQuery(body: AddQueryRequest, expectSuccess = true): Promise<Test> {
     const token = await this.jwt();
     const response = await this.request
-      .post(QueriesEndpointV1.Base)
+      .post(AdminEndpointV1.Queries.Base)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
 
@@ -179,7 +179,7 @@ export class TestClient {
   ): Promise<Test> {
     const token = await this.jwt();
     const response = await this.request
-      .delete(QueriesEndpointV1.Base)
+      .delete(AdminEndpointV1.Queries.Base)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
 

@@ -13,6 +13,7 @@ import type { CreatedResult, UpdateResult } from "#/data/repository";
 import { DataService } from "#/data/service";
 import { PUBLIC_KEY_LENGTH } from "#/env";
 import { isRoleAllowed } from "#/middleware/auth";
+import { QueriesService } from "#/queries/service";
 import type { AccountDocument } from "./repository";
 import { AdminService } from "./services";
 
@@ -276,6 +277,80 @@ const updateData: RequestHandler<
   );
 };
 
+const VariablePrimitive = z.enum(["string", "number", "boolean", "date"]);
+export const QueryVariableValidator = z.union([
+  z.object({
+    type: VariablePrimitive,
+    description: z.string(),
+  }),
+  z.object({
+    type: z.enum(["array"]),
+    description: z.string(),
+    items: z.object({
+      type: VariablePrimitive,
+    }),
+  }),
+]);
+export const AddQueryRequest = z.object({
+  _id: Uuid,
+  owner: NilDid,
+  name: z.string(),
+  schema: Uuid,
+  variables: z.record(z.string(), QueryVariableValidator),
+  pipeline: z.array(z.record(z.string(), z.unknown())),
+});
+export type AddQueryRequest = z.infer<typeof AddQueryRequest>;
+export type AddQueryResponse = ApiResponse<UuidDto>;
+
+const addQuery: RequestHandler<
+  EmptyObject,
+  AddQueryResponse,
+  AddQueryRequest
+> = async (req, res) => {
+  const { ctx, body } = req;
+
+  if (!isRoleAllowed(req, ["admin"])) {
+    res.sendStatus(401);
+    return;
+  }
+
+  await pipe(
+    parseUserData<AddQueryRequest>(() => AddQueryRequest.parse(body)),
+    E.flatMap((payload) => QueriesService.addQuery(ctx, payload)),
+    foldToApiResponse(req, res),
+    E.runPromise,
+  );
+};
+
+export const DeleteQueryRequest = z.object({
+  id: Uuid,
+});
+export type DeleteQueryRequest = z.infer<typeof DeleteQueryRequest>;
+export type DeleteQueryResponse = ApiResponse<boolean>;
+
+const deleteQuery: RequestHandler<
+  EmptyObject,
+  DeleteQueryResponse,
+  DeleteQueryRequest
+> = async (req, res) => {
+  const { ctx, body } = req;
+
+  if (!isRoleAllowed(req, ["organization"])) {
+    res.sendStatus(401);
+    return;
+  }
+  const account = req.account as OrganizationAccountDocument;
+
+  await pipe(
+    parseUserData<DeleteQueryRequest>(() => DeleteQueryRequest.parse(body)),
+    E.flatMap((payload) => {
+      return QueriesService.removeQuery(ctx, account._id, payload.id);
+    }),
+    foldToApiResponse(req, res),
+    E.runPromise,
+  );
+};
+
 export const AdminController = {
   createAdminAccount,
   listAccounts,
@@ -286,4 +361,7 @@ export const AdminController = {
   tailData,
   uploadData,
   updateData,
+
+  addQuery,
+  deleteQuery,
 };

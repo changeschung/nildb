@@ -10,8 +10,6 @@ export function buildQueriesRouter(): Router {
   const router = Router();
 
   router.get(QueriesEndpointV1.Base, QueriesController.listQueries);
-  router.post(QueriesEndpointV1.Base, QueriesController.addQuery);
-  router.delete(QueriesEndpointV1.Base, QueriesController.deleteQuery);
   router.post(QueriesEndpointV1.Execute, QueriesController.executeQuery);
 
   return router;
