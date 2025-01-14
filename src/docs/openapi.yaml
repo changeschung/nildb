@@ -11,9 +11,6 @@ servers:
   - url: https://nildb-node-guue.sandbox.app-cluster.sandbox.nilogy.xyz
     description: node-guue
 
-security:
-  - jwt: []
-
 components:
   securitySchemes:
     jwt:
