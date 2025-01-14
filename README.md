@@ -1,54 +1,108 @@
-# Nil Db
+# Welcome to nilDB
+
+
 
 ## Prerequisites
 
-- nodejs => 23.0
+- Node.js ≥ 23.0
 - pnpm
-- docker
+- Docker
 
 ## Set up development environment 
 
-1. `git clone git@github.com:NillionNetwork/nil-db.git`
-2. `cd nil-db`
-3. `pnpm install`
-4. `pnpm install-hooks # optional but helps avoid trivial github action failures`
-5. `cp .env.example .env`
+1. Clone the repository:
+   ```shell
+   git clone git@github.com:NillionNetwork/nil-db.git
+   cd nil-db
+   ```
 
-## Running tests
+2. Install dependencies and set up environment:
+   ```shell
+   pnpm install
+   pnpm install-hooks
+   cp .env.example .env
+   ```
 
-- `pnpm test`
+3. If desired, configure your .env file with appropriate values.
 
-### Notes
+## Running the API
 
-- Tests use the `test` database
-- The `test` database is dropped at the start of a test run (so that it can be inspected at the end of a test suite).
+1. Start MonogDB:
+   ```shell
+   docker run -d -p 27017:27017 mongo:8
+   ```
 
-## Run the api
+2. Start the API:
+   ```shell
+   pnpm dev # or start for non-watch mode
+   ```
 
-- `docker run -d -p 27017:27017 mongo:8`
-- `pnpm start`
+## Tests
 
-## Example usage
+Run the test suite:
+   ```shell
+   pnpm test
+   ```
 
-This section provides a high level flow to help orientate yourself as a Nillion Admin. You will need to refer to the openapi specification for request payloads and a list of all available methods.
+**Note:**
+- Tests use a dedicated test database
+- The test database is dropped at the start of each test run
+- Test database state is preserved after runs for inspection
 
+## Getting started
 
-### Gaining access as the root user/admin 
+This section provides a high level flow to help orientate yourself as a nilDB admin. 
 
-1. The system does not create a root user automatically, so you will need to do this manually. If you want to do local development outside of tests, the easiest approach is to run the test suite and then copy the root record from `test.users` to `datablocks.users`.
-2. Get an auth JWT: `POST http://localhost:8080/api/v1/auth/login`.
-3. Attach the JWT to future _root/admin user_ requests as: `Authorization: Bearer {JWT}`.
+1. Root credentials are set by the env var `APP_ROOT_USER_SECRET_KEY`.
 
-### Setting an organization 
+2. After starting your node you can access its public key with:
+    ```shell
+    curl ${NODE_URL}/about
+   
+   {
+      "started": "2025-01-14T12:10:30.707Z",
+      "build": {
+        "time": "1970-01-01T00:00:00Z",
+        "commit": "unknown",
+        "version": "0.0.0"
+      },
+      "did": "did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc",
+      "publicKey": "02d1f198df9a64ffa27c293861bace8c80bd6b1e150e008267f7f94eae9e6c380c",
+      "url": "http://localhost:8080"
+   }
+   ```
 
-1. Create the org: `POST http://localhost:8080/api/v1/orgs`
-2. Add a data schema to the org: `POST http://localhost:8080/api/v1/data/orgs/schemas`
-3. Add a query (aka mongo aggregation pipeline) to the org: `POST http://localhost:8080/api/v1/data/orgs/queries`
-4. Generate a backend api key for the org: `POST http://localhost:8080/api/v1/orgs/keys/generate`
+3. Now, create a root jwt using the nodes public key and your root secret key:
+    ```shell
+    tsc bin/credentials.ts --secret-key ${APP_ROOT_USER_SECRET_KEY} --node-public-key ${APP_NODE_PUBLIC_KEY}
+    ```
 
-The org is now setup. Provide them with the API key to attach to all requests as `Authorization: Bearer {JWT}`.
+4. Generate admin credentials:
+    ```shell
+    tsx bin/credentials.ts 
+    ```
 
-### How the org uploads data and runs queries
+5. Use the root jwt to create the admin account:
+    ```shell
+    curl ${NODE_URL}/api/v1/admin/accounts \
+      --header "authorization: bearer ${ROOT_JWT}" \
+      --header "content-type: application/json" \
+      -d '{ "did": "${ADMIN_DID}", "publicKey": "${ADMIN_PK}" }'
+    ```
+ 
+6. Once the account is created generate a JWT for your admin and the target node:
+   ```shell
+   tsx bin/credentials.ts --secret-key ${ADMIN_USER_SECRET_KEY} --node-public-key ${APP_NODE_PUBLIC_KEY}
+   ```
 
-1. Upload data: `POST http://localhost:8080/api/v1/data/upload`
-2. Run a query: `POST http://localhost:8080/api/v1/data/query`
+## OpenApi Documentation
+
+When the node is running a swagger ui is available at `/api/v1/openapi/docs/`. The UI is based on this [openapi specification](./src/docs/openapi.yaml).
+
+**Note**: Admin routes are not documented.
+
+## Contributing
+
+1.	Open an issue to discuss proposed changes
+2.	Submit a pull request with your changes
+3.	Ensure all tests pass and documentation is updated
