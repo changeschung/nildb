@@ -67,7 +67,7 @@ export async function createContext(): Promise<Context> {
   const rootDocument: RootAccountDocument = {
     _id: node.root.did,
     _type: "root",
-    publicKey: node.root.publicKey,
+    publicKey: node.root.pk,
   };
   accounts.set(node.root.did, rootDocument, Number.MAX_SAFE_INTEGER);
 

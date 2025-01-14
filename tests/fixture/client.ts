@@ -50,7 +50,7 @@ export class TestClient {
   }
 
   get publicKey() {
-    return this._options.identity.publicKey;
+    return this._options.identity.pk;
   }
 
   jwt(): Promise<string> {

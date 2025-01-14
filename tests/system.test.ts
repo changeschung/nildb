@@ -21,6 +21,6 @@ describe("system.test.ts", () => {
 
     expect(body.build.version).toBe("0.0.0");
     expect(body.did).toBe(fixture.ctx.node.identity.did);
-    expect(body.publicKey).toBe(fixture.ctx.node.identity.publicKey);
+    expect(body.publicKey).toBe(fixture.ctx.node.identity.pk);
   });
 });

@@ -26,7 +26,7 @@ export function getNodeInfo(ctx: Context): AboutNode {
     started,
     build: getBuildInfo(ctx),
     did: ctx.node.identity.did,
-    publicKey: ctx.node.identity.publicKey,
+    publicKey: ctx.node.identity.pk,
     url: ctx.node.endpoint,
   };
 }
