@@ -21,7 +21,7 @@ deployment:
   network:
     headers:
       insert:
-        "Access-Control-Allow-Origin": "https://docs.nillion.com"
+        "Access-Control-Allow-Origin": "https://nillion-docs-git-feat-open-api-integration-nillion.vercel.app"
         "Access-Control-Allow-Methods": "GET,POST,DELETE"
         "Access-Control-Allow-Headers": "Authorization,Content-Type,Accept"
         "Access-Control-Max-Age": "3600"
