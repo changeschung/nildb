@@ -1,4 +1,5 @@
 import compression from "compression";
+import * as cors from "cors";
 import * as express from "express";
 import promBundle from "express-prom-bundle";
 import prometheus from "prom-client";
@@ -25,6 +26,19 @@ export function buildApp(ctx: Context): App {
   const app = express.default();
   app.disable("x-powered-by");
   app.use(compression());
+
+  app.use(
+    cors.default({
+      origin: [
+        "https://docs.nillion.com",
+        "https://nillion-docs-git-feat-open-api-integration-nillion.vercel.app",
+      ],
+      allowedHeaders: ["Content-Type", "Authorization"],
+      methods: ["GET", "POST", "DELETE"],
+      maxAge: 3600,
+      credentials: true,
+    }),
+  );
 
   app.use(useContextMiddleware(ctx));
   app.use(createSystemRouter());
