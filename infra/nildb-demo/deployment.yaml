@@ -18,17 +18,6 @@ deployment:
       metrics_port: 9091
       metrics_path: /metrics
 
-  network:
-    headers:
-      insert:
-        "Access-Control-Allow-Origin": "https://nillion-docs-git-feat-open-api-integration-nillion.vercel.app"
-        "Access-Control-Allow-Methods": "GET,POST,DELETE"
-        "Access-Control-Allow-Headers": "Authorization,Content-Type,Accept"
-        "Access-Control-Max-Age": "3600"
-        "Access-Control-Allow-Credentials": "true"
-
-      disable: ["server"]
-
   scaling:
     desired_count: 1
 
