@@ -3,6 +3,7 @@ import supertest from "supertest";
 import type { App } from "supertest/types";
 import { beforeAll, describe, expect, it } from "vitest";
 import { AccountsEndpointV1 } from "#/accounts/routes";
+import { AdminEndpointV1 } from "#/admin/routes";
 import { Identity } from "#/common/identity";
 import { createUuidDto } from "#/common/types";
 import queryJson from "./data/simple.query.json";
@@ -14,12 +15,12 @@ import {
   buildFixture,
   registerSchemaAndQuery,
 } from "./fixture/app-fixture";
-import { TestClient } from "./fixture/client";
+import { TestOrganizationUserClient } from "./fixture/test-org-user-client";
 
 describe("access-management.test.ts", () => {
   let fixture: AppFixture;
-  let organization: TestClient;
-  let organizationB: TestClient;
+  let organization: TestOrganizationUserClient;
+  let organizationB: TestOrganizationUserClient;
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
 
@@ -37,20 +38,27 @@ describe("access-management.test.ts", () => {
   });
 
   it("organizations cannot create admin accounts", async () => {
-    const response = await organization.createAdminAccount(
-      {
-        did: organization.did,
-        publicKey: organization.publicKey,
-        name: faker.person.fullName(),
-      },
-      false,
-    );
+    const token = await organization.jwt();
+    const body = {
+      did: organization.did,
+      publicKey: organization.publicKey,
+      name: faker.person.fullName(),
+    };
+
+    const response = await organization.request
+      .post(AdminEndpointV1.Accounts)
+      .set("Authorization", `Bearer ${token}`)
+      .send(body);
 
     expect(response.status).toBe(401);
   });
 
   it("organizations cannot list accounts", async () => {
-    const response = await organization.listAccounts(false);
+    const token = await organization.jwt();
+    const response = await organization.request
+      .get(AdminEndpointV1.Accounts)
+      .set("Authorization", `Bearer ${token}`);
+
     expect(response.status).toBe(401);
   });
 
@@ -67,13 +75,13 @@ describe("access-management.test.ts", () => {
         data,
       });
 
-      organizationB = new TestClient({
+      organizationB = new TestOrganizationUserClient({
         request: supertest(fixture.app as App),
         identity: Identity.new(),
         node: fixture.ctx.node,
       });
 
-      await fixture.users.admin.registerAccount({
+      await organizationB.register({
         did: organizationB.did,
         publicKey: organizationB.publicKey,
         name: faker.company.name(),

@@ -87,15 +87,11 @@ function findQueries(
   );
 }
 
-function removeQuery(
-  ctx: Context,
-  owner: NilDid,
-  _id: UUID,
-): E.Effect<boolean, ServiceError> {
+function removeQuery(ctx: Context, _id: UUID): E.Effect<boolean, ServiceError> {
   return pipe(
-    QueriesRepository.deleteOne(ctx, { owner, _id }),
-    E.flatMap((_success) => {
-      return OrganizationRepository.removeQuery(ctx, owner, _id);
+    QueriesRepository.findOneAndDelete(ctx, { _id }),
+    E.flatMap((document) => {
+      return OrganizationRepository.removeQuery(ctx, document.owner, _id);
     }),
     E.mapError((cause) => {
       return new ServiceError({

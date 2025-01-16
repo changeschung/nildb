@@ -11,11 +11,11 @@ import {
   buildFixture,
   registerSchemaAndQuery,
 } from "./fixture/app-fixture";
-import type { TestClient } from "./fixture/client";
+import type { TestOrganizationUserClient } from "./fixture/test-org-user-client";
 
 describe("read.data.test", () => {
   let fixture: AppFixture;
-  let organization: TestClient;
+  let organization: TestOrganizationUserClient;
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
 

@@ -2,7 +2,6 @@ import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
 import type { EmptyObject, JsonArray, JsonValue } from "type-fest";
 import { z } from "zod";
-import type { OrganizationAccountDocument } from "#/accounts/repository";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import type { DocumentBase } from "#/common/mongo";
 import { NilDid } from "#/common/nil-did";
@@ -12,7 +11,6 @@ import { MAX_RECORDS_LENGTH } from "#/data/controllers";
 import type { UpdateResult, UploadResult } from "#/data/repository";
 import { DataService } from "#/data/service";
 import { PUBLIC_KEY_LENGTH } from "#/env";
-import { isRoleAllowed } from "#/middleware/auth";
 import { QueriesService } from "#/queries/service";
 import { SchemasService } from "#/schemas/service";
 import type { AccountDocument } from "./repository";
@@ -35,11 +33,6 @@ const createAdminAccount: RequestHandler<
 > = async (req, res) => {
   const { ctx, body } = req;
 
-  if (!isRoleAllowed(req, ["root", "admin"])) {
-    res.sendStatus(401);
-    return;
-  }
-
   await pipe(
     parseUserData<CreateAdminAccountRequest>(() =>
       CreateAdminAccountRequest.parse(body),
@@ -59,11 +52,6 @@ const listAccounts: RequestHandler<EmptyObject, ListAccountsResponse> = async (
 ) => {
   const { ctx } = req;
 
-  if (!isRoleAllowed(req, ["root", "admin"])) {
-    res.sendStatus(401);
-    return;
-  }
-
   await pipe(
     AdminService.listAllAccounts(ctx),
     foldToApiResponse(req, res),
@@ -79,11 +67,6 @@ const removeAccount: RequestHandler<
   RemoveAccountResponse
 > = async (req, res) => {
   const { ctx, body } = req;
-
-  if (!isRoleAllowed(req, ["root", "admin"])) {
-    res.sendStatus(401);
-    return;
-  }
 
   await pipe(
     parseUserData<NilDid>(() => NilDid.parse(body)),
@@ -113,11 +96,6 @@ const deleteData: RequestHandler<
 > = async (req, res) => {
   const { ctx, body } = req;
 
-  if (!isRoleAllowed(req, ["admin"])) {
-    res.sendStatus(401);
-    return;
-  }
-
   await pipe(
     parseUserData<DeleteDataRequest>(() => DeleteDataRequest.parse(body)),
     E.flatMap((payload) => DataService.deleteRecords(ctx, payload)),
@@ -138,11 +116,6 @@ const flushData: RequestHandler<
   FlushDataRequest
 > = async (req, res) => {
   const { ctx, body } = req;
-
-  if (!isRoleAllowed(req, ["admin"])) {
-    res.sendStatus(401);
-    return;
-  }
 
   await pipe(
     parseUserData<FlushDataRequest>(() => TailDataRequest.parse(body)),
@@ -165,10 +138,6 @@ const readData: RequestHandler<
   ReadDataRequest
 > = async (req, res) => {
   const { ctx, body } = req;
-  if (!isRoleAllowed(req, ["admin"])) {
-    res.sendStatus(401);
-    return;
-  }
 
   await pipe(
     parseUserData<ReadDataRequest>(() => ReadDataRequest.parse(body)),
@@ -190,11 +159,6 @@ const tailData: RequestHandler<
   TailDataRequest
 > = async (req, res) => {
   const { ctx, body } = req;
-
-  if (!isRoleAllowed(req, ["admin"])) {
-    res.sendStatus(401);
-    return;
-  }
 
   await pipe(
     parseUserData<TailDataRequest>(() => TailDataRequest.parse(body)),
@@ -227,21 +191,10 @@ const uploadData: RequestHandler<
 > = async (req, res) => {
   const { ctx, body } = req;
 
-  if (!isRoleAllowed(req, ["admin"])) {
-    res.sendStatus(401);
-    return;
-  }
-  const account = req.account as OrganizationAccountDocument;
-
   await pipe(
     parseUserData<UploadDataRequest>(() => UploadDataRequest.parse(body)),
     E.flatMap((payload) => {
-      return DataService.createRecords(
-        ctx,
-        account._id,
-        payload.schema,
-        payload.data,
-      );
+      return DataService.createRecords(ctx, payload.schema, payload.data);
     }),
     foldToApiResponse(req, res),
     E.runPromise,
@@ -262,11 +215,6 @@ const updateData: RequestHandler<
   UpdateDataRequest
 > = async (req, res) => {
   const { ctx, body } = req;
-
-  if (!isRoleAllowed(req, ["admin"])) {
-    res.sendStatus(401);
-    return;
-  }
 
   await pipe(
     parseUserData<UpdateDataRequest>(() => UpdateDataRequest.parse(body)),
@@ -310,11 +258,6 @@ const addQuery: RequestHandler<
 > = async (req, res) => {
   const { ctx, body } = req;
 
-  if (!isRoleAllowed(req, ["admin"])) {
-    res.sendStatus(401);
-    return;
-  }
-
   await pipe(
     parseUserData<AddQueryRequest>(() => AddQueryRequest.parse(body)),
     E.flatMap((payload) => QueriesService.addQuery(ctx, payload)),
@@ -336,16 +279,10 @@ const deleteQuery: RequestHandler<
 > = async (req, res) => {
   const { ctx, body } = req;
 
-  if (!isRoleAllowed(req, ["organization"])) {
-    res.sendStatus(401);
-    return;
-  }
-  const account = req.account as OrganizationAccountDocument;
-
   await pipe(
     parseUserData<DeleteQueryRequest>(() => DeleteQueryRequest.parse(body)),
     E.flatMap((payload) => {
-      return QueriesService.removeQuery(ctx, account._id, payload.id);
+      return QueriesService.removeQuery(ctx, payload.id);
     }),
     foldToApiResponse(req, res),
     E.runPromise,
@@ -365,11 +302,6 @@ const executeQuery: RequestHandler<
   ExecuteQueryRequest
 > = async (req, res) => {
   const { ctx, body } = req;
-
-  if (!isRoleAllowed(req, ["admin"])) {
-    res.sendStatus(401);
-    return;
-  }
 
   await pipe(
     parseUserData<ExecuteQueryRequest>(() => ExecuteQueryRequest.parse(body)),
@@ -398,11 +330,6 @@ const addSchema: RequestHandler<
 > = async (req, res) => {
   const { ctx, body } = req;
 
-  if (!isRoleAllowed(req, ["admin"])) {
-    res.sendStatus(401);
-    return;
-  }
-
   await pipe(
     parseUserData<AddSchemaRequest>(() => AddSchemaRequest.parse(body)),
     E.flatMap((payload) => SchemasService.addSchema(ctx, payload)),
@@ -423,11 +350,6 @@ const deleteSchema: RequestHandler<
   DeleteSchemaRequest
 > = async (req, res) => {
   const { ctx, body } = req;
-
-  if (!isRoleAllowed(req, ["admin"])) {
-    res.sendStatus(401);
-    return;
-  }
 
   await pipe(
     parseUserData<DeleteSchemaRequest>(() => DeleteSchemaRequest.parse(body)),

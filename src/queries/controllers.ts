@@ -8,7 +8,6 @@ import { ControllerError } from "#/common/app-error";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { Uuid } from "#/common/types";
 import { parseUserData } from "#/common/zod-utils";
-import { isRoleAllowed } from "#/middleware/auth";
 import type { QueryDocument } from "./repository";
 import { QueriesService } from "./service";
 
@@ -20,11 +19,6 @@ const listQueries: RequestHandler<
   EmptyObject
 > = async (req, res) => {
   const { ctx } = req;
-
-  if (!isRoleAllowed(req, ["organization"])) {
-    res.sendStatus(401);
-    return;
-  }
   const account = req.account as OrganizationAccountDocument;
 
   await pipe(
@@ -47,11 +41,6 @@ const executeQuery: RequestHandler<
   ExecuteQueryRequest
 > = async (req, res) => {
   const { ctx, body } = req;
-
-  if (!isRoleAllowed(req, ["organization"])) {
-    res.sendStatus(401);
-    return;
-  }
   const account = req.account as OrganizationAccountDocument;
 
   await pipe(

@@ -12,12 +12,13 @@ import {
   buildFixture,
 } from "./fixture/app-fixture";
 import { assertDefined } from "./fixture/assertions";
-import type { TestClient } from "./fixture/client";
+import type { TestAdminUserClient } from "./fixture/test-admin-user-client";
+import type { TestOrganizationUserClient } from "./fixture/test-org-user-client";
 
 describe("schemas.test.ts", () => {
   let fixture: AppFixture;
-  let admin: TestClient;
-  let organization: TestClient;
+  let admin: TestAdminUserClient;
+  let organization: TestOrganizationUserClient;
   const schema = schemaJson as unknown as SchemaFixture;
 
   beforeAll(async () => {

@@ -1,18 +1,7 @@
 import type { Response, Test } from "supertest";
 import type TestAgent from "supertest/lib/agent";
-import type {
-  RegisterAccountRequest,
-  RemoveAccountRequest,
-} from "#/accounts/controllers";
+import type { RegisterAccountRequest } from "#/accounts/controllers";
 import { AccountsEndpointV1 } from "#/accounts/routes";
-import type {
-  AddQueryRequest,
-  AddSchemaRequest,
-  CreateAdminAccountRequest,
-  DeleteQueryRequest,
-  DeleteSchemaRequest,
-} from "#/admin/controllers";
-import { AdminEndpointV1 } from "#/admin/routes";
 import type { Identity } from "#/common/identity";
 import type {
   DeleteDataRequest,
@@ -38,7 +27,7 @@ export type TestClientOptions = {
   };
 };
 
-export class TestClient {
+export class TestOrganizationUserClient {
   constructor(public _options: TestClientOptions) {}
 
   get request(): TestAgent {
@@ -66,13 +55,15 @@ export class TestClient {
     return this.request.get(SystemEndpoint.About);
   }
 
-  async listAccounts(expectSuccess = true): Promise<Test> {
-    const token = await this.jwt();
+  async register(
+    body: RegisterAccountRequest,
+    expectSuccess = true,
+  ): Promise<Test> {
     const response = await this.request
-      .get(AdminEndpointV1.Accounts)
-      .set("Authorization", `Bearer ${token}`);
+      .post(AccountsEndpointV1.Base)
+      .send(body);
 
-    return checkResponse(expectSuccess, response, "listAccounts");
+    return checkResponse(expectSuccess, response, "registerAccount");
   }
 
   async getAccount(expectSuccess = true): Promise<Test> {
@@ -84,43 +75,6 @@ export class TestClient {
     return checkResponse(expectSuccess, response, "getAccount");
   }
 
-  async createAdminAccount(
-    body: CreateAdminAccountRequest,
-    expectSuccess = true,
-  ): Promise<Test> {
-    const token = await this.jwt();
-    const response = await this.request
-      .post(AdminEndpointV1.Accounts)
-      .set("Authorization", `Bearer ${token}`)
-      .send(body);
-
-    return checkResponse(expectSuccess, response, "createAdminAccount");
-  }
-
-  async registerAccount(
-    body: RegisterAccountRequest,
-    expectSuccess = true,
-  ): Promise<Test> {
-    const response = await this.request
-      .post(AccountsEndpointV1.Base)
-      .send(body);
-
-    return checkResponse(expectSuccess, response, "registerAccount");
-  }
-
-  async deleteAccount(
-    body: RemoveAccountRequest,
-    expectSuccess = true,
-  ): Promise<Test> {
-    const token = await this.jwt();
-    const response = await this.request
-      .delete(AccountsEndpointV1.Base)
-      .set("Authorization", `Bearer ${token}`)
-      .send(body);
-
-    return checkResponse(expectSuccess, response, "deleteAccount");
-  }
-
   async listSchemas(expectSuccess = true): Promise<Test> {
     const token = await this.jwt();
     const response = await this.request
@@ -130,29 +84,6 @@ export class TestClient {
     return checkResponse(expectSuccess, response, "listSchemas");
   }
 
-  async addSchema(body: AddSchemaRequest, expectSuccess = true): Promise<Test> {
-    const token = await this.jwt();
-    const response = await this.request
-      .post(AdminEndpointV1.Schemas.Base)
-      .set("Authorization", `Bearer ${token}`)
-      .send(body);
-
-    return checkResponse(expectSuccess, response, "addSchema");
-  }
-
-  async deleteSchema(
-    body: DeleteSchemaRequest,
-    expectSuccess = true,
-  ): Promise<Test> {
-    const token = await this.jwt();
-    const response = await this.request
-      .delete(AdminEndpointV1.Schemas.Base)
-      .set("Authorization", `Bearer ${token}`)
-      .send(body);
-
-    return checkResponse(expectSuccess, response, "deleteSchema");
-  }
-
   async listQueries(expectSuccess = true): Promise<Test> {
     const token = await this.jwt();
     const response = await this.request
@@ -160,29 +91,6 @@ export class TestClient {
       .set("Authorization", `Bearer ${token}`);
 
     return checkResponse(expectSuccess, response, "listQueries");
-  }
-
-  async addQuery(body: AddQueryRequest, expectSuccess = true): Promise<Test> {
-    const token = await this.jwt();
-    const response = await this.request
-      .post(AdminEndpointV1.Queries.Base)
-      .set("Authorization", `Bearer ${token}`)
-      .send(body);
-
-    return checkResponse(expectSuccess, response, "addQuery");
-  }
-
-  async deleteQuery(
-    body: DeleteQueryRequest,
-    expectSuccess = true,
-  ): Promise<Test> {
-    const token = await this.jwt();
-    const response = await this.request
-      .delete(AdminEndpointV1.Queries.Base)
-      .set("Authorization", `Bearer ${token}`)
-      .send(body);
-
-    return checkResponse(expectSuccess, response, "deleteQuery");
   }
 
   async executeQuery(
@@ -269,7 +177,7 @@ export class TestClient {
   }
 }
 
-function checkResponse(
+export function checkResponse(
   expectSuccess: boolean,
   response: Response,
   method: string,

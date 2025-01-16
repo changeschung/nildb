@@ -7,15 +7,17 @@ import { buildApp } from "#/app";
 import { Identity } from "#/common/identity";
 import { type Context, createContext } from "#/env";
 import type { QueryVariable } from "#/queries/repository";
-import { TestClient } from "./client";
+import { TestAdminUserClient } from "./test-admin-user-client";
+import { TestOrganizationUserClient } from "./test-org-user-client";
+import { TestRootUserClient } from "./test-root-user-client";
 
 export interface AppFixture {
   app: Express.Application;
   ctx: Context;
   users: {
-    root: TestClient;
-    admin: TestClient;
-    organization: TestClient;
+    root: TestRootUserClient;
+    admin: TestAdminUserClient;
+    organization: TestOrganizationUserClient;
   };
 }
 
@@ -30,17 +32,17 @@ export async function buildFixture(): Promise<AppFixture> {
   };
 
   const users = {
-    root: new TestClient({
+    root: new TestRootUserClient({
       request: supertest(app),
       identity: Identity.fromSk(ctx.config.rootAccountSecretKey),
       node,
     }),
-    admin: new TestClient({
+    admin: new TestAdminUserClient({
       request: supertest(app),
       identity: Identity.new(),
       node,
     }),
-    organization: new TestClient({
+    organization: new TestOrganizationUserClient({
       request: supertest(app),
       identity: Identity.new(),
       node,
@@ -59,7 +61,7 @@ export async function buildFixture(): Promise<AppFixture> {
     name: faker.person.fullName(),
   });
 
-  await users.organization.registerAccount({
+  await users.admin.registerOrganizationAccount({
     did: users.organization._options.identity.did,
     publicKey: users.organization._options.identity.pk,
     name: faker.person.fullName(),
