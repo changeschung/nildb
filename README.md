@@ -1,6 +1,6 @@
 # Welcome to nilDB
 
-
+Nillion is a secure computation network that decentralizes trust for high-value, sensitive, and private data in the same way that blockchains decentralize transactions. Learn more about nillion and nilDB in our [docs](https://docs.nillion.com). 
 
 ## Prerequisites
 
