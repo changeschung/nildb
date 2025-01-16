@@ -10,12 +10,12 @@ import {
   buildFixture,
   registerSchemaAndQuery,
 } from "./fixture/app-fixture";
-import type { TestClient } from "./fixture/client";
+import type { TestOrganizationUserClient } from "./fixture/test-org-user-client";
 
 describe("schemas.datetime.test", async () => {
   let fixture: AppFixture;
   let db: Context["db"];
-  let organization: TestClient;
+  let organization: TestOrganizationUserClient;
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
 

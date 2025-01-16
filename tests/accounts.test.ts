@@ -4,13 +4,15 @@ import type { OrganizationAccountDocument } from "#/accounts/repository";
 import { Identity } from "#/common/identity";
 import { CollectionName } from "#/common/mongo";
 import { type AppFixture, buildFixture } from "./fixture/app-fixture";
-import { TestClient } from "./fixture/client";
+import { TestAdminUserClient } from "./fixture/test-admin-user-client";
+import { TestOrganizationUserClient } from "./fixture/test-org-user-client";
+import type { TestRootUserClient } from "./fixture/test-root-user-client";
 
 describe("accounts.test.ts", () => {
   let fixture: AppFixture;
-  let root: TestClient;
-  let admin: TestClient;
-  let organization: TestClient;
+  let root: TestRootUserClient;
+  let admin: TestAdminUserClient;
+  let organization: TestOrganizationUserClient;
 
   beforeAll(async () => {
     fixture = await buildFixture();
@@ -18,7 +20,7 @@ describe("accounts.test.ts", () => {
   });
 
   it("root can create an admin account", async () => {
-    admin = new TestClient({
+    admin = new TestAdminUserClient({
       request: root.request,
       identity: Identity.new(),
       node: root._options.node,
@@ -34,13 +36,13 @@ describe("accounts.test.ts", () => {
   });
 
   it("admin can register an organization account", async () => {
-    organization = new TestClient({
+    organization = new TestOrganizationUserClient({
       request: root.request,
       identity: Identity.new(),
       node: root._options.node,
     });
 
-    const response = await admin.registerAccount({
+    const response = await admin.registerOrganizationAccount({
       did: organization.did,
       publicKey: organization.publicKey,
       name: faker.company.name(),
@@ -58,13 +60,13 @@ describe("accounts.test.ts", () => {
   });
 
   it("an organization can self register", async () => {
-    const organization = new TestClient({
+    const organization = new TestOrganizationUserClient({
       request: root.request,
       identity: Identity.new(),
       node: root._options.node,
     });
 
-    const response = await organization.registerAccount({
+    const response = await organization.register({
       did: organization.did,
       publicKey: organization.publicKey,
       name: faker.company.name(),

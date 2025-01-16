@@ -13,12 +13,12 @@ import {
   registerSchemaAndQuery,
 } from "./fixture/app-fixture";
 import { assertDefined } from "./fixture/assertions";
-import type { TestClient } from "./fixture/client";
+import type { TestOrganizationUserClient } from "./fixture/test-org-user-client";
 
 describe("update.data.test", () => {
   let fixture: AppFixture;
   let db: Context["db"];
-  let organization: TestClient;
+  let organization: TestOrganizationUserClient;
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
 

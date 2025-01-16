@@ -11,13 +11,14 @@ import {
   buildFixture,
 } from "./fixture/app-fixture";
 import { assertDefined } from "./fixture/assertions";
-import type { TestClient } from "./fixture/client";
+import type { TestAdminUserClient } from "./fixture/test-admin-user-client";
+import type { TestOrganizationUserClient } from "./fixture/test-org-user-client";
 
 describe("query.test.ts", () => {
   let fixture: AppFixture;
   let db: Context["db"];
-  let organization: TestClient;
-  let admin: TestClient;
+  let organization: TestOrganizationUserClient;
+  let admin: TestAdminUserClient;
   const query = queryJson as unknown as QueryFixture;
 
   beforeAll(async () => {
@@ -55,7 +56,7 @@ describe("query.test.ts", () => {
   });
 
   it("can delete a query", async () => {
-    const _response = await organization.deleteQuery({
+    const _response = await admin.deleteQuery({
       id: query.id,
     });
 
