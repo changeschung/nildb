@@ -27,18 +27,23 @@ export function buildApp(ctx: Context): App {
   app.disable("x-powered-by");
   app.use(compression());
 
-  app.use(
-    cors.default({
-      origin: [
-        "https://docs.nillion.com",
-        "https://nillion-docs-git-feat-open-api-integration-nillion.vercel.app",
-      ],
-      allowedHeaders: ["Content-Type", "Authorization"],
-      methods: ["GET", "POST", "DELETE"],
-      maxAge: 3600,
-      credentials: true,
-    }),
-  );
+  // A CORS workaround so that the demo node can be queried from docs
+  if (
+    ctx.node.endpoint.toLowerCase() === "https://nildb-demo.nillion.network"
+  ) {
+    app.use(
+      cors.default({
+        origin: [
+          "https://docs.nillion.com",
+          "https://nillion-docs-git-feat-open-api-integration-nillion.vercel.app",
+        ],
+        allowedHeaders: ["Content-Type", "Authorization"],
+        methods: ["GET", "POST", "DELETE"],
+        maxAge: 3600,
+        credentials: true,
+      }),
+    );
+  }
 
   app.use(useContextMiddleware(ctx));
   app.use(createSystemRouter());
