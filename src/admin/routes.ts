@@ -9,7 +9,7 @@ export const AdminEndpointV1 = {
     Read: "/api/v1/admin/data/read",
     Tail: "/api/v1/admin/data/tail",
     Update: "/api/v1/admin/data/update",
-    Upload: "/api/v1/admin/data/upload",
+    Upload: "/api/v1/admin/data/create",
   },
   Queries: {
     Base: "/api/v1/admin/queries",
