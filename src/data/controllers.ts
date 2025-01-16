@@ -10,7 +10,6 @@ import type { DocumentBase } from "#/common/mongo";
 import { Uuid, type UuidDto } from "#/common/types";
 import { parseUserData } from "#/common/zod-utils";
 import { DataService } from "#/data/service";
-import { isRoleAllowed } from "#/middleware/auth";
 import type { UpdateResult, UploadResult } from "./repository";
 
 export const MAX_RECORDS_LENGTH = 10_000;
@@ -37,11 +36,6 @@ const uploadData: RequestHandler<
   UploadDataRequest
 > = async (req, res) => {
   const { ctx, body } = req;
-
-  if (!isRoleAllowed(req, ["organization"])) {
-    res.sendStatus(401);
-    return;
-  }
   const account = req.account as OrganizationAccountDocument;
 
   await pipe(
@@ -71,11 +65,6 @@ const updateData: RequestHandler<
   UpdateDataRequest
 > = async (req, res) => {
   const { ctx, body } = req;
-
-  if (!isRoleAllowed(req, ["organization"])) {
-    res.sendStatus(401);
-    return;
-  }
   const account = req.account as OrganizationAccountDocument;
 
   await pipe(
@@ -104,10 +93,6 @@ const readData: RequestHandler<
   ReadDataRequest
 > = async (req, res) => {
   const { ctx, body } = req;
-  if (!isRoleAllowed(req, ["organization"])) {
-    res.sendStatus(401);
-    return;
-  }
   const account = req.account as OrganizationAccountDocument;
 
   await pipe(
@@ -138,11 +123,6 @@ const deleteData: RequestHandler<
   DeleteDataRequest
 > = async (req, res) => {
   const { ctx, body } = req;
-
-  if (!isRoleAllowed(req, ["organization"])) {
-    res.sendStatus(401);
-    return;
-  }
   const account = req.account as OrganizationAccountDocument;
 
   await pipe(
@@ -168,11 +148,6 @@ const flushData: RequestHandler<
   FlushDataRequest
 > = async (req, res) => {
   const { ctx, body } = req;
-
-  if (!isRoleAllowed(req, ["organization"])) {
-    res.sendStatus(401);
-    return;
-  }
   const account = req.account as OrganizationAccountDocument;
 
   await pipe(
@@ -198,11 +173,6 @@ const tailData: RequestHandler<
   TailDataRequest
 > = async (req, res) => {
   const { ctx, body } = req;
-
-  if (!isRoleAllowed(req, ["organization"])) {
-    res.sendStatus(401);
-    return;
-  }
   const account = req.account as OrganizationAccountDocument;
 
   await pipe(

@@ -3,7 +3,6 @@ import type { RequestHandler } from "express";
 import type { EmptyObject } from "type-fest";
 import type { OrganizationAccountDocument } from "#/accounts/repository";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
-import { isRoleAllowed } from "#/middleware/auth";
 import type { SchemaDocument } from "#/schemas/repository";
 import { SchemasService } from "./service";
 
@@ -14,11 +13,6 @@ export const listSchemas: RequestHandler<
   ListSchemasResponse
 > = async (req, res) => {
   const { ctx } = req;
-
-  if (!isRoleAllowed(req, ["organization"])) {
-    res.sendStatus(401);
-    return;
-  }
   const account = req.account as OrganizationAccountDocument;
 
   await pipe(

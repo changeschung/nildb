@@ -1,5 +1,7 @@
 import { Router } from "express";
+import { AdminEndpointV1 } from "#/admin/routes";
 import { DataController } from "#/data/controllers";
+import { isRoleAllowed } from "#/middleware/auth";
 
 export const DataEndpointV1 = {
   Upload: "/api/v1/data/create",
@@ -12,6 +14,14 @@ export const DataEndpointV1 = {
 
 export function buildDataRouter(): Router {
   const router = Router();
+
+  router.use(AdminEndpointV1.Base, (req, res, next): void => {
+    if (!isRoleAllowed(req, ["organization"])) {
+      res.sendStatus(401);
+      return;
+    }
+    next();
+  });
 
   router.post(DataEndpointV1.Upload, DataController.uploadData);
   router.post(DataEndpointV1.Read, DataController.readData);
