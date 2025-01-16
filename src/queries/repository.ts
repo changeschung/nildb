@@ -113,17 +113,17 @@ function deleteMany(
   );
 }
 
-function deleteOne(
+function findOneAndDelete(
   ctx: Context,
   filter: StrictFilter<QueryDocument>,
-): E.Effect<boolean, RepositoryError> {
+): E.Effect<QueryDocument, RepositoryError> {
   return pipe(
     E.tryPromise(async () => {
       const collection = ctx.db.primary.collection<QueryDocument>(
         CollectionName.Queries,
       );
-      const result = await collection.deleteOne(filter);
-      return O.fromNullable(result.deletedCount === 1);
+      const result = await collection.findOneAndDelete(filter);
+      return O.fromNullable(result);
     }),
     E.tap(() =>
       E.sync(() => {
@@ -131,14 +131,14 @@ function deleteOne(
       }),
     ),
     succeedOrMapToRepositoryError({
-      op: "QueriesRepository.deleteOne",
+      op: "QueriesRepository.findOneAndDelete",
       filter,
     }),
   );
 }
 
 export const QueriesRepository = {
-  deleteOne,
+  findOneAndDelete,
   deleteMany,
   findOne,
   findMany,

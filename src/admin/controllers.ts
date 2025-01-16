@@ -336,16 +336,15 @@ const deleteQuery: RequestHandler<
 > = async (req, res) => {
   const { ctx, body } = req;
 
-  if (!isRoleAllowed(req, ["organization"])) {
+  if (!isRoleAllowed(req, ["admin"])) {
     res.sendStatus(401);
     return;
   }
-  const account = req.account as OrganizationAccountDocument;
 
   await pipe(
     parseUserData<DeleteQueryRequest>(() => DeleteQueryRequest.parse(body)),
     E.flatMap((payload) => {
-      return QueriesService.removeQuery(ctx, account._id, payload.id);
+      return QueriesService.removeQuery(ctx, payload.id);
     }),
     foldToApiResponse(req, res),
     E.runPromise,
