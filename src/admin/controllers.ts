@@ -2,7 +2,6 @@ import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
 import type { EmptyObject, JsonArray, JsonValue } from "type-fest";
 import { z } from "zod";
-import type { OrganizationAccountDocument } from "#/accounts/repository";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import type { DocumentBase } from "#/common/mongo";
 import { NilDid } from "#/common/nil-did";
@@ -231,17 +230,11 @@ const uploadData: RequestHandler<
     res.sendStatus(401);
     return;
   }
-  const account = req.account as OrganizationAccountDocument;
 
   await pipe(
     parseUserData<UploadDataRequest>(() => UploadDataRequest.parse(body)),
     E.flatMap((payload) => {
-      return DataService.createRecords(
-        ctx,
-        account._id,
-        payload.schema,
-        payload.data,
-      );
+      return DataService.createRecords(ctx, payload.schema, payload.data);
     }),
     foldToApiResponse(req, res),
     E.runPromise,

@@ -1,7 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import { UUID } from "mongodb";
 import { type DataValidationError, ServiceError } from "#/common/app-error";
-import type { NilDid } from "#/common/nil-did";
 import { validateData } from "#/common/validator";
 import type {
   DeleteDataRequest,
@@ -20,7 +19,6 @@ import { SchemasRepository } from "#/schemas/repository";
 
 function createRecords(
   ctx: Context,
-  ownerId: NilDid,
   schemaId: UUID,
   data: Record<string, unknown>[],
 ): E.Effect<UploadResult, DataValidationError | ServiceError> {
@@ -29,7 +27,6 @@ function createRecords(
     E.bind("document", () => {
       return SchemasRepository.findOne(ctx, {
         _id: schemaId,
-        owner: ownerId,
       });
     }),
     E.bind("data", ({ document }) => {

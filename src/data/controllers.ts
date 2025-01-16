@@ -50,12 +50,7 @@ const uploadData: RequestHandler<
       enforceSchemaOwnership(account, payload.schema, payload),
     ),
     E.flatMap((payload) => {
-      return DataService.createRecords(
-        ctx,
-        account._id,
-        payload.schema,
-        payload.data,
-      );
+      return DataService.createRecords(ctx, payload.schema, payload.data);
     }),
     foldToApiResponse(req, res),
     E.runPromise,
