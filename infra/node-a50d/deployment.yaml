@@ -9,6 +9,13 @@ deployment:
       cpu: 1024
       memory: 1024
 
+    environment:
+      APP_DB_NAME_DATA: datablocks_data
+      APP_DB_NAME_PRIMARY: datablocks
+      APP_ENV: testnet
+      APP_METRICS_PORT: 9091
+      APP_PORT: 8080
+
     secrets:
       APP_DB_URI: db_uri
       APP_NODE_SECRET_KEY: node_secret_key
@@ -33,13 +40,8 @@ vars:
         allowed_cidrs: ["0.0.0.0/0"]
       container:
         environment:
-          APP_DB_NAME_DATA: datablocks_data
-          APP_DB_NAME_PRIMARY: datablocks
-          APP_ENV: testnet
           APP_LOG_LEVEL: debug
-          APP_METRICS_PORT: 9091
           APP_NODE_PUBLIC_ENDPOINT: https://nildb-node-a50d.sandbox.app-cluster.sandbox.nilogy.xyz
-          APP_PORT: 8080
 
   production:
     zone_name: "nillion.network"
@@ -51,10 +53,5 @@ vars:
         additional_domains: [ nildb-a50d.nillion.network ]
       container:
         environment:
-          APP_DB_NAME_DATA: datablocks_data
-          APP_DB_NAME_PRIMARY: datablocks
-          APP_ENV: testnet
           APP_LOG_LEVEL: warn
-          APP_METRICS_PORT: 9091
           APP_NODE_PUBLIC_ENDPOINT: https://nildb-a50d.nillion.network
-          APP_PORT: 8080
