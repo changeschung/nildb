@@ -1,4 +1,5 @@
 import { Effect as E, Option as O, pipe } from "effect";
+import { Temporal } from "temporal-polyfill";
 import type { AccountDocument } from "#/admin/repository";
 import type { RepositoryError } from "#/common/app-error";
 import { succeedOrMapToRepositoryError } from "#/common/errors";
@@ -8,31 +9,33 @@ import type { Context } from "#/env";
 
 type CacheValue<V> = {
   value: V;
-  expires: number;
+  expires: Temporal.Instant;
 };
 
-const DEFAULT_TTL = 1000 * 60;
+const DEFAULT_TTL = Temporal.Duration.from({ minutes: 1 });
 
 export class Cache<K, V> {
-  private cache = new Map<K, CacheValue<V>>();
-  constructor(private ttlMs = DEFAULT_TTL) {}
+  private _db = new Map<K, CacheValue<V>>();
+  constructor(private ttl = DEFAULT_TTL) {}
 
-  set(key: K, value: V, ttl?: number): void {
-    let expires = ttl ? ttl : this.ttlMs;
-    expires += Date.now();
+  set(key: K, value: V): void {
+    const expires = Temporal.Now.instant().add(this.ttl);
 
-    this.cache.set(key, {
+    this._db.set(key, {
       value,
       expires,
     });
   }
 
   get(key: K): V | null {
-    const entry = this.cache.get(key);
+    const entry = this._db.get(key);
     if (!entry) return null;
 
-    if (Date.now() > entry.expires) {
-      this.cache.delete(key);
+    const now = Temporal.Now.instant();
+    const expired = Temporal.Instant.compare(now, entry.expires) > 0;
+
+    if (expired) {
+      this._db.delete(key);
       return null;
     }
 
@@ -40,13 +43,13 @@ export class Cache<K, V> {
   }
 
   delete(key: K): boolean {
-    return this.cache.delete(key);
+    return this._db.delete(key);
   }
 
   taint(key: K): void {
-    const entry = this.cache.get(key);
+    const entry = this._db.get(key);
     if (entry) {
-      entry.expires = Date.now() - 1;
+      entry.expires = Temporal.Now.instant();
     }
   }
 }
