@@ -69,7 +69,7 @@ export async function createContext(): Promise<Context> {
     _type: "root",
     publicKey: node.root.pk,
   };
-  accounts.set(node.root.did, rootDocument, Number.MAX_SAFE_INTEGER);
+  accounts.set(node.root.did, rootDocument);
 
   return {
     config,
