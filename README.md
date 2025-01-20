@@ -95,6 +95,37 @@ This section provides a high level flow to help orientate yourself as a nilDB ad
    tsx bin/credentials.ts --secret-key ${ADMIN_USER_SECRET_KEY} --node-public-key ${APP_NODE_PUBLIC_KEY}
    ```
 
+## Node upgrades
+
+Normal upgrades are transparent as database migrations are run automatically. The upgrade process is:  
+
+1. Pull latest image
+   ```shell
+   docker pull <repo>/nildb-api:0.0.0
+   ```
+
+2. Start updated image
+   ```shell
+   docker compose up -d
+   ```
+
+3. When the container starts, it triggers `pnpm start` which comprises:
+   ```shell  
+   # apply missing migrations based on the collection `migrations_changelog`
+   tsx bin/db-migrations.ts up
+   # start the node
+   tsx src/main.ts
+   ```
+
+### Database migrations
+
+```shell
+pnpm db-migrations help
+pnpm db-migrations status
+pnpm db-migrations up
+pnpm db-migrations down --last | --all
+```
+
 ## OpenApi Documentation
 
 When the node is running a swagger ui is available at `/api/v1/openapi/docs/`. The UI is based on this [openapi specification](./src/docs/openapi.yaml).

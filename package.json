@@ -5,9 +5,10 @@
   "repository": "https://github.com/NillionNetwork/nildb",
   "type": "module",
   "scripts": {
-    "dev": "tsx --watch src/main.ts",
-    "start": "tsx src/main.ts",
+    "dev": "tsx bin/db-migrations.ts up && tsx --watch src/main.ts",
+    "start": "tsx bin/db-migrations.ts up && tsx src/main.ts",
     "test": "vitest --run tests/",
+    "migrate": "tsx bin/db-migrations.ts",
     "install-hooks": "lefthook install"
   },
   "engines": {

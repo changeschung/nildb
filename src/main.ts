@@ -4,7 +4,8 @@ import { createContext } from "./env";
 
 async function main() {
   dotenv.config();
-  console.warn("Starting api ...");
+
+  console.info("! Starting api ...");
 
   const ctx = await createContext();
   const { app, metrics } = buildApp(ctx);
