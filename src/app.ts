@@ -5,6 +5,7 @@ import promBundle from "express-prom-bundle";
 import prometheus from "prom-client";
 import { buildAdminRouter } from "#/admin/routes";
 import { apiRequestsCounter } from "#/middleware/request-counter";
+import { useSubscriptionCheckMiddleware } from "#/middleware/subscription";
 import { buildAccountsRouter } from "./accounts/routes";
 import { buildDataRouter } from "./data/routes";
 import { buildApiDocsRoutes } from "./docs/routes";
@@ -50,6 +51,7 @@ export function buildApp(ctx: Context): App {
 
   app.use(loggerMiddleware(ctx.config));
   app.use(useAuthMiddleware(ctx));
+  app.use(useSubscriptionCheckMiddleware(ctx));
 
   prometheus.register.setDefaultLabels({
     node: ctx.node.identity.did,

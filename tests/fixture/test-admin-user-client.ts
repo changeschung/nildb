@@ -7,6 +7,7 @@ import type {
   DeleteAccountRequest,
   DeleteQueryRequest,
   DeleteSchemaRequest,
+  SetAccountSubscriptionStateRequest,
 } from "#/admin/controllers";
 import { AdminEndpointV1 } from "#/admin/routes";
 import type { Identity } from "#/common/identity";
@@ -222,5 +223,18 @@ export class TestAdminUserClient {
       .send(body);
 
     return checkResponse(expectSuccess, response, "updateData");
+  }
+
+  async setSubscriptionState(
+    body: SetAccountSubscriptionStateRequest,
+    expectSuccess = true,
+  ) {
+    const token = await this.jwt();
+    const response = await this.request
+      .post(AdminEndpointV1.Accounts.Subscriptions)
+      .set("Authorization", `Bearer ${token}`)
+      .send(body);
+
+    return checkResponse(expectSuccess, response, "setSubscriptionState");
   }
 }

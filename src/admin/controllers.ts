@@ -80,6 +80,34 @@ const deleteAccount: RequestHandler<
   );
 };
 
+export const SetAccountSubscriptionStateRequest = z.object({
+  ids: z.array(NilDid).nonempty(),
+  active: z.boolean(),
+});
+export type SetAccountSubscriptionStateRequest = z.infer<
+  typeof SetAccountSubscriptionStateRequest
+>;
+export type SetAccountSubscriptionStateResponse = ApiResponse<NilDid>;
+
+const setSubscriptionState: RequestHandler<
+  EmptyObject,
+  SetAccountSubscriptionStateRequest,
+  SetAccountSubscriptionStateResponse
+> = async (req, res) => {
+  const { ctx, body } = req;
+
+  await pipe(
+    parseUserData<SetAccountSubscriptionStateRequest>(() =>
+      SetAccountSubscriptionStateRequest.parse(body),
+    ),
+    E.flatMap((payload) =>
+      AccountService.setSubscriptionState(ctx, payload.ids, payload.active),
+    ),
+    foldToApiResponse(req, res),
+    E.runPromise,
+  );
+};
+
 export const DeleteDataRequest = z.object({
   schema: Uuid,
   filter: z
@@ -364,7 +392,9 @@ const deleteSchema: RequestHandler<
 export const AdminController = {
   createAccount,
   listAccounts,
-  removeAccount,
+  deleteAccount,
+  setSubscriptionState,
+
   deleteData,
   flushData,
   readData,

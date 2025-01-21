@@ -63,7 +63,7 @@ export function useAuthMiddleware(ctx: Context): RequestHandler {
         return;
       }
 
-      // this should be a cache hit
+      // this should be a cache hit because the resolver ensures the account is loaded
       const account = await pipe(
         findAccountByIdWithCache(ctx, NilDid.parse(payload.iss)),
         E.runPromise,

@@ -103,8 +103,29 @@ export function remove(
   );
 }
 
+export function setSubscriptionState(
+  ctx: Context,
+  ids: NilDid[],
+  active: boolean,
+): E.Effect<NilDid[], ServiceError> {
+  return pipe(
+    AccountRepository.setSubscriptionState(ctx, ids, active),
+    E.mapError(
+      (error) =>
+        new ServiceError({
+          reason: "Failed to set accounts subscription state",
+          cause: error,
+        }),
+    ),
+    E.tap((ids) => {
+      ctx.log.debug(`Set subscription.active=${active} for accounts: %O`, ids);
+    }),
+  );
+}
+
 export const AccountService = {
   find,
   createAccount,
   remove,
+  setSubscriptionState,
 };

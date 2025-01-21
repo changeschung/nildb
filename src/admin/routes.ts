@@ -36,11 +36,13 @@ export function buildAdminRouter(): Router {
     next();
   });
 
-  router.get(AdminEndpointV1.Accounts, AdminController.listAccounts);
-  router.post(AdminEndpointV1.Accounts, AdminController.createAdminAccount);
-  router.delete(
-    `${AdminEndpointV1.Accounts}/:accountDid`,
-    AdminController.removeAccount,
+  router.get(AdminEndpointV1.Accounts.Base, AdminController.listAccounts);
+  router.post(AdminEndpointV1.Accounts.Base, AdminController.createAccount);
+  router.delete(AdminEndpointV1.Accounts.Base, AdminController.deleteAccount);
+
+  router.post(
+    AdminEndpointV1.Accounts.Subscriptions,
+    AdminController.setSubscriptionState,
   );
 
   router.post(AdminEndpointV1.Data.Delete, AdminController.deleteData);

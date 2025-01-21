@@ -49,7 +49,7 @@ export class Cache<K, V> {
   taint(key: K): void {
     const entry = this._db.get(key);
     if (entry) {
-      entry.expires = Temporal.Now.instant();
+      entry.expires = Temporal.Instant.fromEpochSeconds(0);
     }
   }
 }
