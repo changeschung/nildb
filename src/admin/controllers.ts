@@ -2,6 +2,7 @@ import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
 import type { EmptyObject, JsonArray, JsonValue } from "type-fest";
 import { z } from "zod";
+import { AccountService } from "#/accounts/service";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import type { DocumentBase } from "#/common/mongo";
 import { NilDid } from "#/common/nil-did";
@@ -16,28 +17,25 @@ import { SchemasService } from "#/schemas/service";
 import type { AccountDocument } from "./repository";
 import { AdminService } from "./services";
 
-export const CreateAdminAccountRequest = z.object({
+export const CreateAccountRequest = z.object({
   did: NilDid,
   publicKey: z.string().length(PUBLIC_KEY_LENGTH),
   name: z.string(),
+  type: z.enum(["admin", "organization"]),
 });
-export type CreateAdminAccountRequest = z.infer<
-  typeof CreateAdminAccountRequest
->;
-export type CreateAdminAccountResponse = ApiResponse<UuidDto>;
+export type CreateAccountRequest = z.infer<typeof CreateAccountRequest>;
+export type CreateAccountResponse = ApiResponse<UuidDto>;
 
-const createAdminAccount: RequestHandler<
+const createAccount: RequestHandler<
   EmptyObject,
-  CreateAdminAccountResponse,
-  CreateAdminAccountRequest
+  CreateAccountResponse,
+  CreateAccountRequest
 > = async (req, res) => {
   const { ctx, body } = req;
 
   await pipe(
-    parseUserData<CreateAdminAccountRequest>(() =>
-      CreateAdminAccountRequest.parse(body),
-    ),
-    E.flatMap((payload) => AdminService.createAdminAccount(ctx, payload)),
+    parseUserData<CreateAccountRequest>(() => CreateAccountRequest.parse(body)),
+    E.flatMap((payload) => AccountService.createAccount(ctx, payload)),
     E.map((id) => id.toString() as UuidDto),
     foldToApiResponse(req, res),
     E.runPromise,
@@ -360,7 +358,7 @@ const deleteSchema: RequestHandler<
 };
 
 export const AdminController = {
-  createAdminAccount,
+  createAccount,
   listAccounts,
   removeAccount,
   deleteData,

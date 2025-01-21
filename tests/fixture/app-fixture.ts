@@ -55,16 +55,18 @@ export async function buildFixture(): Promise<AppFixture> {
 
   const fixture = { app, ctx, users };
 
-  await users.root.createAdminAccount({
+  await users.root.createAccount({
     did: users.admin._options.identity.did,
     publicKey: users.admin._options.identity.pk,
     name: faker.person.fullName(),
+    type: "admin",
   });
 
-  await users.admin.registerOrganizationAccount({
+  await users.admin.createAccount({
     did: users.organization._options.identity.did,
     publicKey: users.organization._options.identity.pk,
     name: faker.person.fullName(),
+    type: "organization",
   });
 
   return fixture;

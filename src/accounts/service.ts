@@ -1,5 +1,7 @@
 import { Effect as E, pipe } from "effect";
 import type { RegisterAccountRequest } from "#/accounts/controllers";
+import type { CreateAccountRequest } from "#/admin/controllers";
+import { AdminAccountRepository } from "#/admin/repository";
 import { ServiceError } from "#/common/app-error";
 import { Identity } from "#/common/identity";
 import type { NilDid } from "#/common/nil-did";
@@ -31,9 +33,9 @@ export function find(
   );
 }
 
-export function register(
+export function createAccount(
   ctx: Context,
-  data: RegisterAccountRequest,
+  data: RegisterAccountRequest | CreateAccountRequest,
 ): E.Effect<NilDid, ServiceError> {
   return pipe(
     E.succeed(data),
@@ -50,7 +52,7 @@ export function register(
       if (!Identity.isDidFromPublicKey(data.did, data.publicKey)) {
         return E.fail(
           new ServiceError({
-            reason: "DID not derived from provided public key",
+            reason: "DID not derived from public key",
             context: { data },
           }),
         );
@@ -59,7 +61,18 @@ export function register(
       return E.succeed(data);
     }),
     E.flatMap((data) => {
-      const document = AccountRepository.toOrganizationAccountDocument(data);
+      const isAdminRegistration =
+        "type" in data && data.type.toLocaleLowerCase() === "admin";
+
+      if (isAdminRegistration) {
+        const document = AdminAccountRepository.toAdminAccountDocument(data);
+        return AdminAccountRepository.insert(ctx, document);
+      }
+
+      const document = AccountRepository.toOrganizationAccountDocument(
+        data,
+        ctx.config.env,
+      );
       return AccountRepository.insert(ctx, document);
     }),
     E.mapError((cause) => {
@@ -92,6 +105,6 @@ export function remove(
 
 export const AccountService = {
   find,
-  register,
+  createAccount,
   remove,
 };

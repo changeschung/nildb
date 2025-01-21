@@ -46,7 +46,7 @@ describe("access-management.test.ts", () => {
     };
 
     const response = await organization.request
-      .post(AdminEndpointV1.Accounts)
+      .post(AdminEndpointV1.Accounts.Base)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
 
@@ -56,7 +56,7 @@ describe("access-management.test.ts", () => {
   it("organizations cannot list accounts", async () => {
     const token = await organization.jwt();
     const response = await organization.request
-      .get(AdminEndpointV1.Accounts)
+      .get(AdminEndpointV1.Accounts.Base)
       .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(401);

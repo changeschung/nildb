@@ -4,7 +4,10 @@ import { AdminController } from "./controllers";
 
 export const AdminEndpointV1 = {
   Base: "/api/v1/admin",
-  Accounts: "/api/v1/admin/accounts",
+  Accounts: {
+    Base: "/api/v1/admin/accounts",
+    Subscriptions: "/api/v1/admin/accounts/subscription",
+  },
   Data: {
     Delete: "/api/v1/admin/data/delete",
     Flush: "/api/v1/admin/data/flush",

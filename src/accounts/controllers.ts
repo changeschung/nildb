@@ -47,11 +47,19 @@ const register: RequestHandler<
 > = async (req, res) => {
   const { ctx, body } = req;
 
+  if (req.account?._type) {
+    res.status(400).json({
+      ts: new Date(),
+      errors: ["Use /admin/* endpoints for account management"],
+    });
+    return;
+  }
+
   await pipe(
     parseUserData<RegisterAccountRequest>(() =>
       RegisterAccountRequest.parse(body),
     ),
-    E.flatMap((payload) => AccountService.register(ctx, payload)),
+    E.flatMap((payload) => AccountService.createAccount(ctx, payload)),
     foldToApiResponse(req, res),
     E.runPromise,
   );

@@ -26,10 +26,11 @@ describe("accounts.test.ts", () => {
       node: root._options.node,
     });
 
-    const response = await root.createAdminAccount({
+    const response = await root.createAccount({
       did: admin.did,
       publicKey: admin.publicKey,
       name: faker.person.fullName(),
+      type: "admin",
     });
 
     expect(response.body).toMatchObject({ data: admin.did });
@@ -42,10 +43,11 @@ describe("accounts.test.ts", () => {
       node: root._options.node,
     });
 
-    const response = await admin.registerOrganizationAccount({
+    const response = await admin.createAccount({
       did: organization.did,
       publicKey: organization.publicKey,
       name: faker.company.name(),
+      type: "organization",
     });
 
     expect(response.body).toMatchObject({ data: organization.did });

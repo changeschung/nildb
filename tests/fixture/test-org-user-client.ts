@@ -182,13 +182,11 @@ export function checkResponse(
   response: Response,
   method: string,
 ): Response | never {
-  if (response.body.errors && expectSuccess) {
-    const message = `Unexpected request failure: method=${method}, status=${response.statusCode}`;
-    throw new Error(message, { cause: response });
-  }
+  const isFailure =
+    (response.body.errors || response.statusCode >= 300) && expectSuccess;
 
-  if (response.statusCode >= 400 && expectSuccess) {
-    const message = `Unexpected request failure: method=${method}, status=${response.statusCode}`;
+  if (isFailure) {
+    const message = `Expected success got failure: method=${method}, status=${response.statusCode}`;
     throw new Error(message, { cause: response });
   }
 
