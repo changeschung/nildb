@@ -57,19 +57,23 @@ const listAccounts: RequestHandler<EmptyObject, ListAccountsResponse> = async (
   );
 };
 
-export type RemoveAccountRequestParams = { accountDid: NilDid };
-export type RemoveAccountResponse = ApiResponse<NilDid>;
+export const DeleteAccountRequest = z.object({
+  id: NilDid,
+});
+export type DeleteAccountRequest = z.infer<typeof DeleteAccountRequest>;
+export type DeleteAccountResponse = ApiResponse<NilDid>;
 
-const removeAccount: RequestHandler<
-  RemoveAccountRequestParams,
-  RemoveAccountResponse
+const deleteAccount: RequestHandler<
+  EmptyObject,
+  DeleteAccountRequest,
+  DeleteAccountResponse
 > = async (req, res) => {
   const { ctx, body } = req;
 
   await pipe(
-    parseUserData<NilDid>(() => NilDid.parse(body)),
-    E.flatMap((id) => {
-      return AdminService.removeAccount(ctx, id);
+    parseUserData<DeleteAccountRequest>(() => DeleteAccountRequest.parse(body)),
+    E.flatMap((payload) => {
+      return AdminService.deleteAccount(ctx, payload.id);
     }),
     foldToApiResponse(req, res),
     E.runPromise,

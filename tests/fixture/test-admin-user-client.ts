@@ -1,10 +1,10 @@
 import type { Test } from "supertest";
 import type TestAgent from "supertest/lib/agent";
-import type { RemoveAccountRequest } from "#/accounts/controllers";
 import type {
   AddQueryRequest,
   AddSchemaRequest,
   CreateAccountRequest,
+  DeleteAccountRequest,
   DeleteQueryRequest,
   DeleteSchemaRequest,
 } from "#/admin/controllers";
@@ -83,7 +83,7 @@ export class TestAdminUserClient {
   }
 
   async deleteAccount(
-    body: RemoveAccountRequest,
+    body: DeleteAccountRequest,
     expectSuccess = true,
   ): Promise<Test> {
     const token = await this.jwt();

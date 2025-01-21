@@ -21,7 +21,7 @@ export function listAllAccounts(
   );
 }
 
-export function removeAccount(
+export function deleteAccount(
   ctx: Context,
   id: NilDid,
 ): E.Effect<NilDid, ServiceError> {
@@ -38,5 +38,5 @@ export function removeAccount(
 
 export const AdminService = {
   listAllAccounts,
-  removeAccount,
+  deleteAccount,
 };
