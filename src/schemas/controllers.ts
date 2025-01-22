@@ -4,6 +4,7 @@ import type { EmptyObject } from "type-fest";
 import { z } from "zod";
 import type { OrganizationAccountDocument } from "#/accounts/repository";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
+import { enforceSchemaOwnership } from "#/common/ownership";
 import { Uuid, type UuidDto } from "#/common/types";
 import { parseUserData } from "#/common/zod-utils";
 import type { SchemaDocument } from "./repository";
@@ -50,6 +51,31 @@ export const addSchema: RequestHandler<
         owner: account._id,
       }),
     ),
+    foldToApiResponse(req, res),
+    E.runPromise,
+  );
+};
+
+export const DeleteSchemaRequest = z.object({
+  id: Uuid,
+});
+export type DeleteSchemaRequest = z.infer<typeof DeleteSchemaRequest>;
+export type DeleteSchemaResponse = ApiResponse<UuidDto>;
+
+export const deleteSchema: RequestHandler<
+  EmptyObject,
+  DeleteSchemaResponse,
+  DeleteSchemaRequest
+> = async (req, res) => {
+  const { ctx, body } = req;
+  const account = req.account as OrganizationAccountDocument;
+
+  await pipe(
+    parseUserData<DeleteSchemaRequest>(() => DeleteSchemaRequest.parse(body)),
+    E.flatMap((payload) =>
+      enforceSchemaOwnership(account, payload.id, payload),
+    ),
+    E.flatMap((payload) => SchemasService.deleteSchema(ctx, payload.id)),
     foldToApiResponse(req, res),
     E.runPromise,
   );

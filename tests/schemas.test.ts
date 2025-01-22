@@ -12,18 +12,15 @@ import {
   buildFixture,
 } from "./fixture/app-fixture";
 import { assertDefined } from "./fixture/assertions";
-import type { TestAdminUserClient } from "./fixture/test-admin-user-client";
 import type { TestOrganizationUserClient } from "./fixture/test-org-user-client";
 
 describe("schemas.test.ts", () => {
   let fixture: AppFixture;
-  let admin: TestAdminUserClient;
   let organization: TestOrganizationUserClient;
   const schema = schemaJson as unknown as SchemaFixture;
 
   beforeAll(async () => {
     fixture = await buildFixture();
-    admin = fixture.users.admin;
     organization = fixture.users.organization;
   });
 
@@ -85,7 +82,7 @@ describe("schemas.test.ts", () => {
 
   it("can delete schema", async () => {
     const id = schema.id;
-    const response = await admin.deleteSchema({
+    const response = await organization.deleteSchema({
       id,
     });
 
