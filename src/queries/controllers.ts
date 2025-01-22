@@ -84,3 +84,28 @@ export const addQuery: RequestHandler<
     E.runPromise,
   );
 };
+
+export const DeleteQueryRequest = z.object({
+  id: Uuid,
+});
+export type DeleteQueryRequest = z.infer<typeof DeleteQueryRequest>;
+export type DeleteQueryResponse = ApiResponse<boolean>;
+
+export const deleteQuery: RequestHandler<
+  EmptyObject,
+  DeleteQueryResponse,
+  DeleteQueryRequest
+> = async (req, res) => {
+  const { ctx, body } = req;
+  const account = req.account as OrganizationAccountDocument;
+
+  await pipe(
+    parseUserData<DeleteQueryRequest>(() => DeleteQueryRequest.parse(body)),
+    E.flatMap((payload) => enforceQueryOwnership(account, payload.id, payload)),
+    E.flatMap((payload) => {
+      return QueriesService.removeQuery(ctx, payload.id);
+    }),
+    foldToApiResponse(req, res),
+    E.runPromise,
+  );
+};

@@ -2,6 +2,7 @@ import type { Response, Test } from "supertest";
 import type TestAgent from "supertest/lib/agent";
 import type { RegisterAccountRequest } from "#/accounts/controllers";
 import { AccountsEndpointV1 } from "#/accounts/routes";
+import type { DeleteQueryRequest } from "#/admin/controllers";
 import type { Identity } from "#/common/identity";
 import type {
   DeleteDataRequest,
@@ -128,6 +129,19 @@ export class TestOrganizationUserClient {
       .send(body);
 
     return checkResponse(expectSuccess, response, "addQuery");
+  }
+
+  async deleteQuery(
+    body: DeleteQueryRequest,
+    expectSuccess = true,
+  ): Promise<Test> {
+    const token = await this.jwt();
+    const response = await this.request
+      .delete(QueriesEndpointV1.Base)
+      .set("Authorization", `Bearer ${token}`)
+      .send(body);
+
+    return checkResponse(expectSuccess, response, "deleteQuery");
   }
 
   async executeQuery(
