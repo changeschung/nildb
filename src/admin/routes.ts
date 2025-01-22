@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { StatusCodes } from "http-status-codes";
 import { isRoleAllowed } from "#/middleware/auth";
 import { AdminController } from "./controllers";
 
@@ -30,7 +31,7 @@ export function buildAdminRouter(): Router {
 
   router.use(AdminEndpointV1.Base, (req, res, next): void => {
     if (!isRoleAllowed(req, ["admin", "root"])) {
-      res.sendStatus(401);
+      res.sendStatus(StatusCodes.UNAUTHORIZED);
       return;
     }
     next();

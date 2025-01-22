@@ -3,6 +3,7 @@ import * as didJwt from "did-jwt";
 import { Resolver } from "did-resolver";
 import { Effect as E, pipe } from "effect";
 import type { Request, RequestHandler } from "express";
+import { StatusCodes } from "http-status-codes";
 import { AccountsEndpointV1 } from "#/accounts/routes";
 import type { AccountDocument, AccountType } from "#/admin/repository";
 import { findAccountByIdWithCache } from "#/common/cache";
@@ -49,7 +50,7 @@ export function useAuthMiddleware(ctx: Context): RequestHandler {
       const header = req.headers.authorization ?? "";
       const [scheme, token] = header.split(" ");
       if (scheme.toLowerCase() !== "bearer") {
-        res.sendStatus(401);
+        res.sendStatus(StatusCodes.UNAUTHORIZED);
         return;
       }
 
@@ -59,7 +60,7 @@ export function useAuthMiddleware(ctx: Context): RequestHandler {
       });
 
       if (!payload) {
-        res.sendStatus(401);
+        res.sendStatus(StatusCodes.UNAUTHORIZED);
         return;
       }
 
@@ -75,7 +76,7 @@ export function useAuthMiddleware(ctx: Context): RequestHandler {
       next();
     } catch (error) {
       console.error(error);
-      res.sendStatus(401);
+      res.sendStatus(StatusCodes.UNAUTHORIZED);
     }
   };
 }

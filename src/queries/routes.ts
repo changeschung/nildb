@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { StatusCodes } from "http-status-codes";
 import { AdminEndpointV1 } from "#/admin/routes";
 import { isRoleAllowed } from "#/middleware/auth";
 import { QueriesController } from "#/queries/controllers";
@@ -13,7 +14,7 @@ export function buildQueriesRouter(): Router {
 
   router.use(AdminEndpointV1.Base, (req, res, next): void => {
     if (!isRoleAllowed(req, ["organization"])) {
-      res.sendStatus(401);
+      res.sendStatus(StatusCodes.UNAUTHORIZED);
       return;
     }
     next();

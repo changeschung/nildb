@@ -1,5 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
+import { StatusCodes } from "http-status-codes";
 import type { EmptyObject } from "type-fest";
 import { z } from "zod";
 import type { OrganizationAccountDocument } from "#/accounts/repository";
@@ -21,7 +22,7 @@ const get: RequestHandler<
   const { ctx, account } = req;
 
   if (!isRoleAllowed(req, ["admin", "organization"])) {
-    res.sendStatus(401);
+    res.sendStatus(StatusCodes.UNAUTHORIZED);
     return;
   }
 
@@ -79,7 +80,7 @@ const remove: RequestHandler<
   const { ctx, body } = req;
 
   if (!isRoleAllowed(req, ["root", "admin"])) {
-    res.sendStatus(401);
+    res.sendStatus(StatusCodes.UNAUTHORIZED);
     return;
   }
 

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { StatusCodes } from "http-status-codes";
 import { AdminEndpointV1 } from "#/admin/routes";
 import { isRoleAllowed } from "#/middleware/auth";
 import { SchemasController } from "#/schemas/controllers";
@@ -12,7 +13,7 @@ export function buildSchemasRouter(): Router {
 
   router.use(AdminEndpointV1.Base, (req, res, next): void => {
     if (!isRoleAllowed(req, ["organization"])) {
-      res.sendStatus(401);
+      res.sendStatus(StatusCodes.UNAUTHORIZED);
       return;
     }
     next();
