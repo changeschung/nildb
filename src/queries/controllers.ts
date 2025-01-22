@@ -1,11 +1,10 @@
 import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
-import type { UUID } from "mongodb";
 import type { EmptyObject, JsonValue } from "type-fest";
 import { z } from "zod";
 import type { OrganizationAccountDocument } from "#/accounts/repository";
-import { ControllerError } from "#/common/app-error";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
+import { enforceQueryOwnership } from "#/common/ownership";
 import { Uuid } from "#/common/types";
 import { parseUserData } from "#/common/zod-utils";
 import type { QueryDocument } from "./repository";
@@ -53,21 +52,3 @@ export const executeQuery: RequestHandler<
     E.runPromise,
   );
 };
-
-function enforceQueryOwnership<T>(
-  account: OrganizationAccountDocument,
-  query: UUID,
-  value: T, // pass through on success
-): E.Effect<T, ControllerError, never> {
-  const isAuthorized = account.queries.some(
-    (s) => s.toString() === query.toString(),
-  );
-
-  return isAuthorized
-    ? E.succeed(value)
-    : E.fail(
-        new ControllerError({
-          reason: ["Query not found", account._id, query.toString()],
-        }),
-      );
-}

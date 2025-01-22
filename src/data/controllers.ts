@@ -1,12 +1,11 @@
 import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
-import type { UUID } from "mongodb";
 import type { EmptyObject, JsonArray } from "type-fest";
 import { z } from "zod";
 import type { OrganizationAccountDocument } from "#/accounts/repository";
-import { ControllerError } from "#/common/app-error";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import type { DocumentBase } from "#/common/mongo";
+import { enforceSchemaOwnership } from "#/common/ownership";
 import { Uuid, type UuidDto } from "#/common/types";
 import { parseUserData } from "#/common/zod-utils";
 import type { UpdateResult, UploadResult } from "./repository";
@@ -185,21 +184,3 @@ export const tailData: RequestHandler<
     E.runPromise,
   );
 };
-
-function enforceSchemaOwnership<T>(
-  account: OrganizationAccountDocument,
-  schema: UUID,
-  value: T, // pass through on success
-): E.Effect<T, ControllerError, never> {
-  const isAuthorized = account.schemas.some(
-    (s) => s.toString() === schema.toString(),
-  );
-
-  return isAuthorized
-    ? E.succeed(value)
-    : E.fail(
-        new ControllerError({
-          reason: ["Schema not found", account._id, schema.toString()],
-        }),
-      );
-}
