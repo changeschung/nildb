@@ -21,6 +21,7 @@ export function buildQueriesRouter(): Router {
   });
 
   router.get(QueriesEndpointV1.Base, QueriesController.listQueries);
+  router.post(QueriesEndpointV1.Base, QueriesController.addQuery);
   router.post(QueriesEndpointV1.Execute, QueriesController.executeQuery);
 
   return router;

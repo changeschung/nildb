@@ -2,7 +2,6 @@ import type { Response, Test } from "supertest";
 import type TestAgent from "supertest/lib/agent";
 import type { RegisterAccountRequest } from "#/accounts/controllers";
 import { AccountsEndpointV1 } from "#/accounts/routes";
-import type { DeleteSchemaRequest } from "#/admin/controllers";
 import type { Identity } from "#/common/identity";
 import type {
   DeleteDataRequest,
@@ -13,8 +12,12 @@ import type {
   UploadDataRequest,
 } from "#/data/controllers";
 import { DataEndpointV1 } from "#/data/routes";
-import type { ExecuteQueryRequest } from "#/queries/controllers";
+import type {
+  AddQueryRequest,
+  ExecuteQueryRequest,
+} from "#/queries/controllers";
 import { QueriesEndpointV1 } from "#/queries/routes";
+import type { DeleteSchemaRequest } from "#/schemas/controllers";
 import type { AddSchemaRequest } from "#/schemas/controllers";
 import { SchemasEndpointV1 } from "#/schemas/routes";
 import { SystemEndpoint } from "#/system/routes";
@@ -115,6 +118,16 @@ export class TestOrganizationUserClient {
       .set("Authorization", `Bearer ${token}`);
 
     return checkResponse(expectSuccess, response, "listQueries");
+  }
+
+  async addQuery(body: AddQueryRequest, expectSuccess = true): Promise<Test> {
+    const token = await this.jwt();
+    const response = await this.request
+      .post(QueriesEndpointV1.Base)
+      .set("Authorization", `Bearer ${token}`)
+      .send(body);
+
+    return checkResponse(expectSuccess, response, "addQuery");
   }
 
   async executeQuery(
