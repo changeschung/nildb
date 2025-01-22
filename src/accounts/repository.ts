@@ -21,7 +21,7 @@ export type OrganizationAccountDocument = {
   queries: UUID[];
 };
 
-function toOrganizationAccountDocument(
+export function toOrganizationAccountDocument(
   data: RegisterAccountRequest,
   env: "mainnet" | "testnet",
 ): OrganizationAccountDocument {
@@ -44,7 +44,7 @@ function toOrganizationAccountDocument(
   };
 }
 
-function insert(
+export function insert(
   ctx: Context,
   document: OrganizationAccountDocument,
 ): E.Effect<NilDid, RepositoryError> {
@@ -63,7 +63,7 @@ function insert(
   );
 }
 
-function findOne(
+export function findOne(
   ctx: Context,
   filter: StrictFilter<OrganizationAccountDocument>,
 ): E.Effect<OrganizationAccountDocument, RepositoryError> {
@@ -99,7 +99,7 @@ function findOne(
   );
 }
 
-function deleteOneById(
+export function deleteOneById(
   ctx: Context,
   _id: NilDid,
 ): E.Effect<NilDid, RepositoryError> {
@@ -128,7 +128,7 @@ function deleteOneById(
   );
 }
 
-function setSubscriptionState(
+export function setSubscriptionState(
   ctx: Context,
   ids: NilDid[],
   active: boolean,
@@ -157,11 +157,3 @@ function setSubscriptionState(
     }),
   );
 }
-
-export const AccountRepository = {
-  toOrganizationAccountDocument,
-  deleteOneById,
-  findOne,
-  insert,
-  setSubscriptionState,
-};

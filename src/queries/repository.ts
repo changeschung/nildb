@@ -28,7 +28,7 @@ export type QueryDocument = DocumentBase & {
   pipeline: Record<string, unknown>[];
 };
 
-function insert(
+export function insert(
   ctx: Context,
   document: QueryDocument,
 ): E.Effect<UUID, RepositoryError> {
@@ -52,7 +52,7 @@ function insert(
   );
 }
 
-function findMany(
+export function findMany(
   ctx: Context,
   filter: StrictFilter<QueryDocument>,
 ): E.Effect<QueryDocument[], RepositoryError> {
@@ -70,7 +70,7 @@ function findMany(
   );
 }
 
-function findOne(
+export function findOne(
   ctx: Context,
   filter: StrictFilter<QueryDocument>,
 ): E.Effect<QueryDocument, RepositoryError> {
@@ -89,7 +89,7 @@ function findOne(
   );
 }
 
-function deleteMany(
+export function deleteMany(
   ctx: Context,
   filter: StrictFilter<QueryDocument>,
 ): E.Effect<number, RepositoryError> {
@@ -113,7 +113,7 @@ function deleteMany(
   );
 }
 
-function findOneAndDelete(
+export function findOneAndDelete(
   ctx: Context,
   filter: StrictFilter<QueryDocument>,
 ): E.Effect<QueryDocument, RepositoryError> {
@@ -136,11 +136,3 @@ function findOneAndDelete(
     }),
   );
 }
-
-export const QueriesRepository = {
-  findOneAndDelete,
-  deleteMany,
-  findOne,
-  findMany,
-  insert,
-};

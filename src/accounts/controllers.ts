@@ -4,7 +4,7 @@ import { StatusCodes } from "http-status-codes";
 import type { EmptyObject } from "type-fest";
 import { z } from "zod";
 import type { OrganizationAccountDocument } from "#/accounts/repository";
-import { AccountService } from "#/accounts/service";
+import * as AccountService from "#/accounts/service";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { NilDid } from "#/common/nil-did";
 import { parseUserData } from "#/common/zod-utils";
@@ -14,7 +14,7 @@ import { isRoleAllowed } from "#/middleware/auth";
 export type GetAccountRequest = EmptyObject;
 export type GetAccountResponse = ApiResponse<OrganizationAccountDocument>;
 
-const get: RequestHandler<
+export const get: RequestHandler<
   EmptyObject,
   GetAccountResponse,
   GetAccountRequest
@@ -41,7 +41,7 @@ export const RegisterAccountRequest = z.object({
 export type RegisterAccountRequest = z.infer<typeof RegisterAccountRequest>;
 export type RegisterAccountResponse = ApiResponse<NilDid>;
 
-const register: RequestHandler<
+export const register: RequestHandler<
   EmptyObject,
   RegisterAccountResponse,
   RegisterAccountRequest
@@ -72,7 +72,7 @@ export const RemoveAccountRequest = z.object({
 export type RemoveAccountRequest = z.infer<typeof RemoveAccountRequest>;
 export type RemoveAccountResponse = ApiResponse<string>;
 
-const remove: RequestHandler<
+export const remove: RequestHandler<
   EmptyObject,
   RemoveAccountResponse,
   RemoveAccountRequest
@@ -90,10 +90,4 @@ const remove: RequestHandler<
     foldToApiResponse(req, res),
     E.runPromise,
   );
-};
-
-export const AccountController = {
-  get,
-  register,
-  remove,
 };

@@ -46,7 +46,7 @@ export function toAdminAccountDocument(
   };
 }
 
-function deleteOneById(
+export function deleteOneById(
   ctx: Context,
   _id: NilDid,
 ): E.Effect<NilDid, RepositoryError> {
@@ -69,7 +69,7 @@ function deleteOneById(
   );
 }
 
-function findById(
+export function findById(
   ctx: Context,
   _id: NilDid,
 ): E.Effect<AccountDocument, RepositoryError> {
@@ -88,7 +88,7 @@ function findById(
   );
 }
 
-function insert(
+export function insert(
   ctx: Context,
   document: AdminAccountDocument,
 ): E.Effect<NilDid, RepositoryError> {
@@ -123,11 +123,3 @@ export function listAll(
     }),
   );
 }
-
-export const AdminAccountRepository = {
-  deleteOneById,
-  findById,
-  insert,
-  listAll,
-  toAdminAccountDocument,
-};

@@ -7,16 +7,13 @@ import { DataValidationError, ServiceError } from "#/common/app-error";
 import type { NilDid } from "#/common/nil-did";
 import { validateData } from "#/common/validator";
 import { flattenZodError } from "#/common/zod-utils";
-import { DataRepository } from "#/data/repository";
+import * as DataRepository from "#/data/repository";
 import type { Context } from "#/env";
 import { OrganizationRepository } from "#/organizations/repository";
-import type { ExecuteQueryRequest } from "#/queries/controllers";
-import pipelineSchema from "#/queries/mongodb_pipeline.json";
-import {
-  QueriesRepository,
-  type QueryArrayVariable,
-  type QueryDocument,
-} from "#/queries/repository";
+import type { ExecuteQueryRequest } from "./controllers";
+import pipelineSchema from "./mongodb_pipeline.json";
+import type { QueryArrayVariable, QueryDocument } from "./repository";
+import * as QueriesRepository from "./repository";
 
 export function addQuery(
   ctx: Context,

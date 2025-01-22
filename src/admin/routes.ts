@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { StatusCodes } from "http-status-codes";
 import { isRoleAllowed } from "#/middleware/auth";
-import { AdminController } from "./controllers";
+import * as AdminController from "./controllers";
 
 export const AdminEndpointV1 = {
   Base: "/api/v1/admin",

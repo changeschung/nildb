@@ -15,7 +15,7 @@ import type { Context } from "#/env";
 import type { QueryDocument } from "#/queries/repository";
 import type { SchemaDocument } from "#/schemas/repository";
 
-function createCollection(
+export function createCollection(
   ctx: Context,
   schemaId: UUID,
   keys: string[],
@@ -44,7 +44,7 @@ function createCollection(
 
 export const TAIL_DATA_LIMIT = 25;
 
-function tailCollection(
+export function tailCollection(
   ctx: Context,
   schema: UUID,
 ): E.Effect<DataDocument[], RepositoryError> {
@@ -64,7 +64,7 @@ function tailCollection(
   );
 }
 
-function deleteCollection(
+export function deleteCollection(
   ctx: Context,
   schema: UUID,
 ): E.Effect<boolean, RepositoryError> {
@@ -111,7 +111,7 @@ export type UploadResult = {
   errors: CreateFailure[];
 };
 
-function insert(
+export function insert(
   ctx: Context,
   schema: SchemaDocument,
   data: PartialDataDocumentDto[],
@@ -188,7 +188,7 @@ export type UpdateResult = {
   updated: number;
 };
 
-function updateMany(
+export function updateMany(
   ctx: Context,
   schema: UUID,
   filter: Filter<DocumentBase>,
@@ -213,7 +213,7 @@ function updateMany(
   );
 }
 
-function deleteMany(
+export function deleteMany(
   ctx: Context,
   schema: UUID,
   filter: StrictFilter<DocumentBase>,
@@ -234,7 +234,7 @@ function deleteMany(
   );
 }
 
-function runAggregation(
+export function runAggregation(
   ctx: Context,
   query: QueryDocument,
   pipeline: Document[],
@@ -253,7 +253,7 @@ function runAggregation(
   );
 }
 
-function findMany(
+export function findMany(
   ctx: Context,
   schema: UUID,
   filter: Filter<DocumentBase>,
@@ -271,15 +271,3 @@ function findMany(
     }),
   );
 }
-
-export const DataRepository = {
-  createCollection,
-  deleteCollection,
-  deleteMany,
-  findMany,
-  flushCollection,
-  insert,
-  runAggregation,
-  tailCollection,
-  updateMany,
-};

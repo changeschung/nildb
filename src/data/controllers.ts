@@ -9,8 +9,8 @@ import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import type { DocumentBase } from "#/common/mongo";
 import { Uuid, type UuidDto } from "#/common/types";
 import { parseUserData } from "#/common/zod-utils";
-import { DataService } from "#/data/service";
 import type { UpdateResult, UploadResult } from "./repository";
+import * as DataService from "./service";
 
 export const MAX_RECORDS_LENGTH = 10_000;
 
@@ -30,7 +30,7 @@ export type PartialDataDocumentDto = UploadDataRequest["data"] & {
 };
 export type UploadDataResponse = ApiResponse<UploadResult>;
 
-const uploadData: RequestHandler<
+export const uploadData: RequestHandler<
   EmptyObject,
   UploadDataResponse,
   UploadDataRequest
@@ -59,7 +59,7 @@ export const UpdateDataRequest = z.object({
 export type UpdateDataRequest = z.infer<typeof UpdateDataRequest>;
 export type UpdateDataResponse = ApiResponse<UpdateResult>;
 
-const updateData: RequestHandler<
+export const updateData: RequestHandler<
   EmptyObject,
   UpdateDataResponse,
   UpdateDataRequest
@@ -87,7 +87,7 @@ export const ReadDataRequest = z.object({
 export type ReadDataRequest = z.infer<typeof ReadDataRequest>;
 export type ReadDataResponse = ApiResponse<DocumentBase[]>;
 
-const readData: RequestHandler<
+export const readData: RequestHandler<
   EmptyObject,
   ReadDataResponse,
   ReadDataRequest
@@ -117,7 +117,7 @@ export const DeleteDataRequest = z.object({
 export type DeleteDataRequest = z.infer<typeof DeleteDataRequest>;
 export type DeleteDataResponse = ApiResponse<number>;
 
-const deleteData: RequestHandler<
+export const deleteData: RequestHandler<
   EmptyObject,
   DeleteDataResponse,
   DeleteDataRequest
@@ -142,7 +142,7 @@ export const FlushDataRequest = z.object({
 export type FlushDataRequest = z.infer<typeof FlushDataRequest>;
 export type FlushDataResponse = ApiResponse<number>;
 
-const flushData: RequestHandler<
+export const flushData: RequestHandler<
   EmptyObject,
   FlushDataResponse,
   FlushDataRequest
@@ -167,7 +167,7 @@ export const TailDataRequest = z.object({
 export type TailDataRequest = z.infer<typeof TailDataRequest>;
 export type TailDataResponse = ApiResponse<JsonArray>;
 
-const tailData: RequestHandler<
+export const tailData: RequestHandler<
   EmptyObject,
   TailDataResponse,
   TailDataRequest
@@ -203,12 +203,3 @@ function enforceSchemaOwnership<T>(
         }),
       );
 }
-
-export const DataController = {
-  uploadData,
-  deleteData,
-  flushData,
-  readData,
-  tailData,
-  updateData,
-};

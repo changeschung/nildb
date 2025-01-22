@@ -1,7 +1,9 @@
 import type { Request, RequestHandler, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import type { EmptyObject } from "type-fest";
-import { type AboutNode, SystemService } from "./service";
+import type { AboutNode } from "./service";
+import * as SystemService from "./service";
+
 type AboutNodeControllerResponse = AboutNode;
 
 export const aboutNodeController: RequestHandler<
@@ -17,8 +19,3 @@ export const aboutNodeController: RequestHandler<
 export function healthCheckController(_req: Request, res: Response): void {
   res.sendStatus(StatusCodes.OK);
 }
-
-export const SystemController = {
-  aboutNodeController,
-  healthCheckController,
-};

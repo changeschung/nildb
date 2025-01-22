@@ -1,15 +1,13 @@
 import { Effect as E, pipe } from "effect";
 import type { RegisterAccountRequest } from "#/accounts/controllers";
 import type { CreateAccountRequest } from "#/admin/controllers";
-import { AdminAccountRepository } from "#/admin/repository";
+import * as AdminAccountRepository from "#/admin/repository";
 import { ServiceError } from "#/common/app-error";
 import { Identity } from "#/common/identity";
 import type { NilDid } from "#/common/nil-did";
 import type { Context } from "#/env";
-import {
-  AccountRepository,
-  type OrganizationAccountDocument,
-} from "./repository";
+import type { OrganizationAccountDocument } from "./repository";
+import * as AccountRepository from "./repository";
 
 export function find(
   ctx: Context,
@@ -122,10 +120,3 @@ export function setSubscriptionState(
     }),
   );
 }
-
-export const AccountService = {
-  find,
-  createAccount,
-  remove,
-  setSubscriptionState,
-};

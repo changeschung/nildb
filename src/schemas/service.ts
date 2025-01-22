@@ -4,12 +4,13 @@ import type { OrganizationAccountDocument } from "#/accounts/repository";
 import type { AddSchemaRequest } from "#/admin/controllers";
 import { ServiceError } from "#/common/app-error";
 import { validateSchema } from "#/common/validator";
-import { DataRepository } from "#/data/repository";
+import * as DataRepository from "#/data/repository";
 import type { Context } from "#/env";
 import { OrganizationRepository } from "#/organizations/repository";
-import { type SchemaDocument, SchemasRepository } from "#/schemas/repository";
+import type { SchemaDocument } from "./repository";
+import * as SchemasRepository from "./repository";
 
-function getOrganizationSchemas(
+export function getOrganizationSchemas(
   ctx: Context,
   organization: OrganizationAccountDocument,
 ): E.Effect<SchemaDocument[], ServiceError> {
@@ -23,7 +24,7 @@ function getOrganizationSchemas(
   );
 }
 
-function addSchema(
+export function addSchema(
   ctx: Context,
   request: AddSchemaRequest,
 ): E.Effect<UUID, ServiceError> {
@@ -51,7 +52,7 @@ function addSchema(
   );
 }
 
-function deleteSchema(
+export function deleteSchema(
   ctx: Context,
   schemaId: UUID,
 ): E.Effect<SchemaDocument, ServiceError> {
@@ -69,9 +70,3 @@ function deleteSchema(
     }),
   );
 }
-
-export const SchemasService = {
-  addSchema,
-  deleteSchema,
-  getOrganizationSchemas,
-};
