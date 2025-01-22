@@ -9,11 +9,11 @@ import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { Uuid } from "#/common/types";
 import { parseUserData } from "#/common/zod-utils";
 import type { QueryDocument } from "./repository";
-import { QueriesService } from "./service";
+import * as QueriesService from "./service";
 
 export type ListQueriesResponse = ApiResponse<QueryDocument[]>;
 
-const listQueries: RequestHandler<
+export const listQueries: RequestHandler<
   EmptyObject,
   ListQueriesResponse,
   EmptyObject
@@ -35,7 +35,7 @@ export const ExecuteQueryRequest = z.object({
 export type ExecuteQueryRequest = z.infer<typeof ExecuteQueryRequest>;
 export type ExecuteQueryResponse = ApiResponse<JsonValue>;
 
-const executeQuery: RequestHandler<
+export const executeQuery: RequestHandler<
   EmptyObject,
   ExecuteQueryResponse,
   ExecuteQueryRequest
@@ -71,8 +71,3 @@ function enforceQueryOwnership<T>(
         }),
       );
 }
-
-export const QueriesController = {
-  executeQuery,
-  listQueries,
-};

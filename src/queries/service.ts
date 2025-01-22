@@ -42,7 +42,7 @@ export function addQuery(
   );
 }
 
-function executeQuery(
+export function executeQuery(
   ctx: Context,
   request: ExecuteQueryRequest,
 ): E.Effect<JsonValue, DataValidationError | ServiceError> {
@@ -69,7 +69,7 @@ function executeQuery(
   );
 }
 
-function findQueries(
+export function findQueries(
   ctx: Context,
   owner: NilDid,
 ): E.Effect<QueryDocument[], ServiceError> {
@@ -84,7 +84,10 @@ function findQueries(
   );
 }
 
-function removeQuery(ctx: Context, _id: UUID): E.Effect<boolean, ServiceError> {
+export function removeQuery(
+  ctx: Context,
+  _id: UUID,
+): E.Effect<boolean, ServiceError> {
   return pipe(
     QueriesRepository.findOneAndDelete(ctx, { _id }),
     E.flatMap((document) => {
@@ -98,13 +101,6 @@ function removeQuery(ctx: Context, _id: UUID): E.Effect<boolean, ServiceError> {
     }),
   );
 }
-
-export const QueriesService = {
-  addQuery,
-  executeQuery,
-  findQueries,
-  removeQuery,
-};
 
 export type QueryPrimitive = string | number | boolean | Date;
 

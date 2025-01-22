@@ -12,7 +12,7 @@ import { MAX_RECORDS_LENGTH } from "#/data/controllers";
 import type { UpdateResult, UploadResult } from "#/data/repository";
 import * as DataService from "#/data/service";
 import { PUBLIC_KEY_LENGTH } from "#/env";
-import { QueriesService } from "#/queries/service";
+import * as QueriesService from "#/queries/service";
 import * as SchemasService from "#/schemas/service";
 import type { AccountDocument } from "./repository";
 import * as AdminService from "./services";
