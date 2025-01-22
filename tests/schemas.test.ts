@@ -33,9 +33,8 @@ describe("schemas.test.ts", () => {
   });
 
   it("can add schema", async () => {
-    const response = await admin.addSchema({
+    const response = await organization.addSchema({
       _id: new UUID(),
-      owner: organization.did,
       name: schema.name,
       keys: schema.keys,
       schema: schema.schema,

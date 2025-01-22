@@ -20,6 +20,7 @@ export function buildSchemasRouter(): Router {
   });
 
   router.get(SchemasEndpointV1.Base, SchemasController.listSchemas);
+  router.post(SchemasEndpointV1.Base, SchemasController.addSchema);
 
   return router;
 }

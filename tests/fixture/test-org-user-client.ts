@@ -14,7 +14,7 @@ import type {
 import { DataEndpointV1 } from "#/data/routes";
 import type { ExecuteQueryRequest } from "#/queries/controllers";
 import { QueriesEndpointV1 } from "#/queries/routes";
-import type {} from "#/schemas/controllers";
+import type { AddSchemaRequest } from "#/schemas/controllers";
 import { SchemasEndpointV1 } from "#/schemas/routes";
 import { SystemEndpoint } from "#/system/routes";
 
@@ -82,6 +82,16 @@ export class TestOrganizationUserClient {
       .set("Authorization", `Bearer ${token}`);
 
     return checkResponse(expectSuccess, response, "listSchemas");
+  }
+
+  async addSchema(body: AddSchemaRequest, expectSuccess = true): Promise<Test> {
+    const token = await this.jwt();
+    const response = await this.request
+      .post(SchemasEndpointV1.Base)
+      .set("Authorization", `Bearer ${token}`)
+      .send(body);
+
+    return checkResponse(expectSuccess, response, "addSchema");
   }
 
   async listQueries(expectSuccess = true): Promise<Test> {
