@@ -13,7 +13,7 @@ export type SchemaDocument = DocumentBase & {
   schema: Record<string, unknown>;
 };
 
-function insert(
+export function insert(
   ctx: Context,
   document: SchemaDocument,
 ): E.Effect<UUID, RepositoryError> {
@@ -37,7 +37,7 @@ function insert(
   );
 }
 
-function findMany(
+export function findMany(
   ctx: Context,
   filter: StrictFilter<SchemaDocument>,
 ): E.Effect<SchemaDocument[], RepositoryError> {
@@ -55,7 +55,7 @@ function findMany(
   );
 }
 
-function findOne(
+export function findOne(
   ctx: Context,
   filter: StrictFilter<SchemaDocument>,
 ): E.Effect<SchemaDocument, RepositoryError> {
@@ -74,7 +74,7 @@ function findOne(
   );
 }
 
-function deleteMany(
+export function deleteMany(
   ctx: Context,
   filter: StrictFilter<SchemaDocument>,
 ): E.Effect<number, RepositoryError> {
@@ -98,7 +98,7 @@ function deleteMany(
   );
 }
 
-function deleteOne(
+export function deleteOne(
   ctx: Context,
   filter: StrictFilter<SchemaDocument>,
 ): E.Effect<SchemaDocument, RepositoryError> {
@@ -121,11 +121,3 @@ function deleteOne(
     }),
   );
 }
-
-export const SchemasRepository = {
-  deleteMany,
-  deleteOne,
-  findMany,
-  findOne,
-  insert,
-};

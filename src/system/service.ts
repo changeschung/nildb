@@ -52,7 +52,3 @@ function getBuildInfo(ctx: Context): BuildInfo {
     return buildInfo;
   }
 }
-
-export const SystemService = {
-  getNodeInfo,
-};

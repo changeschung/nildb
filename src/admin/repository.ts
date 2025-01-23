@@ -6,7 +6,7 @@ import { succeedOrMapToRepositoryError } from "#/common/errors";
 import { CollectionName } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
 import type { Context } from "#/env";
-import type { CreateAdminAccountRequest } from "./controllers";
+import type { CreateAccountRequest } from "./controllers";
 
 export type AccountDocument =
   | RootAccountDocument
@@ -31,7 +31,7 @@ export type AdminAccountDocument = {
 };
 
 export function toAdminAccountDocument(
-  data: CreateAdminAccountRequest,
+  data: CreateAccountRequest,
 ): AdminAccountDocument {
   const { did, publicKey, name } = data;
   const now = new Date();
@@ -46,7 +46,7 @@ export function toAdminAccountDocument(
   };
 }
 
-function deleteOneById(
+export function deleteOneById(
   ctx: Context,
   _id: NilDid,
 ): E.Effect<NilDid, RepositoryError> {
@@ -69,7 +69,7 @@ function deleteOneById(
   );
 }
 
-function findById(
+export function findById(
   ctx: Context,
   _id: NilDid,
 ): E.Effect<AccountDocument, RepositoryError> {
@@ -88,7 +88,7 @@ function findById(
   );
 }
 
-function insert(
+export function insert(
   ctx: Context,
   document: AdminAccountDocument,
 ): E.Effect<NilDid, RepositoryError> {
@@ -123,11 +123,3 @@ export function listAll(
     }),
   );
 }
-
-export const AdminAccountRepository = {
-  deleteOneById,
-  findById,
-  insert,
-  listAll,
-  toAdminAccountDocument,
-};

@@ -11,20 +11,17 @@ import {
   buildFixture,
 } from "./fixture/app-fixture";
 import { assertDefined } from "./fixture/assertions";
-import type { TestAdminUserClient } from "./fixture/test-admin-user-client";
 import type { TestOrganizationUserClient } from "./fixture/test-org-user-client";
 
 describe("query.test.ts", () => {
   let fixture: AppFixture;
   let db: Context["db"];
   let organization: TestOrganizationUserClient;
-  let admin: TestAdminUserClient;
   const query = queryJson as unknown as QueryFixture;
 
   beforeAll(async () => {
     fixture = await buildFixture();
     db = fixture.ctx.db;
-    admin = fixture.users.admin;
     organization = fixture.users.organization;
     // placeholder schema id so addQuery passes validation
     query.schema = new UUID();
@@ -36,9 +33,8 @@ describe("query.test.ts", () => {
   });
 
   it("can add a query", async () => {
-    const response = await admin.addQuery({
+    const response = await organization.addQuery({
       _id: new UUID(),
-      owner: organization.did,
       name: query.name,
       schema: query.schema,
       variables: query.variables,
@@ -56,7 +52,7 @@ describe("query.test.ts", () => {
   });
 
   it("can delete a query", async () => {
-    const _response = await admin.deleteQuery({
+    const _response = await organization.deleteQuery({
       id: query.id,
     });
 

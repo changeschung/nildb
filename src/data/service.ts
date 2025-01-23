@@ -2,22 +2,18 @@ import { Effect as E, pipe } from "effect";
 import { UUID } from "mongodb";
 import { type DataValidationError, ServiceError } from "#/common/app-error";
 import { validateData } from "#/common/validator";
+import type { Context } from "#/env";
+import * as SchemasRepository from "#/schemas/repository";
 import type {
   DeleteDataRequest,
   PartialDataDocumentDto,
   ReadDataRequest,
   UpdateDataRequest,
-} from "#/data/controllers";
-import {
-  type DataDocument,
-  DataRepository,
-  type UpdateResult,
-  type UploadResult,
-} from "#/data/repository";
-import type { Context } from "#/env";
-import { SchemasRepository } from "#/schemas/repository";
+} from "./controllers";
+import type { DataDocument, UpdateResult, UploadResult } from "./repository";
+import * as DataRepository from "./repository";
 
-function createRecords(
+export function createRecords(
   ctx: Context,
   schemaId: UUID,
   data: Record<string, unknown>[],
@@ -46,7 +42,7 @@ function createRecords(
   );
 }
 
-function updateRecords(
+export function updateRecords(
   ctx: Context,
   request: UpdateDataRequest,
 ): E.Effect<UpdateResult, ServiceError> {
@@ -64,7 +60,7 @@ function updateRecords(
   );
 }
 
-function readRecords(
+export function readRecords(
   ctx: Context,
   request: ReadDataRequest,
 ): E.Effect<DataDocument[], ServiceError> {
@@ -115,7 +111,7 @@ function readRecords(
   );
 }
 
-function deleteRecords(
+export function deleteRecords(
   ctx: Context,
   request: DeleteDataRequest,
 ): E.Effect<number, ServiceError> {
@@ -128,7 +124,7 @@ function deleteRecords(
   );
 }
 
-function flushCollection(
+export function flushCollection(
   ctx: Context,
   schema: UUID,
 ): E.Effect<number, ServiceError> {
@@ -141,7 +137,7 @@ function flushCollection(
   );
 }
 
-function tailData(
+export function tailData(
   ctx: Context,
   schema: UUID,
 ): E.Effect<DataDocument[], ServiceError> {
@@ -153,12 +149,3 @@ function tailData(
     }),
   );
 }
-
-export const DataService = {
-  createRecords,
-  deleteRecords,
-  flushCollection,
-  readRecords,
-  tailData,
-  updateRecords,
-};

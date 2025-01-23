@@ -1,9 +1,10 @@
 import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
+import { StatusCodes } from "http-status-codes";
 import type { EmptyObject } from "type-fest";
 import { z } from "zod";
 import type { OrganizationAccountDocument } from "#/accounts/repository";
-import { AccountService } from "#/accounts/service";
+import * as AccountService from "#/accounts/service";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import { NilDid } from "#/common/nil-did";
 import { parseUserData } from "#/common/zod-utils";
@@ -13,7 +14,7 @@ import { isRoleAllowed } from "#/middleware/auth";
 export type GetAccountRequest = EmptyObject;
 export type GetAccountResponse = ApiResponse<OrganizationAccountDocument>;
 
-const get: RequestHandler<
+export const get: RequestHandler<
   EmptyObject,
   GetAccountResponse,
   GetAccountRequest
@@ -21,7 +22,7 @@ const get: RequestHandler<
   const { ctx, account } = req;
 
   if (!isRoleAllowed(req, ["admin", "organization"])) {
-    res.sendStatus(401);
+    res.sendStatus(StatusCodes.UNAUTHORIZED);
     return;
   }
 
@@ -40,18 +41,26 @@ export const RegisterAccountRequest = z.object({
 export type RegisterAccountRequest = z.infer<typeof RegisterAccountRequest>;
 export type RegisterAccountResponse = ApiResponse<NilDid>;
 
-const register: RequestHandler<
+export const register: RequestHandler<
   EmptyObject,
   RegisterAccountResponse,
   RegisterAccountRequest
 > = async (req, res) => {
   const { ctx, body } = req;
 
+  if (req.account?._type) {
+    res.status(400).json({
+      ts: new Date(),
+      errors: ["Use /admin/* endpoints for account management"],
+    });
+    return;
+  }
+
   await pipe(
     parseUserData<RegisterAccountRequest>(() =>
       RegisterAccountRequest.parse(body),
     ),
-    E.flatMap((payload) => AccountService.register(ctx, payload)),
+    E.flatMap((payload) => AccountService.createAccount(ctx, payload)),
     foldToApiResponse(req, res),
     E.runPromise,
   );
@@ -63,7 +72,7 @@ export const RemoveAccountRequest = z.object({
 export type RemoveAccountRequest = z.infer<typeof RemoveAccountRequest>;
 export type RemoveAccountResponse = ApiResponse<string>;
 
-const remove: RequestHandler<
+export const remove: RequestHandler<
   EmptyObject,
   RemoveAccountResponse,
   RemoveAccountRequest
@@ -71,7 +80,7 @@ const remove: RequestHandler<
   const { ctx, body } = req;
 
   if (!isRoleAllowed(req, ["root", "admin"])) {
-    res.sendStatus(401);
+    res.sendStatus(StatusCodes.UNAUTHORIZED);
     return;
   }
 
@@ -81,10 +90,4 @@ const remove: RequestHandler<
     foldToApiResponse(req, res),
     E.runPromise,
   );
-};
-
-export const AccountController = {
-  get,
-  register,
-  remove,
 };

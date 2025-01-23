@@ -1,10 +1,14 @@
 import { Router } from "express";
+import { StatusCodes } from "http-status-codes";
 import { isRoleAllowed } from "#/middleware/auth";
-import { AdminController } from "./controllers";
+import * as AdminController from "./controllers";
 
 export const AdminEndpointV1 = {
   Base: "/api/v1/admin",
-  Accounts: "/api/v1/admin/accounts",
+  Accounts: {
+    Base: "/api/v1/admin/accounts",
+    Subscriptions: "/api/v1/admin/accounts/subscription",
+  },
   Data: {
     Delete: "/api/v1/admin/data/delete",
     Flush: "/api/v1/admin/data/flush",
@@ -27,17 +31,19 @@ export function buildAdminRouter(): Router {
 
   router.use(AdminEndpointV1.Base, (req, res, next): void => {
     if (!isRoleAllowed(req, ["admin", "root"])) {
-      res.sendStatus(401);
+      res.sendStatus(StatusCodes.UNAUTHORIZED);
       return;
     }
     next();
   });
 
-  router.get(AdminEndpointV1.Accounts, AdminController.listAccounts);
-  router.post(AdminEndpointV1.Accounts, AdminController.createAdminAccount);
-  router.delete(
-    `${AdminEndpointV1.Accounts}/:accountDid`,
-    AdminController.removeAccount,
+  router.get(AdminEndpointV1.Accounts.Base, AdminController.listAccounts);
+  router.post(AdminEndpointV1.Accounts.Base, AdminController.createAccount);
+  router.delete(AdminEndpointV1.Accounts.Base, AdminController.deleteAccount);
+
+  router.post(
+    AdminEndpointV1.Accounts.Subscriptions,
+    AdminController.setSubscriptionState,
   );
 
   router.post(AdminEndpointV1.Data.Delete, AdminController.deleteData);

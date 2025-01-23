@@ -1,6 +1,6 @@
 import type { Test } from "supertest";
 import type TestAgent from "supertest/lib/agent";
-import type { CreateAdminAccountRequest } from "#/admin/controllers";
+import type { CreateAccountRequest } from "#/admin/controllers";
 import { AdminEndpointV1 } from "#/admin/routes";
 import { type TestClientOptions, checkResponse } from "./test-org-user-client";
 
@@ -24,16 +24,16 @@ export class TestRootUserClient {
     return this._options.identity.createJwt({ aud });
   }
 
-  async createAdminAccount(
-    body: CreateAdminAccountRequest,
+  async createAccount(
+    body: CreateAccountRequest,
     expectSuccess = true,
   ): Promise<Test> {
     const token = await this.jwt();
     const response = await this.request
-      .post(AdminEndpointV1.Accounts)
+      .post(AdminEndpointV1.Accounts.Base)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
 
-    return checkResponse(expectSuccess, response, "createAdminAccount");
+    return checkResponse(expectSuccess, response, "createAccount");
   }
 }

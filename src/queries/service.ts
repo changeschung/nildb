@@ -7,16 +7,13 @@ import { DataValidationError, ServiceError } from "#/common/app-error";
 import type { NilDid } from "#/common/nil-did";
 import { validateData } from "#/common/validator";
 import { flattenZodError } from "#/common/zod-utils";
-import { DataRepository } from "#/data/repository";
+import * as DataRepository from "#/data/repository";
 import type { Context } from "#/env";
 import { OrganizationRepository } from "#/organizations/repository";
-import type { ExecuteQueryRequest } from "#/queries/controllers";
-import pipelineSchema from "#/queries/mongodb_pipeline.json";
-import {
-  QueriesRepository,
-  type QueryArrayVariable,
-  type QueryDocument,
-} from "#/queries/repository";
+import type { ExecuteQueryRequest } from "./controllers";
+import pipelineSchema from "./mongodb_pipeline.json";
+import type { QueryArrayVariable, QueryDocument } from "./repository";
+import * as QueriesRepository from "./repository";
 
 export function addQuery(
   ctx: Context,
@@ -45,7 +42,7 @@ export function addQuery(
   );
 }
 
-function executeQuery(
+export function executeQuery(
   ctx: Context,
   request: ExecuteQueryRequest,
 ): E.Effect<JsonValue, DataValidationError | ServiceError> {
@@ -72,7 +69,7 @@ function executeQuery(
   );
 }
 
-function findQueries(
+export function findQueries(
   ctx: Context,
   owner: NilDid,
 ): E.Effect<QueryDocument[], ServiceError> {
@@ -87,7 +84,10 @@ function findQueries(
   );
 }
 
-function removeQuery(ctx: Context, _id: UUID): E.Effect<boolean, ServiceError> {
+export function removeQuery(
+  ctx: Context,
+  _id: UUID,
+): E.Effect<boolean, ServiceError> {
   return pipe(
     QueriesRepository.findOneAndDelete(ctx, { _id }),
     E.flatMap((document) => {
@@ -101,13 +101,6 @@ function removeQuery(ctx: Context, _id: UUID): E.Effect<boolean, ServiceError> {
     }),
   );
 }
-
-export const QueriesService = {
-  addQuery,
-  executeQuery,
-  findQueries,
-  removeQuery,
-};
 
 export type QueryPrimitive = string | number | boolean | Date;
 

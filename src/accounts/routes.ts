@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { AccountController } from "./controllers";
+import * as AccountController from "./controllers";
 
 export const AccountsEndpointV1 = {
   Base: "/api/v1/accounts",

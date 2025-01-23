@@ -7,7 +7,7 @@ import { CollectionName } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
 import type { Context } from "#/env";
 
-function addSchema(
+export function addSchema(
   ctx: Context,
   owner: NilDid,
   schemaId: UUID,
@@ -33,7 +33,7 @@ function addSchema(
   );
 }
 
-function removeSchema(
+export function removeSchema(
   ctx: Context,
   orgId: NilDid,
   schemaId: UUID,

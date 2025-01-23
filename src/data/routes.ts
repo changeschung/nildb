@@ -1,9 +1,10 @@
 import { Router } from "express";
-import { AdminEndpointV1 } from "#/admin/routes";
-import { DataController } from "#/data/controllers";
+import { StatusCodes } from "http-status-codes";
 import { isRoleAllowed } from "#/middleware/auth";
+import * as DataController from "./controllers";
 
 export const DataEndpointV1 = {
+  Base: "/api/v1/data",
   Upload: "/api/v1/data/create",
   Read: "/api/v1/data/read",
   Update: "/api/v1/data/update",
@@ -15,9 +16,9 @@ export const DataEndpointV1 = {
 export function buildDataRouter(): Router {
   const router = Router();
 
-  router.use(AdminEndpointV1.Base, (req, res, next): void => {
+  router.use(DataEndpointV1.Base, (req, res, next): void => {
     if (!isRoleAllowed(req, ["organization"])) {
-      res.sendStatus(401);
+      res.sendStatus(StatusCodes.UNAUTHORIZED);
       return;
     }
     next();

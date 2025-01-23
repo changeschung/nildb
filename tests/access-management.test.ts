@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { StatusCodes } from "http-status-codes";
 import supertest from "supertest";
 import type { App } from "supertest/types";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -34,7 +35,7 @@ describe("access-management.test.ts", () => {
     const response = await fixture.users.admin.request.get(
       AccountsEndpointV1.Base,
     );
-    expect(response.status).toBe(401);
+    expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });
 
   it("organizations cannot create admin accounts", async () => {
@@ -46,20 +47,20 @@ describe("access-management.test.ts", () => {
     };
 
     const response = await organization.request
-      .post(AdminEndpointV1.Accounts)
+      .post(AdminEndpointV1.Accounts.Base)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
 
-    expect(response.status).toBe(401);
+    expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });
 
   it("organizations cannot list accounts", async () => {
     const token = await organization.jwt();
     const response = await organization.request
-      .get(AdminEndpointV1.Accounts)
+      .get(AdminEndpointV1.Accounts.Base)
       .set("Authorization", `Bearer ${token}`);
 
-    expect(response.status).toBe(401);
+    expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });
 
   describe("enforces cross org access restrictions", () => {

@@ -2,6 +2,7 @@ import type { Response, Test } from "supertest";
 import type TestAgent from "supertest/lib/agent";
 import type { RegisterAccountRequest } from "#/accounts/controllers";
 import { AccountsEndpointV1 } from "#/accounts/routes";
+import type { DeleteQueryRequest } from "#/admin/controllers";
 import type { Identity } from "#/common/identity";
 import type {
   DeleteDataRequest,
@@ -12,9 +13,13 @@ import type {
   UploadDataRequest,
 } from "#/data/controllers";
 import { DataEndpointV1 } from "#/data/routes";
-import type { ExecuteQueryRequest } from "#/queries/controllers";
+import type {
+  AddQueryRequest,
+  ExecuteQueryRequest,
+} from "#/queries/controllers";
 import { QueriesEndpointV1 } from "#/queries/routes";
-import type {} from "#/schemas/controllers";
+import type { DeleteSchemaRequest } from "#/schemas/controllers";
+import type { AddSchemaRequest } from "#/schemas/controllers";
 import { SchemasEndpointV1 } from "#/schemas/routes";
 import { SystemEndpoint } from "#/system/routes";
 
@@ -84,6 +89,29 @@ export class TestOrganizationUserClient {
     return checkResponse(expectSuccess, response, "listSchemas");
   }
 
+  async addSchema(body: AddSchemaRequest, expectSuccess = true): Promise<Test> {
+    const token = await this.jwt();
+    const response = await this.request
+      .post(SchemasEndpointV1.Base)
+      .set("Authorization", `Bearer ${token}`)
+      .send(body);
+
+    return checkResponse(expectSuccess, response, "addSchema");
+  }
+
+  async deleteSchema(
+    body: DeleteSchemaRequest,
+    expectSuccess = true,
+  ): Promise<Test> {
+    const token = await this.jwt();
+    const response = await this.request
+      .delete(SchemasEndpointV1.Base)
+      .set("Authorization", `Bearer ${token}`)
+      .send(body);
+
+    return checkResponse(expectSuccess, response, "deleteSchema");
+  }
+
   async listQueries(expectSuccess = true): Promise<Test> {
     const token = await this.jwt();
     const response = await this.request
@@ -91,6 +119,29 @@ export class TestOrganizationUserClient {
       .set("Authorization", `Bearer ${token}`);
 
     return checkResponse(expectSuccess, response, "listQueries");
+  }
+
+  async addQuery(body: AddQueryRequest, expectSuccess = true): Promise<Test> {
+    const token = await this.jwt();
+    const response = await this.request
+      .post(QueriesEndpointV1.Base)
+      .set("Authorization", `Bearer ${token}`)
+      .send(body);
+
+    return checkResponse(expectSuccess, response, "addQuery");
+  }
+
+  async deleteQuery(
+    body: DeleteQueryRequest,
+    expectSuccess = true,
+  ): Promise<Test> {
+    const token = await this.jwt();
+    const response = await this.request
+      .delete(QueriesEndpointV1.Base)
+      .set("Authorization", `Bearer ${token}`)
+      .send(body);
+
+    return checkResponse(expectSuccess, response, "deleteQuery");
   }
 
   async executeQuery(
@@ -182,13 +233,11 @@ export function checkResponse(
   response: Response,
   method: string,
 ): Response | never {
-  if (response.body.errors && expectSuccess) {
-    const message = `Unexpected request failure: method=${method}, status=${response.statusCode}`;
-    throw new Error(message, { cause: response });
-  }
+  const isFailure =
+    (response.body.errors || response.statusCode >= 300) && expectSuccess;
 
-  if (response.statusCode >= 400 && expectSuccess) {
-    const message = `Unexpected request failure: method=${method}, status=${response.statusCode}`;
+  if (isFailure) {
+    const message = `Expected success got failure: method=${method}, status=${response.statusCode}`;
     throw new Error(message, { cause: response });
   }
 

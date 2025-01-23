@@ -2,6 +2,7 @@ import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
 import type { EmptyObject, JsonArray, JsonValue } from "type-fest";
 import { z } from "zod";
+import * as AccountService from "#/accounts/service";
 import { type ApiResponse, foldToApiResponse } from "#/common/handler";
 import type { DocumentBase } from "#/common/mongo";
 import { NilDid } from "#/common/nil-did";
@@ -9,35 +10,32 @@ import { Uuid, type UuidDto } from "#/common/types";
 import { parseUserData } from "#/common/zod-utils";
 import { MAX_RECORDS_LENGTH } from "#/data/controllers";
 import type { UpdateResult, UploadResult } from "#/data/repository";
-import { DataService } from "#/data/service";
+import * as DataService from "#/data/service";
 import { PUBLIC_KEY_LENGTH } from "#/env";
-import { QueriesService } from "#/queries/service";
-import { SchemasService } from "#/schemas/service";
+import * as QueriesService from "#/queries/service";
+import * as SchemasService from "#/schemas/service";
 import type { AccountDocument } from "./repository";
-import { AdminService } from "./services";
+import * as AdminService from "./services";
 
-export const CreateAdminAccountRequest = z.object({
+export const CreateAccountRequest = z.object({
   did: NilDid,
   publicKey: z.string().length(PUBLIC_KEY_LENGTH),
   name: z.string(),
+  type: z.enum(["admin", "organization"]),
 });
-export type CreateAdminAccountRequest = z.infer<
-  typeof CreateAdminAccountRequest
->;
-export type CreateAdminAccountResponse = ApiResponse<UuidDto>;
+export type CreateAccountRequest = z.infer<typeof CreateAccountRequest>;
+export type CreateAccountResponse = ApiResponse<UuidDto>;
 
-const createAdminAccount: RequestHandler<
+export const createAccount: RequestHandler<
   EmptyObject,
-  CreateAdminAccountResponse,
-  CreateAdminAccountRequest
+  CreateAccountResponse,
+  CreateAccountRequest
 > = async (req, res) => {
   const { ctx, body } = req;
 
   await pipe(
-    parseUserData<CreateAdminAccountRequest>(() =>
-      CreateAdminAccountRequest.parse(body),
-    ),
-    E.flatMap((payload) => AdminService.createAdminAccount(ctx, payload)),
+    parseUserData<CreateAccountRequest>(() => CreateAccountRequest.parse(body)),
+    E.flatMap((payload) => AccountService.createAccount(ctx, payload)),
     E.map((id) => id.toString() as UuidDto),
     foldToApiResponse(req, res),
     E.runPromise,
@@ -46,10 +44,10 @@ const createAdminAccount: RequestHandler<
 
 export type ListAccountsResponse = ApiResponse<AccountDocument[]>;
 
-const listAccounts: RequestHandler<EmptyObject, ListAccountsResponse> = async (
-  req,
-  res,
-) => {
+export const listAccounts: RequestHandler<
+  EmptyObject,
+  ListAccountsResponse
+> = async (req, res) => {
   const { ctx } = req;
 
   await pipe(
@@ -59,20 +57,52 @@ const listAccounts: RequestHandler<EmptyObject, ListAccountsResponse> = async (
   );
 };
 
-export type RemoveAccountRequestParams = { accountDid: NilDid };
-export type RemoveAccountResponse = ApiResponse<NilDid>;
+export const DeleteAccountRequest = z.object({
+  id: NilDid,
+});
+export type DeleteAccountRequest = z.infer<typeof DeleteAccountRequest>;
+export type DeleteAccountResponse = ApiResponse<NilDid>;
 
-const removeAccount: RequestHandler<
-  RemoveAccountRequestParams,
-  RemoveAccountResponse
+export const deleteAccount: RequestHandler<
+  EmptyObject,
+  DeleteAccountRequest,
+  DeleteAccountResponse
 > = async (req, res) => {
   const { ctx, body } = req;
 
   await pipe(
-    parseUserData<NilDid>(() => NilDid.parse(body)),
-    E.flatMap((id) => {
-      return AdminService.removeAccount(ctx, id);
+    parseUserData<DeleteAccountRequest>(() => DeleteAccountRequest.parse(body)),
+    E.flatMap((payload) => {
+      return AdminService.deleteAccount(ctx, payload.id);
     }),
+    foldToApiResponse(req, res),
+    E.runPromise,
+  );
+};
+
+export const SetAccountSubscriptionStateRequest = z.object({
+  ids: z.array(NilDid).nonempty(),
+  active: z.boolean(),
+});
+export type SetAccountSubscriptionStateRequest = z.infer<
+  typeof SetAccountSubscriptionStateRequest
+>;
+export type SetAccountSubscriptionStateResponse = ApiResponse<NilDid>;
+
+export const setSubscriptionState: RequestHandler<
+  EmptyObject,
+  SetAccountSubscriptionStateRequest,
+  SetAccountSubscriptionStateResponse
+> = async (req, res) => {
+  const { ctx, body } = req;
+
+  await pipe(
+    parseUserData<SetAccountSubscriptionStateRequest>(() =>
+      SetAccountSubscriptionStateRequest.parse(body),
+    ),
+    E.flatMap((payload) =>
+      AccountService.setSubscriptionState(ctx, payload.ids, payload.active),
+    ),
     foldToApiResponse(req, res),
     E.runPromise,
   );
@@ -89,7 +119,7 @@ export const DeleteDataRequest = z.object({
 export type DeleteDataRequest = z.infer<typeof DeleteDataRequest>;
 export type DeleteDataResponse = ApiResponse<number>;
 
-const deleteData: RequestHandler<
+export const deleteData: RequestHandler<
   EmptyObject,
   DeleteDataResponse,
   DeleteDataRequest
@@ -110,7 +140,7 @@ export const FlushDataRequest = z.object({
 export type FlushDataRequest = z.infer<typeof FlushDataRequest>;
 export type FlushDataResponse = ApiResponse<number>;
 
-const flushData: RequestHandler<
+export const flushData: RequestHandler<
   EmptyObject,
   FlushDataResponse,
   FlushDataRequest
@@ -132,7 +162,7 @@ export const ReadDataRequest = z.object({
 export type ReadDataRequest = z.infer<typeof ReadDataRequest>;
 export type ReadDataResponse = ApiResponse<DocumentBase[]>;
 
-const readData: RequestHandler<
+export const readData: RequestHandler<
   EmptyObject,
   ReadDataResponse,
   ReadDataRequest
@@ -153,7 +183,7 @@ export const TailDataRequest = z.object({
 export type TailDataRequest = z.infer<typeof TailDataRequest>;
 export type TailDataResponse = ApiResponse<JsonArray>;
 
-const tailData: RequestHandler<
+export const tailData: RequestHandler<
   EmptyObject,
   TailDataResponse,
   TailDataRequest
@@ -184,7 +214,7 @@ export type PartialDataDocumentDto = UploadDataRequest["data"] & {
 };
 export type UploadDataResponse = ApiResponse<UploadResult>;
 
-const uploadData: RequestHandler<
+export const uploadData: RequestHandler<
   EmptyObject,
   UploadDataResponse,
   UploadDataRequest
@@ -209,7 +239,7 @@ export const UpdateDataRequest = z.object({
 export type UpdateDataRequest = z.infer<typeof UpdateDataRequest>;
 export type UpdateDataResponse = ApiResponse<UpdateResult>;
 
-const updateData: RequestHandler<
+export const updateData: RequestHandler<
   EmptyObject,
   UpdateDataResponse,
   UpdateDataRequest
@@ -251,7 +281,7 @@ export const AddQueryRequest = z.object({
 export type AddQueryRequest = z.infer<typeof AddQueryRequest>;
 export type AddQueryResponse = ApiResponse<UuidDto>;
 
-const addQuery: RequestHandler<
+export const addQuery: RequestHandler<
   EmptyObject,
   AddQueryResponse,
   AddQueryRequest
@@ -272,7 +302,7 @@ export const DeleteQueryRequest = z.object({
 export type DeleteQueryRequest = z.infer<typeof DeleteQueryRequest>;
 export type DeleteQueryResponse = ApiResponse<boolean>;
 
-const deleteQuery: RequestHandler<
+export const deleteQuery: RequestHandler<
   EmptyObject,
   DeleteQueryResponse,
   DeleteQueryRequest
@@ -296,7 +326,7 @@ export const ExecuteQueryRequest = z.object({
 export type ExecuteQueryRequest = z.infer<typeof ExecuteQueryRequest>;
 export type ExecuteQueryResponse = ApiResponse<JsonValue>;
 
-const executeQuery: RequestHandler<
+export const executeQuery: RequestHandler<
   EmptyObject,
   ExecuteQueryResponse,
   ExecuteQueryRequest
@@ -323,7 +353,7 @@ export const AddSchemaRequest = z.object({
 export type AddSchemaRequest = z.infer<typeof AddSchemaRequest>;
 export type AddSchemaResponse = ApiResponse<UuidDto>;
 
-const addSchema: RequestHandler<
+export const addSchema: RequestHandler<
   EmptyObject,
   AddSchemaResponse,
   AddSchemaRequest
@@ -344,7 +374,7 @@ export const DeleteSchemaRequest = z.object({
 export type DeleteSchemaRequest = z.infer<typeof DeleteSchemaRequest>;
 export type DeleteSchemaResponse = ApiResponse<UuidDto>;
 
-const deleteSchema: RequestHandler<
+export const deleteSchema: RequestHandler<
   EmptyObject,
   DeleteSchemaResponse,
   DeleteSchemaRequest
@@ -357,23 +387,4 @@ const deleteSchema: RequestHandler<
     foldToApiResponse(req, res),
     E.runPromise,
   );
-};
-
-export const AdminController = {
-  createAdminAccount,
-  listAccounts,
-  removeAccount,
-  deleteData,
-  flushData,
-  readData,
-  tailData,
-  uploadData,
-  updateData,
-
-  addQuery,
-  deleteQuery,
-  executeQuery,
-
-  addSchema,
-  deleteSchema,
 };

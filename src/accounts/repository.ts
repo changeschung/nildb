@@ -14,12 +14,16 @@ export type OrganizationAccountDocument = {
   _updated: Date;
   publicKey: string;
   name: string;
+  subscription: {
+    active: boolean;
+  };
   schemas: UUID[];
   queries: UUID[];
 };
 
-function toOrganizationAccountDocument(
+export function toOrganizationAccountDocument(
   data: RegisterAccountRequest,
+  env: "mainnet" | "testnet",
 ): OrganizationAccountDocument {
   const { did, publicKey, name } = data;
   const now = new Date();
@@ -31,12 +35,16 @@ function toOrganizationAccountDocument(
     _updated: now,
     publicKey,
     name,
+    subscription: {
+      // testnet subscriptions default to active
+      active: env === "testnet",
+    },
     schemas: [],
     queries: [],
   };
 }
 
-function insert(
+export function insert(
   ctx: Context,
   document: OrganizationAccountDocument,
 ): E.Effect<NilDid, RepositoryError> {
@@ -55,7 +63,7 @@ function insert(
   );
 }
 
-function findOne(
+export function findOne(
   ctx: Context,
   filter: StrictFilter<OrganizationAccountDocument>,
 ): E.Effect<OrganizationAccountDocument, RepositoryError> {
@@ -91,7 +99,7 @@ function findOne(
   );
 }
 
-function deleteOneById(
+export function deleteOneById(
   ctx: Context,
   _id: NilDid,
 ): E.Effect<NilDid, RepositoryError> {
@@ -120,9 +128,32 @@ function deleteOneById(
   );
 }
 
-export const AccountRepository = {
-  toOrganizationAccountDocument,
-  deleteOneById,
-  findOne,
-  insert,
-};
+export function setSubscriptionState(
+  ctx: Context,
+  ids: NilDid[],
+  active: boolean,
+): E.Effect<NilDid[], RepositoryError> {
+  const filter: StrictFilter<OrganizationAccountDocument> = {
+    _id: { $in: ids },
+    _type: "organization",
+  };
+
+  return pipe(
+    E.tryPromise(async () => {
+      const collection = ctx.db.primary.collection<OrganizationAccountDocument>(
+        CollectionName.Accounts,
+      );
+      const result = await collection.updateMany(filter, {
+        $set: { "subscription.active": active },
+      });
+      return result.modifiedCount === ids.length ? O.some(ids) : O.none();
+    }),
+    E.tap(() =>
+      E.forEach(ids, (id) => E.sync(() => ctx.cache.accounts.taint(id))),
+    ),
+    succeedOrMapToRepositoryError({
+      name: "AccountRepository.setSubscriptionState",
+      filter,
+    }),
+  );
+}

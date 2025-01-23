@@ -1,7 +1,8 @@
 import { Router } from "express";
+import { StatusCodes } from "http-status-codes";
 import { AdminEndpointV1 } from "#/admin/routes";
 import { isRoleAllowed } from "#/middleware/auth";
-import { SchemasController } from "#/schemas/controllers";
+import * as SchemasController from "#/schemas/controllers";
 
 export const SchemasEndpointV1 = {
   Base: "/api/v1/schemas",
@@ -12,13 +13,15 @@ export function buildSchemasRouter(): Router {
 
   router.use(AdminEndpointV1.Base, (req, res, next): void => {
     if (!isRoleAllowed(req, ["organization"])) {
-      res.sendStatus(401);
+      res.sendStatus(StatusCodes.UNAUTHORIZED);
       return;
     }
     next();
   });
 
   router.get(SchemasEndpointV1.Base, SchemasController.listSchemas);
+  router.post(SchemasEndpointV1.Base, SchemasController.addSchema);
+  router.delete(SchemasEndpointV1.Base, SchemasController.deleteSchema);
 
   return router;
 }

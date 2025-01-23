@@ -1,16 +1,13 @@
 import type { Test } from "supertest";
 import type TestAgent from "supertest/lib/agent";
 import type {
-  RegisterAccountRequest,
-  RemoveAccountRequest,
-} from "#/accounts/controllers";
-import { AccountsEndpointV1 } from "#/accounts/routes";
-import type {
   AddQueryRequest,
   AddSchemaRequest,
-  CreateAdminAccountRequest,
+  CreateAccountRequest,
+  DeleteAccountRequest,
   DeleteQueryRequest,
   DeleteSchemaRequest,
+  SetAccountSubscriptionStateRequest,
 } from "#/admin/controllers";
 import { AdminEndpointV1 } from "#/admin/routes";
 import type { Identity } from "#/common/identity";
@@ -67,43 +64,32 @@ export class TestAdminUserClient {
   async listAccounts(expectSuccess = true): Promise<Test> {
     const token = await this.jwt();
     const response = await this.request
-      .get(AdminEndpointV1.Accounts)
+      .get(AdminEndpointV1.Accounts.Base)
       .set("Authorization", `Bearer ${token}`);
 
     return checkResponse(expectSuccess, response, "listAccounts");
   }
 
-  async createAdminAccount(
-    body: CreateAdminAccountRequest,
+  async createAccount(
+    body: CreateAccountRequest,
     expectSuccess = true,
   ): Promise<Test> {
     const token = await this.jwt();
     const response = await this.request
-      .post(AdminEndpointV1.Accounts)
+      .post(AdminEndpointV1.Accounts.Base)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
 
-    return checkResponse(expectSuccess, response, "createAdminAccount");
-  }
-
-  async registerOrganizationAccount(
-    body: RegisterAccountRequest,
-    expectSuccess = true,
-  ): Promise<Test> {
-    const response = await this.request
-      .post(AccountsEndpointV1.Base)
-      .send(body);
-
-    return checkResponse(expectSuccess, response, "registerAccount");
+    return checkResponse(expectSuccess, response, "createAccount");
   }
 
   async deleteAccount(
-    body: RemoveAccountRequest,
+    body: DeleteAccountRequest,
     expectSuccess = true,
   ): Promise<Test> {
     const token = await this.jwt();
     const response = await this.request
-      .delete(AccountsEndpointV1.Base)
+      .delete(AdminEndpointV1.Accounts.Base)
       .set("Authorization", `Bearer ${token}`)
       .send(body);
 
@@ -237,5 +223,18 @@ export class TestAdminUserClient {
       .send(body);
 
     return checkResponse(expectSuccess, response, "updateData");
+  }
+
+  async setSubscriptionState(
+    body: SetAccountSubscriptionStateRequest,
+    expectSuccess = true,
+  ) {
+    const token = await this.jwt();
+    const response = await this.request
+      .post(AdminEndpointV1.Accounts.Subscriptions)
+      .set("Authorization", `Bearer ${token}`)
+      .send(body);
+
+    return checkResponse(expectSuccess, response, "setSubscriptionState");
   }
 }

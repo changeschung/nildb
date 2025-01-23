@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { SystemController } from "./controllers";
+import * as SystemController from "./controllers";
 
 export const SystemEndpoint = {
   About: "/about",
