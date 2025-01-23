@@ -122,11 +122,6 @@ export async function registerSchemaAndQuery(
       schema: schema.schema,
     });
 
-    if (response.body.errors) {
-      console.error(response);
-      throw response.body;
-    }
-
     const id = new UUID(response.body.data);
     schema.id = id;
     query.schema = id;
@@ -141,10 +136,6 @@ export async function registerSchemaAndQuery(
       variables: query.variables,
       pipeline: query.pipeline,
     });
-
-    if (response.body.errors) {
-      console.error(response.body.errors);
-    }
 
     query.id = new UUID(response.body.data);
   }
