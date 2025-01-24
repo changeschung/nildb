@@ -13,13 +13,16 @@ type CacheValue<V> = {
 };
 
 const DEFAULT_TTL = Temporal.Duration.from({ minutes: 1 });
+// There is a limitation in Duration in taht it does not let you add years directly
+// because of the ambiguity introduced (eg leap years, etc). So we convert 10 years to hours.
+export const CACHE_FOREVER = Temporal.Duration.from({ hours: 87600 });
 
 export class Cache<K, V> {
   private _db = new Map<K, CacheValue<V>>();
   constructor(private ttl = DEFAULT_TTL) {}
 
-  set(key: K, value: V): void {
-    const expires = Temporal.Now.instant().add(this.ttl);
+  set(key: K, value: V, ttl = this.ttl): void {
+    const expires = Temporal.Now.instant().add(ttl);
 
     this._db.set(key, {
       value,
