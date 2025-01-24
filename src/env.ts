@@ -2,7 +2,7 @@ import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
 import { z } from "zod";
 import type { AccountDocument, RootAccountDocument } from "#/admin/repository";
-import { Cache } from "#/common/cache";
+import { CACHE_FOREVER, Cache } from "#/common/cache";
 import { Identity } from "#/common/identity";
 import type { NilDid } from "#/common/nil-did";
 import { createLogger } from "#/middleware/logger";
@@ -69,7 +69,7 @@ export async function createContext(): Promise<Context> {
     _type: "root",
     publicKey: node.root.pk,
   };
-  accounts.set(node.root.did, rootDocument);
+  accounts.set(node.root.did, rootDocument, CACHE_FOREVER);
 
   return {
     config,
