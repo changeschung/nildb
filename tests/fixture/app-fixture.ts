@@ -34,7 +34,7 @@ export async function buildFixture(): Promise<AppFixture> {
   const users = {
     root: new TestRootUserClient({
       request: supertest(app),
-      identity: Identity.fromSk(ctx.config.rootAccountSecretKey),
+      identity: Identity.fromSk(ctx.config.nodeSecretKey),
       node,
     }),
     admin: new TestAdminUserClient({

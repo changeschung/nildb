@@ -6,7 +6,7 @@ import { ServiceError } from "#/common/app-error";
 import { validateSchema } from "#/common/validator";
 import * as DataRepository from "#/data/repository";
 import type { Context } from "#/env";
-import { OrganizationRepository } from "#/organizations/repository";
+import * as OrganizationRepository from "#/organizations/repository";
 import type { SchemaDocument } from "./repository";
 import * as SchemasRepository from "./repository";
 

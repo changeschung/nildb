@@ -59,7 +59,7 @@ export function removeSchema(
   );
 }
 
-function addQuery(
+export function addQuery(
   ctx: Context,
   orgId: NilDid,
   queryId: UUID,
@@ -85,7 +85,7 @@ function addQuery(
   );
 }
 
-function removeQuery(
+export function removeQuery(
   ctx: Context,
   orgId: NilDid,
   queryId: UUID,
@@ -110,10 +110,3 @@ function removeQuery(
     }),
   );
 }
-
-export const OrganizationRepository = {
-  addSchema,
-  addQuery,
-  removeQuery,
-  removeSchema,
-};

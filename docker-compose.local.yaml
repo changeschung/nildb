@@ -15,7 +15,6 @@ services:
       - APP_NODE_SECRET_KEY=6cab2d10ac21886404eca7cbd40f1777071a243177eae464042885b391412b4e
       - APP_NODE_PUBLIC_ENDPOINT=http://localhost:9181
       - APP_PORT=8080
-      - APP_ROOT_USER_SECRET_KEY=f32892327d8f4c5f39c9c73d8f4a6716342d90eb635bfb6e410d68d7a7c0399f
 
   node-ucct-db:
     image: mongo:latest
@@ -38,7 +37,6 @@ services:
       - APP_NODE_SECRET_KEY=05cee0065bdd080a26310bd201e90075b7739aa97253cb35c351e1df1e3ebeec
       - APP_NODE_PUBLIC_ENDPOINT=http://localhost:8081
       - APP_PORT=8080
-      - APP_ROOT_USER_SECRET_KEY=b5ec198d05e4f028b4b6b5e334b13239a15981411534cefa89cc436df6471447
 
   node-cr35-db:
     image: mongo:latest
@@ -61,7 +59,6 @@ services:
       - APP_NODE_SECRET_KEY=1fa6a7620d08b5249f59f13219bd045b2440f512fb80c306d81d78a106a2eb8d
       - APP_NODE_PUBLIC_ENDPOINT=http://localhost:8081
       - APP_PORT=8080
-      - APP_ROOT_USER_SECRET_KEY=15ab6715be5a1c86673e90dfb26115f429b29905bb86de46e538e090824b7813
 
   node-dglk-db:
     image: mongo:latest

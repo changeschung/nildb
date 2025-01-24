@@ -9,7 +9,7 @@ import { validateData } from "#/common/validator";
 import { flattenZodError } from "#/common/zod-utils";
 import * as DataRepository from "#/data/repository";
 import type { Context } from "#/env";
-import { OrganizationRepository } from "#/organizations/repository";
+import * as OrganizationRepository from "#/organizations/repository";
 import type { ExecuteQueryRequest } from "./controllers";
 import pipelineSchema from "./mongodb_pipeline.json";
 import type { QueryArrayVariable, QueryDocument } from "./repository";

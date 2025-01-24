@@ -1,15 +1,19 @@
 openapi: 3.0.0
 info:
   title: nilDB API
-  version: 0.2.2
+  version: 0.4.0
+  description: |
+    Visit [docs.nillion.com](https://docs.nillion.com) and [github.com/NillionNetwork/nildb](https://github.com/NillionNetwork/nildb) to learn more.
 
 servers:
-  - url: https://nildb-a50d.nillion.network
-    description: nildb-a50d
-  - url: https://nildb-dvml.nillion.network
-    description: nildb-dvml
-  - url: https://nildb-guue.nillion.network
-    description: nildb-guue
+  - url: /
+
+tags:
+  - name: Accounts
+  - name: Data
+  - name: Query
+  - name: Schema
+  - name: System
 
 components:
   securitySchemes:
@@ -93,10 +97,10 @@ components:
         _id:
           description: The accounts decentralised identifier (DID)
           type: string
-          example: "did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc"
+          example: 'did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc'
         _type:
           type: string
-          enum: [ "admin", "organization" ]
+          enum: [ 'admin', 'organization' ]
         _created:
           type: string
           format: date-time
@@ -134,7 +138,7 @@ components:
             owner:
               description: The decentralised identifier (DID) of the owning organization
               type: string
-              example: "did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc"
+              example: 'did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc'
             keys:
               description: The schema's keys which must be unique within the associated schema collection (e.g. primary keys)
               type: array
@@ -159,7 +163,7 @@ components:
             owner:
               description: The decentralised identifier (DID) of the owning organization
               type: string
-              example: "did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc"
+              example: 'did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc'
             schema:
               description: The starting schema collection for this query's aggregation pipeline
               type: string
@@ -220,18 +224,23 @@ components:
 paths:
   /api/v1/accounts:
     get:
-      summary: Retrieve an organization's account details
+      description: Retrieve an organization's account details
       security:
-        - jwt: []
+        - jwt: [ ]
       tags:
         - Accounts
       responses:
         '200':
-          description: The organization's account details
+          description: "The organization's account details"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Account'
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Account'
         '401':
           description: Missing or invalid JWT
         '400':
@@ -243,9 +252,9 @@ paths:
 
   /api/v1/schemas:
     get:
-      summary: "List the organization's schemas"
+      description: "List the organization's schemas"
       security:
-        - jwt: []
+        - jwt: [ ]
       tags:
         - Data
       responses:
@@ -272,11 +281,100 @@ paths:
         '401':
           description: Missing or invalid JWT
 
+    post:
+      description: Add a new schema
+      security:
+        - jwt: [ ]
+      tags:
+        - Data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - _id
+                - name
+                - keys
+                - schema
+              properties:
+                _id:
+                  $ref: '#/components/schemas/UUID'
+                name:
+                  type: string
+                  minLength: 1
+                keys:
+                  type: array
+                  items:
+                    type: string
+                schema:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Schema created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UUID'
+        '400':
+          description: Validation or processing errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid JWT
+
+    delete:
+      description: Delete a schema
+      security:
+        - jwt: [ ]
+      tags:
+        - Data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Schema deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UUID'
+        '400':
+          description: Validation or processing errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid JWT
+
   /api/v1/queries:
     get:
-      summary: "List the organization's queries"
+      description: "List the organization's queries"
       security:
-        - jwt: []
+        - jwt: [ ]
       tags:
         - Query
       responses:
@@ -292,7 +390,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: "#/components/schemas/Query"
+                      $ref: '#/components/schemas/Query'
         '400':
           description: Validation or processing errors
           content:
@@ -302,11 +400,65 @@ paths:
         '401':
           description: Missing or invalid JWT
 
-  /api/v1/queries/execute:
     post:
-      summary: "Execute the specified query"
+      description: Add a new quer
       security:
-        - jwt: []
+        - jwt: [ ]
+      tags:
+        - Query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - _id
+                - name
+                - schema
+                - variables
+                - pipeline
+              properties:
+                _id:
+                  $ref: '#/components/schemas/UUID'
+                name:
+                  type: string
+                schema:
+                  $ref: '#/components/schemas/UUID'
+                variables:
+                  type: object
+                  additionalProperties:
+                    $ref: '#/components/schemas/QueryVariable'
+                pipeline:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: true
+      responses:
+        '200':
+          description: Query created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UUID'
+        '400':
+          description: Validation or processing errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid JWT
+
+    delete:
+      description: Delete a query
+      security:
+        - jwt: [ ]
       tags:
         - Query
       requestBody:
@@ -317,18 +469,12 @@ paths:
               type: object
               required:
                 - id
-                - variables
               properties:
                 id:
-                  description: The query uuid to execute
-                  type: string
-                  format: uuid
-                variables:
-                  description: Key value pairs to use as the query's runtime variables
-                  type: object
+                  $ref: '#/components/schemas/UUID'
       responses:
         '200':
-          description: The query execution result
+          description: Query deleted successfully
           content:
             application/json:
               schema:
@@ -337,8 +483,7 @@ paths:
                   - data
                 properties:
                   data:
-                    description: The query execution result
-                    type: object
+                    type: boolean
         '400':
           description: Validation or processing errors
           content:
@@ -347,12 +492,14 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           description: Missing or invalid JWT
+        '403':
+          description: Insufficient permissions or query ownership
 
   /api/v1/data/create:
     post:
-      summary: Upload data to the specified schema collection
+      description: Upload data to the specified schema collection
       security:
-        - jwt: []
+        - jwt: [ ]
       tags:
         - Data
       requestBody:
@@ -390,7 +537,7 @@ paths:
                     description: The uuids from successfully created documents
                     type: array
                     items:
-                      - $ref: '#/components/schemas/UUID'
+                      $ref: '#/components/schemas/UUID'
                   errors:
                     type: array
                     items:
@@ -415,9 +562,9 @@ paths:
 
   /api/v1/data/read:
     post:
-      summary: Retrieve data from the specified schema collection that matches the provided filter
+      description: Retrieve data from the specified schema collection that matches the provided filter
       security:
-        - jwt: []
+        - jwt: [ ]
       tags:
         - Data
       requestBody:
@@ -446,7 +593,7 @@ paths:
                   data:
                     type: array
                     items:
-                      - $ref: '#/components/schemas/DataDocument'
+                      $ref: '#/components/schemas/DataDocument'
         '400':
           description: Validation or processing errors
           content:
@@ -458,9 +605,9 @@ paths:
 
   /api/v1/data/update:
     post:
-      summary: Update documents within a schema collection that match the given filter
+      description: Update documents within a schema collection that match the given filter
       security:
-        - jwt: []
+        - jwt: [ ]
       tags:
         - Data
       requestBody:
@@ -512,9 +659,9 @@ paths:
 
   /api/v1/data/tail:
     post:
-      summary: Retrieve recently added documents from a schema collection
+      description: Retrieve recently added documents from a schema collection
       security:
-        - jwt: []
+        - jwt: [ ]
       tags:
         - Data
       requestBody:
@@ -540,7 +687,7 @@ paths:
                   data:
                     type: array
                     items:
-                      - $ref: '#/components/schemas/DataDocument'
+                      $ref: '#/components/schemas/DataDocument'
         '400':
           description: Validation or processing errors
           content:
@@ -552,9 +699,9 @@ paths:
 
   /api/v1/data/delete:
     post:
-      summary: Delete data records that match a given filter
+      description: Delete data records that match a given filter
       security:
-        - jwt: []
+        - jwt: [ ]
       tags:
         - Data
       requestBody:
@@ -590,9 +737,9 @@ paths:
 
   /api/v1/data/flush:
     post:
-      summary: Remove all documents in a schema collection
+      description: Remove all documents in a schema collection
       security:
-        - jwt: []
+        - jwt: [ ]
       tags:
         - Data
       requestBody:
@@ -631,7 +778,6 @@ paths:
 
   /health:
     get:
-      summary: Check service health status
       description: Returns 200 OK if the service is healthy
       operationId: getHealthStatus
       tags:
@@ -643,11 +789,10 @@ paths:
             text/plain:
               schema:
                 type: string
-                example: "OK"
+                example: 'OK'
 
   /about:
     get:
-      summary: Retrieve node details
       description: Returns information about the node including its DID, public key and build details
       operationId: getNodeDetails
       tags:
@@ -670,7 +815,7 @@ paths:
                     type: string
                     format: date-time
                     description: Timestamp when the node was started
-                    example: "2024-12-16T09:38:04.095Z"
+                    example: '2024-12-16T09:38:04.095Z'
                   build:
                     type: object
                     required:
@@ -682,25 +827,25 @@ paths:
                         type: string
                         format: date-time
                         description: Build timestamp
-                        example: "2024-12-24T23:59:59Z"
+                        example: '2024-12-24T23:59:59Z'
                       commit:
                         type: string
                         description: Git commit hash or identifier
-                        example: "c0401ee26ece3f7155fd788848baf122cdd702ed"
+                        example: c0401ee26ece3f7155fd788848baf122cdd702ed
                       version:
                         type: string
                         description: Node's api version
-                        example: "0.2.2"
+                        example: 0.2.2
                   did:
                     type: string
                     description: Decentralized Identifier (DID) of the node
-                    example: "did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc"
+                    example: 'did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc'
                   publicKey:
                     type: string
                     description: Public key of the node
-                    example: "02d1f198df9a64ffa27c293861bace8c80bd6b1e150e008267f7f94eae9e6c380c"
+                    example: 02d1f198df9a64ffa27c293861bace8c80bd6b1e150e008267f7f94eae9e6c380c
                   url:
                     type: string
                     format: uri
                     description: URL where the node can be reached
-                    example: "http://localhost:8080"
+                    example: 'https://nildb-demo.nillion.network'

@@ -27,7 +27,9 @@ type Routes = {
   method: "GET" | "POST" | "DELETE";
 }[];
 
-export function useAuthMiddleware(ctx: Context): RequestHandler {
+export function isPublicPath(req: Request): boolean {
+  // this is in the function because otherwise there are import resolution
+  // order issues and some values end up as undefined
   const publicPaths: Routes = [
     { path: SystemEndpoint.Health, method: "GET" },
     { path: SystemEndpoint.About, method: "GET" },
@@ -35,14 +37,17 @@ export function useAuthMiddleware(ctx: Context): RequestHandler {
     { path: AccountsEndpointV1.Base, method: "POST" },
   ];
 
+  return publicPaths.some(({ path, method }) => {
+    return method === req.method && req.path.startsWith(path);
+  });
+}
+
+export function useAuthMiddleware(ctx: Context): RequestHandler {
   const resolver = new Resolver({ nil: buildNilMethodResolver(ctx).resolve });
 
   return async (req, res, next) => {
     try {
-      const isPublic = publicPaths.some(({ path, method }) => {
-        return method === req.method && req.path.startsWith(path);
-      });
-      if (isPublic) {
+      if (isPublicPath(req)) {
         next();
         return;
       }
