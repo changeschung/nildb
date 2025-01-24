@@ -65,7 +65,7 @@ export function buildApp(ctx: Context): App {
   app.use(apiRequestsCounter(ctx));
 
   app.use(buildApiDocsRoutes());
-  app.use(express.json({ limit: "17mb" }));
+  app.use(express.json({ limit: "16mb" }));
 
   app.use(buildAdminRouter());
   app.use(buildAccountsRouter());
