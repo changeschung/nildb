@@ -1,7 +1,7 @@
 import type { RequestHandler } from "express";
 import type { OrganizationAccountDocument } from "#/accounts/repository";
-import { AccountsEndpointV1 } from "#/accounts/routes";
 import type { Context } from "#/env";
+import { isPublicPath } from "#/middleware/auth";
 
 export function useSubscriptionCheckMiddleware(_ctx: Context): RequestHandler {
   return async (req, res, next) => {
@@ -12,12 +12,10 @@ export function useSubscriptionCheckMiddleware(_ctx: Context): RequestHandler {
       return next();
     }
 
-    // registration endpoint does not require subscription
-    if (
-      req.path.toLowerCase() === AccountsEndpointV1.Base &&
-      req.method === "POST"
-    ) {
-      return next();
+    // public paths do not require subscription
+    if (isPublicPath(req)) {
+      next();
+      return;
     }
 
     const account = req.account as OrganizationAccountDocument;
