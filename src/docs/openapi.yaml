@@ -1,15 +1,7 @@
 openapi: 3.0.0
 info:
   title: nilDB API
-  version: 0.2.2
-
-servers:
-  - url: https://nildb-a50d.nillion.network
-    description: nildb-a50d
-  - url: https://nildb-dvml.nillion.network
-    description: nildb-dvml
-  - url: https://nildb-guue.nillion.network
-    description: nildb-guue
+  version: 0.4.0
 
 components:
   securitySchemes:
