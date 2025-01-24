@@ -8,6 +8,7 @@
     "dev": "tsx bin/db-migrations.ts up && tsx --watch src/main.ts",
     "start": "tsx bin/db-migrations.ts up && tsx src/main.ts",
     "test": "vitest --run tests/",
+    "lint:openapi": "spectral lint src/docs/openapi.yaml",
     "migrate": "tsx bin/db-migrations.ts",
     "install-hooks": "lefthook install"
   },
@@ -48,6 +49,7 @@
     "@commitlint/config-conventional": "^19.6.0",
     "@commitlint/types": "^19.5.0",
     "@faker-js/faker": "^9.4.0",
+    "@stoplight/spectral-cli": "^6.14.2",
     "@types/compression": "^1.7.5",
     "@types/cors": "^2.8.17",
     "@types/elliptic": "^6.4.18",
