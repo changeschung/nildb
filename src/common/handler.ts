@@ -2,6 +2,7 @@ import { ValidationError } from "ajv";
 import { Effect as E, pipe } from "effect";
 import { UnknownException } from "effect/Cause";
 import type { Request, Response } from "express";
+import { StatusCodes } from "http-status-codes";
 import type { JsonArray } from "type-fest";
 import { ZodError } from "zod";
 import { AppError } from "#/common/app-error";
@@ -40,7 +41,7 @@ export function foldToApiResponse<T>(req: Request, res: Response) {
       E.match({
         onFailure: (error: AppError) => {
           ctx.log.debug("Request failed: %O", error);
-          res.send({
+          res.status(StatusCodes.BAD_REQUEST).send({
             errors: error.reason,
             ts: new Date(),
           });

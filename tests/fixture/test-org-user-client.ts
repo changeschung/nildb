@@ -233,8 +233,7 @@ export function checkResponse(
   response: Response,
   method: string,
 ): Response | never {
-  const isFailure =
-    (response.body.errors || response.statusCode >= 300) && expectSuccess;
+  const isFailure = !response.ok && expectSuccess;
 
   if (isFailure) {
     const message = `Expected success got failure: method=${method}, status=${response.statusCode}`;
