@@ -2,31 +2,10 @@ import { Effect as E, Option as O, pipe } from "effect";
 import type { StrictFilter, UUID } from "mongodb";
 import type { RepositoryError } from "#/common/app-error";
 import { succeedOrMapToRepositoryError } from "#/common/errors";
-import { CollectionName, type DocumentBase } from "#/common/mongo";
+import { CollectionName } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
 import type { Context } from "#/env";
-
-export type QueryVariable = {
-  type: "string" | "number" | "boolean" | "date";
-  description: string;
-};
-
-export type QueryArrayVariable = {
-  type: "array";
-  description: string;
-  items: {
-    type: "string" | "number" | "boolean" | "date";
-  };
-};
-
-export type QueryDocument = DocumentBase & {
-  owner: NilDid;
-  name: string;
-  // the query's starting collection
-  schema: UUID;
-  variables: Record<string, QueryVariable | QueryArrayVariable>;
-  pipeline: Record<string, unknown>[];
-};
+import type { QueryDocument } from "./queries.types";
 
 export function insert(
   ctx: Context,

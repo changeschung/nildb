@@ -1,14 +1,15 @@
 import { Effect as E, pipe } from "effect";
 import type { UUID } from "mongodb";
-import type { OrganizationAccountDocument } from "#/accounts/repository";
-import type { AddSchemaRequest } from "#/admin/controllers";
+import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import { ServiceError } from "#/common/app-error";
+import type { NilDid } from "#/common/nil-did";
 import { validateSchema } from "#/common/validator";
-import * as DataRepository from "#/data/repository";
+import * as DataRepository from "#/data/data.repository";
 import type { Context } from "#/env";
-import * as OrganizationRepository from "#/organizations/repository";
-import type { SchemaDocument } from "./repository";
-import * as SchemasRepository from "./repository";
+import * as OrganizationRepository from "#/organizations/organizations.repository";
+import type { AddSchemaRequest } from "#/schemas/schemas.types";
+import type { SchemaDocument } from "./schemas.repository";
+import * as SchemasRepository from "./schemas.repository";
 
 export function getOrganizationSchemas(
   ctx: Context,
@@ -26,7 +27,7 @@ export function getOrganizationSchemas(
 
 export function addSchema(
   ctx: Context,
-  request: AddSchemaRequest,
+  request: AddSchemaRequest & { owner: NilDid },
 ): E.Effect<UUID, ServiceError> {
   return pipe(
     validateSchema(request.schema),

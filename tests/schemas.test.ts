@@ -1,10 +1,10 @@
 import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
-import type { OrganizationAccountDocument } from "#/accounts/repository";
+import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import { CollectionName } from "#/common/mongo";
 import { createUuidDto } from "#/common/types";
-import type { UploadResult } from "#/data/repository";
-import type { SchemaDocument } from "#/schemas/repository";
+import type { UploadResult } from "#/data/data.repository";
+import type { SchemaDocument } from "#/schemas/schemas.repository";
 import schemaJson from "./data/wallet.schema.json";
 import {
   type AppFixture,

@@ -1,9 +1,9 @@
 import { UUID } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
-import type { OrganizationAccountDocument } from "#/accounts/repository";
+import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import { CollectionName } from "#/common/mongo";
 import type { Context } from "#/env";
-import type { SchemaDocument } from "#/schemas/repository";
+import type { SchemaDocument } from "#/schemas/schemas.repository";
 import queryJson from "./data/simple.query.json";
 import {
   type AppFixture,

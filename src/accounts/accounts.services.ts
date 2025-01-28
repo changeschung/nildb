@@ -1,13 +1,15 @@
 import { Effect as E, pipe } from "effect";
-import type { RegisterAccountRequest } from "#/accounts/controllers";
-import type { CreateAccountRequest } from "#/admin/controllers";
-import * as AdminAccountRepository from "#/admin/repository";
+import * as AdminAccountRepository from "#/admin/admin.repository";
+import type { AdminCreateAccountRequest } from "#/admin/admin.types";
 import { ServiceError } from "#/common/app-error";
 import { Identity } from "#/common/identity";
 import type { NilDid } from "#/common/nil-did";
 import type { Context } from "#/env";
-import type { OrganizationAccountDocument } from "./repository";
-import * as AccountRepository from "./repository";
+import * as AccountRepository from "./accounts.repository";
+import type {
+  OrganizationAccountDocument,
+  RegisterAccountRequest,
+} from "./accounts.types";
 
 export function find(
   ctx: Context,
@@ -33,7 +35,7 @@ export function find(
 
 export function createAccount(
   ctx: Context,
-  data: RegisterAccountRequest | CreateAccountRequest,
+  data: RegisterAccountRequest | AdminCreateAccountRequest,
 ): E.Effect<NilDid, ServiceError> {
   return pipe(
     E.succeed(data),

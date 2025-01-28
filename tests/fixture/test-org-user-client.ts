@@ -1,9 +1,9 @@
 import type { Response, Test } from "supertest";
 import type TestAgent from "supertest/lib/agent";
-import type { RegisterAccountRequest } from "#/accounts/controllers";
-import { AccountsEndpointV1 } from "#/accounts/routes";
-import type { DeleteQueryRequest } from "#/admin/controllers";
+import { AccountsEndpointV1 } from "#/accounts/accounts.router";
+import type { RegisterAccountRequest } from "#/accounts/accounts.types";
 import type { Identity } from "#/common/identity";
+import { DataEndpointV1 } from "#/data/data.router";
 import type {
   DeleteDataRequest,
   FlushDataRequest,
@@ -11,17 +11,17 @@ import type {
   TailDataRequest,
   UpdateDataRequest,
   UploadDataRequest,
-} from "#/data/controllers";
-import { DataEndpointV1 } from "#/data/routes";
+} from "#/data/data.types";
+import { QueriesEndpointV1 } from "#/queries/queries.router";
 import type {
   AddQueryRequest,
+  DeleteQueryRequest,
   ExecuteQueryRequest,
-} from "#/queries/controllers";
-import { QueriesEndpointV1 } from "#/queries/routes";
-import type { DeleteSchemaRequest } from "#/schemas/controllers";
-import type { AddSchemaRequest } from "#/schemas/controllers";
-import { SchemasEndpointV1 } from "#/schemas/routes";
-import { SystemEndpoint } from "#/system/routes";
+} from "#/queries/queries.types";
+import type { DeleteSchemaRequest } from "#/schemas/schemas.controllers";
+import { SchemasEndpointV1 } from "#/schemas/schemas.router";
+import type { AddSchemaRequest } from "#/schemas/schemas.types";
+import { SystemEndpoint } from "#/system/system.router";
 
 export type TestClientOptions = {
   request: TestAgent;

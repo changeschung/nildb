@@ -1,15 +1,13 @@
 import type { Test } from "supertest";
 import type TestAgent from "supertest/lib/agent";
+import { AdminEndpointV1 } from "#/admin/admin.router";
 import type {
-  AddQueryRequest,
-  AddSchemaRequest,
-  CreateAccountRequest,
-  DeleteAccountRequest,
-  DeleteQueryRequest,
-  DeleteSchemaRequest,
-  SetAccountSubscriptionStateRequest,
-} from "#/admin/controllers";
-import { AdminEndpointV1 } from "#/admin/routes";
+  AdminAddQueryRequest,
+  AdminAddSchemaRequest,
+  AdminCreateAccountRequest,
+  AdminDeleteAccountRequest,
+  AdminSetSubscriptionStateRequest,
+} from "#/admin/admin.types";
 import type { Identity } from "#/common/identity";
 import type {
   DeleteDataRequest,
@@ -18,10 +16,13 @@ import type {
   TailDataRequest,
   UpdateDataRequest,
   UploadDataRequest,
-} from "#/data/controllers";
-import type { ExecuteQueryRequest } from "#/queries/controllers";
-import type {} from "#/schemas/controllers";
-import { SystemEndpoint } from "#/system/routes";
+} from "#/data/data.types";
+import type {
+  DeleteQueryRequest,
+  ExecuteQueryRequest,
+} from "#/queries/queries.types";
+import type { DeleteSchemaRequest } from "#/schemas/schemas.controllers";
+import { SystemEndpoint } from "#/system/system.router";
 import { checkResponse } from "./test-org-user-client";
 
 export type TestClientOptions = {
@@ -71,7 +72,7 @@ export class TestAdminUserClient {
   }
 
   async createAccount(
-    body: CreateAccountRequest,
+    body: AdminCreateAccountRequest,
     expectSuccess = true,
   ): Promise<Test> {
     const token = await this.jwt();
@@ -84,7 +85,7 @@ export class TestAdminUserClient {
   }
 
   async deleteAccount(
-    body: DeleteAccountRequest,
+    body: AdminDeleteAccountRequest,
     expectSuccess = true,
   ): Promise<Test> {
     const token = await this.jwt();
@@ -96,7 +97,10 @@ export class TestAdminUserClient {
     return checkResponse(expectSuccess, response, "deleteAccount");
   }
 
-  async addSchema(body: AddSchemaRequest, expectSuccess = true): Promise<Test> {
+  async addSchema(
+    body: AdminAddSchemaRequest,
+    expectSuccess = true,
+  ): Promise<Test> {
     const token = await this.jwt();
     const response = await this.request
       .post(AdminEndpointV1.Schemas.Base)
@@ -119,7 +123,10 @@ export class TestAdminUserClient {
     return checkResponse(expectSuccess, response, "deleteSchema");
   }
 
-  async addQuery(body: AddQueryRequest, expectSuccess = true): Promise<Test> {
+  async addQuery(
+    body: AdminAddQueryRequest,
+    expectSuccess = true,
+  ): Promise<Test> {
     const token = await this.jwt();
     const response = await this.request
       .post(AdminEndpointV1.Queries.Base)
@@ -226,7 +233,7 @@ export class TestAdminUserClient {
   }
 
   async setSubscriptionState(
-    body: SetAccountSubscriptionStateRequest,
+    body: AdminSetSubscriptionStateRequest,
     expectSuccess = true,
   ) {
     const token = await this.jwt();

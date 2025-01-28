@@ -2,8 +2,8 @@ import { Effect as E, pipe } from "effect";
 import { ServiceError } from "#/common/app-error";
 import type { NilDid } from "#/common/nil-did";
 import type { Context } from "#/env";
-import type { AccountDocument } from "./repository";
-import * as AdminAccountRepository from "./repository";
+import * as AdminAccountRepository from "./admin.repository";
+import type { AccountDocument } from "./admin.types";
 
 export function listAllAccounts(
   ctx: Context,

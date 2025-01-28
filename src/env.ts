@@ -1,11 +1,11 @@
 import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
 import { z } from "zod";
-import type { AccountDocument, RootAccountDocument } from "#/admin/repository";
+import type { AccountDocument, RootAccountDocument } from "#/admin/admin.types";
 import { CACHE_FOREVER, Cache } from "#/common/cache";
 import { Identity } from "#/common/identity";
 import type { NilDid } from "#/common/nil-did";
-import { createLogger } from "#/middleware/logger";
+import { createLogger } from "#/middleware/logger.middleware";
 import { initAndCreateDbClients } from "./common/mongo";
 
 export const PRIVATE_KEY_LENGTH = 64;

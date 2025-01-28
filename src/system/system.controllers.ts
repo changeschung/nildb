@@ -1,8 +1,8 @@
 import type { Request, RequestHandler, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import type { EmptyObject } from "type-fest";
-import type { AboutNode } from "./service";
-import * as SystemService from "./service";
+import type { AboutNode } from "./system.services";
+import * as SystemService from "./system.services";
 
 type AboutNodeControllerResponse = AboutNode;
 

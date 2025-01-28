@@ -3,15 +3,19 @@ import { UUID } from "mongodb";
 import { type DataValidationError, ServiceError } from "#/common/app-error";
 import { validateData } from "#/common/validator";
 import type { Context } from "#/env";
-import * as SchemasRepository from "#/schemas/repository";
+import * as SchemasRepository from "#/schemas/schemas.repository";
+import type {
+  DataDocument,
+  UpdateResult,
+  UploadResult,
+} from "./data.repository";
+import * as DataRepository from "./data.repository";
 import type {
   DeleteDataRequest,
   PartialDataDocumentDto,
   ReadDataRequest,
   UpdateDataRequest,
-} from "./controllers";
-import type { DataDocument, UpdateResult, UploadResult } from "./repository";
-import * as DataRepository from "./repository";
+} from "./data.types";
 
 export function createRecords(
   ctx: Context,

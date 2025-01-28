@@ -1,37 +1,18 @@
 import { Effect as E, Option as O, pipe } from "effect";
 import type { StrictFilter } from "mongodb";
-import type { OrganizationAccountDocument } from "#/accounts/repository";
 import type { RepositoryError } from "#/common/app-error";
 import { succeedOrMapToRepositoryError } from "#/common/errors";
 import { CollectionName } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
 import type { Context } from "#/env";
-import type { CreateAccountRequest } from "./controllers";
-
-export type AccountDocument =
-  | RootAccountDocument
-  | AdminAccountDocument
-  | OrganizationAccountDocument;
-
-export type AccountType = "root" | "admin" | "organization";
-
-export type RootAccountDocument = {
-  _id: NilDid;
-  _type: "root";
-  publicKey: string;
-};
-
-export type AdminAccountDocument = {
-  _id: NilDid;
-  _type: "admin";
-  _created: Date;
-  _updated: Date;
-  publicKey: string;
-  name: string;
-};
+import type {
+  AccountDocument,
+  AdminAccountDocument,
+  AdminCreateAccountRequest,
+} from "./admin.types";
 
 export function toAdminAccountDocument(
-  data: CreateAccountRequest,
+  data: AdminCreateAccountRequest,
 ): AdminAccountDocument {
   const { did, publicKey, name } = data;
   const now = new Date();

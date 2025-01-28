@@ -2,22 +2,21 @@ import { Effect as E, pipe } from "effect";
 import type { Document, UUID } from "mongodb";
 import type { JsonObject, JsonValue } from "type-fest";
 import { z } from "zod";
-import type { AddQueryRequest } from "#/admin/controllers";
 import { DataValidationError, ServiceError } from "#/common/app-error";
 import type { NilDid } from "#/common/nil-did";
 import { validateData } from "#/common/validator";
 import { flattenZodError } from "#/common/zod-utils";
-import * as DataRepository from "#/data/repository";
+import * as DataRepository from "#/data/data.repository";
 import type { Context } from "#/env";
-import * as OrganizationRepository from "#/organizations/repository";
-import type { ExecuteQueryRequest } from "./controllers";
+import * as OrganizationRepository from "#/organizations/organizations.repository";
 import pipelineSchema from "./mongodb_pipeline.json";
-import type { QueryArrayVariable, QueryDocument } from "./repository";
-import * as QueriesRepository from "./repository";
+import * as QueriesRepository from "./queries.repository";
+import type { AddQueryRequest, ExecuteQueryRequest } from "./queries.types";
+import type { QueryArrayVariable, QueryDocument } from "./queries.types";
 
 export function addQuery(
   ctx: Context,
-  request: AddQueryRequest,
+  request: AddQueryRequest & { owner: NilDid },
 ): E.Effect<UUID, ServiceError> {
   return pipe(
     validateData(pipelineSchema, request.pipeline),

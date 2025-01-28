@@ -1,6 +1,6 @@
 import { Effect as E, Option as O, pipe } from "effect";
 import { Temporal } from "temporal-polyfill";
-import type { AccountDocument } from "#/admin/repository";
+import type { AccountDocument } from "#/admin/admin.types";
 import type { RepositoryError } from "#/common/app-error";
 import { succeedOrMapToRepositoryError } from "#/common/errors";
 import { CollectionName } from "#/common/mongo";
@@ -13,7 +13,7 @@ type CacheValue<V> = {
 };
 
 const DEFAULT_TTL = Temporal.Duration.from({ minutes: 1 });
-// There is a limitation in Duration in taht it does not let you add years directly
+// There is a limitation in Duration in that it does not let you add years directly
 // because of the ambiguity introduced (eg leap years, etc). So we convert 10 years to hours.
 export const CACHE_FOREVER = Temporal.Duration.from({ hours: 87600 });
 

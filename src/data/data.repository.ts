@@ -10,10 +10,10 @@ import type { RepositoryError } from "#/common/app-error";
 import { succeedOrMapToRepositoryError } from "#/common/errors";
 import type { DocumentBase } from "#/common/mongo";
 import type { UuidDto } from "#/common/types";
-import type { PartialDataDocumentDto } from "#/data/controllers";
 import type { Context } from "#/env";
-import type { QueryDocument } from "#/queries/repository";
-import type { SchemaDocument } from "#/schemas/repository";
+import type { QueryDocument } from "#/queries/queries.types";
+import type { SchemaDocument } from "#/schemas/schemas.repository";
+import type { PartialDataDocumentDto } from "./data.types";
 
 export function createCollection(
   ctx: Context,

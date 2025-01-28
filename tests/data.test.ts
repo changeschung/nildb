@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { createUuidDto } from "#/common/types";
-import type { DataDocument, UploadResult } from "#/data/repository";
+import type { DataDocument, UploadResult } from "#/data/data.repository";
 import type { Context } from "#/env";
 import queryJson from "./data/wallet.query.json";
 import schemaJson from "./data/wallet.schema.json";

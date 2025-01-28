@@ -4,13 +4,13 @@ import { Resolver } from "did-resolver";
 import { Effect as E, pipe } from "effect";
 import type { Request, RequestHandler } from "express";
 import { StatusCodes } from "http-status-codes";
-import { AccountsEndpointV1 } from "#/accounts/routes";
-import type { AccountDocument, AccountType } from "#/admin/repository";
+import { AccountsEndpointV1 } from "#/accounts/accounts.router";
+import type { AccountDocument, AccountType } from "#/admin/admin.types";
 import { findAccountByIdWithCache } from "#/common/cache";
 import { NilDid, buildNilMethodResolver } from "#/common/nil-did";
-import { ApiDocsEndpoint } from "#/docs/routes";
+import { ApiDocsEndpoint } from "#/docs/docs.rotuer";
 import type { Context } from "#/env";
-import { SystemEndpoint } from "#/system/routes";
+import { SystemEndpoint } from "#/system/system.router";
 
 // Uses global interface merging so Request is aware of auth on request
 declare global {

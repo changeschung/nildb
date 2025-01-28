@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { StatusCodes } from "http-status-codes";
-import { AdminEndpointV1 } from "#/admin/routes";
-import { isRoleAllowed } from "#/middleware/auth";
-import * as SchemasController from "#/schemas/controllers";
+import { AdminEndpointV1 } from "#/admin/admin.router";
+import { isRoleAllowed } from "#/middleware/auth.middleware";
+import * as SchemasController from "#/schemas/schemas.controllers";
 
 export const SchemasEndpointV1 = {
   Base: "/api/v1/schemas",

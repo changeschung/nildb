@@ -1,6 +1,6 @@
 import { Effect as E, Either, pipe } from "effect";
 import { describe, expect, it } from "vitest";
-import { injectVariablesIntoAggregation } from "#/queries/service";
+import { injectVariablesIntoAggregation } from "#/queries/queries.services";
 
 describe("inject.variable.pipeline.test", () => {
   it("replaces simple variables", () => {

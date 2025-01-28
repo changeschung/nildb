@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { createUuidDto } from "#/common/types";
-import { MAX_RECORDS_LENGTH } from "#/data/controllers";
+import { MAX_RECORDS_LENGTH } from "#/data/data.types";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
 import {

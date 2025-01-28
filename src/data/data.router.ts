@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { StatusCodes } from "http-status-codes";
-import { isRoleAllowed } from "#/middleware/auth";
-import * as DataController from "./controllers";
+import { isRoleAllowed } from "#/middleware/auth.middleware";
+import * as DataController from "./data.controllers";
 
 export const DataEndpointV1 = {
   Base: "/api/v1/data",

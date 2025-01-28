@@ -1,7 +1,7 @@
 import type { RequestHandler } from "express";
-import type { OrganizationAccountDocument } from "#/accounts/repository";
+import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import type { Context } from "#/env";
-import { isPublicPath } from "#/middleware/auth";
+import { isPublicPath } from "#/middleware/auth.middleware";
 
 export function useSubscriptionCheckMiddleware(_ctx: Context): RequestHandler {
   return async (req, res, next) => {

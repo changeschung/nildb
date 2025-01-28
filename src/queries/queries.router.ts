@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { StatusCodes } from "http-status-codes";
-import { AdminEndpointV1 } from "#/admin/routes";
-import { isRoleAllowed } from "#/middleware/auth";
-import * as QueriesController from "#/queries/controllers";
+import { AdminEndpointV1 } from "#/admin/admin.router";
+import { isRoleAllowed } from "#/middleware/auth.middleware";
+import * as QueriesController from "#/queries/queries.controllers";
 
 export const QueriesEndpointV1 = {
   Base: "/api/v1/queries",

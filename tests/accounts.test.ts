@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { beforeAll, describe, expect, it } from "vitest";
-import type { OrganizationAccountDocument } from "#/accounts/repository";
+import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import { Identity } from "#/common/identity";
 import { CollectionName } from "#/common/mongo";
 import { type AppFixture, buildFixture } from "./fixture/app-fixture";

@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { beforeAll, describe, expect, it } from "vitest";
 import { type UuidDto, createUuidDto } from "#/common/types";
-import { TAIL_DATA_LIMIT } from "#/data/repository";
+import { TAIL_DATA_LIMIT } from "#/data/data.repository";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
 import {

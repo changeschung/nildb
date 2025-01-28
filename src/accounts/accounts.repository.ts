@@ -1,25 +1,14 @@
 import { Effect as E, Option as O, pipe } from "effect";
-import type { StrictFilter, UUID } from "mongodb";
+import type { StrictFilter } from "mongodb";
 import type { RepositoryError } from "#/common/app-error";
 import { succeedOrMapToRepositoryError } from "#/common/errors";
 import { CollectionName } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
 import type { Context } from "#/env";
-import type { RegisterAccountRequest } from "./controllers";
-
-export type OrganizationAccountDocument = {
-  _id: NilDid;
-  _type: "organization";
-  _created: Date;
-  _updated: Date;
-  publicKey: string;
-  name: string;
-  subscription: {
-    active: boolean;
-  };
-  schemas: UUID[];
-  queries: UUID[];
-};
+import type {
+  OrganizationAccountDocument,
+  RegisterAccountRequest,
+} from "./accounts.types";
 
 export function toOrganizationAccountDocument(
   data: RegisterAccountRequest,

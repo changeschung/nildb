@@ -1,7 +1,7 @@
 import type { Test } from "supertest";
 import type TestAgent from "supertest/lib/agent";
-import type { CreateAccountRequest } from "#/admin/controllers";
-import { AdminEndpointV1 } from "#/admin/routes";
+import { AdminEndpointV1 } from "#/admin/admin.router";
+import type { AdminCreateAccountRequest } from "#/admin/admin.types";
 import { type TestClientOptions, checkResponse } from "./test-org-user-client";
 
 export class TestRootUserClient {
@@ -25,7 +25,7 @@ export class TestRootUserClient {
   }
 
   async createAccount(
-    body: CreateAccountRequest,
+    body: AdminCreateAccountRequest,
     expectSuccess = true,
   ): Promise<Test> {
     const token = await this.jwt();

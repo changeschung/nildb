@@ -1,6 +1,6 @@
 import { Effect as E } from "effect";
 import type { UUID } from "mongodb";
-import type { OrganizationAccountDocument } from "#/accounts/repository";
+import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import { ControllerError } from "#/common/app-error";
 
 export function enforceQueryOwnership<T>(

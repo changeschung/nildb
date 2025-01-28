@@ -1,6 +1,6 @@
 import { Router } from "express";
 import swaggerUi from "swagger-ui-express";
-import { serveApiDocsController } from "#/docs/controllers";
+import { serveApiDocsController } from "#/docs/docs.controllers";
 
 export const ApiDocsEndpoint = {
   Docs: "/api/v1/openapi/docs",

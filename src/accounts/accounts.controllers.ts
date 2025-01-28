@@ -2,22 +2,24 @@ import { Effect as E, pipe } from "effect";
 import type { RequestHandler } from "express";
 import { StatusCodes } from "http-status-codes";
 import type { EmptyObject } from "type-fest";
-import { z } from "zod";
-import type { OrganizationAccountDocument } from "#/accounts/repository";
-import * as AccountService from "#/accounts/service";
-import { type ApiResponse, foldToApiResponse } from "#/common/handler";
-import { NilDid } from "#/common/nil-did";
+import { foldToApiResponse } from "#/common/handler";
 import { parseUserData } from "#/common/zod-utils";
-import { PUBLIC_KEY_LENGTH } from "#/env";
-import { isRoleAllowed } from "#/middleware/auth";
-
-export type GetAccountRequest = EmptyObject;
-export type GetAccountResponse = ApiResponse<OrganizationAccountDocument>;
+import { isRoleAllowed } from "#/middleware/auth.middleware";
+import * as AccountService from "./accounts.services";
+import {
+  type GetAccountResponse,
+  type RegisterAccountRequest,
+  RegisterAccountRequestSchema,
+  type RegisterAccountResponse,
+  type RemoveAccountRequest,
+  RemoveAccountRequestSchema,
+  type RemoveAccountResponse,
+} from "./accounts.types";
 
 export const get: RequestHandler<
   EmptyObject,
   GetAccountResponse,
-  GetAccountRequest
+  EmptyObject
 > = async (req, res) => {
   const { ctx, account } = req;
 
@@ -32,14 +34,6 @@ export const get: RequestHandler<
     E.runPromise,
   );
 };
-
-export const RegisterAccountRequest = z.object({
-  did: NilDid,
-  publicKey: z.string().length(PUBLIC_KEY_LENGTH),
-  name: z.string(),
-});
-export type RegisterAccountRequest = z.infer<typeof RegisterAccountRequest>;
-export type RegisterAccountResponse = ApiResponse<NilDid>;
 
 export const register: RequestHandler<
   EmptyObject,
@@ -58,19 +52,13 @@ export const register: RequestHandler<
 
   await pipe(
     parseUserData<RegisterAccountRequest>(() =>
-      RegisterAccountRequest.parse(body),
+      RegisterAccountRequestSchema.parse(body),
     ),
     E.flatMap((payload) => AccountService.createAccount(ctx, payload)),
     foldToApiResponse(req, res),
     E.runPromise,
   );
 };
-
-export const RemoveAccountRequest = z.object({
-  id: NilDid,
-});
-export type RemoveAccountRequest = z.infer<typeof RemoveAccountRequest>;
-export type RemoveAccountResponse = ApiResponse<string>;
 
 export const remove: RequestHandler<
   EmptyObject,
@@ -85,7 +73,9 @@ export const remove: RequestHandler<
   }
 
   await pipe(
-    parseUserData<RemoveAccountRequest>(() => RemoveAccountRequest.parse(body)),
+    parseUserData<RemoveAccountRequest>(() =>
+      RemoveAccountRequestSchema.parse(body),
+    ),
     E.flatMap((payload) => AccountService.remove(ctx, payload.id)),
     foldToApiResponse(req, res),
     E.runPromise,

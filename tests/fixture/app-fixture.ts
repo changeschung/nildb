@@ -6,7 +6,7 @@ import type { JsonObject } from "type-fest";
 import { buildApp } from "#/app";
 import { Identity } from "#/common/identity";
 import { type Context, createContext } from "#/env";
-import type { QueryVariable } from "#/queries/repository";
+import type { QueryVariable } from "#/queries/queries.types";
 import { TestAdminUserClient } from "./test-admin-user-client";
 import { TestOrganizationUserClient } from "./test-org-user-client";
 import { TestRootUserClient } from "./test-root-user-client";
