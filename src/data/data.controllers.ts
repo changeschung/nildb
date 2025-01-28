@@ -1,142 +1,128 @@
+import { zValidator } from "@hono/zod-validator";
 import { Effect as E, pipe } from "effect";
-import type { RequestHandler } from "express";
-import type { EmptyObject, JsonArray } from "type-fest";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
-import { type ApiResponse, foldToApiResponse } from "#/common/handler";
-import type { DocumentBase } from "#/common/mongo";
+import type { App } from "#/app";
+import { foldToApiResponse } from "#/common/handler";
 import { enforceSchemaOwnership } from "#/common/ownership";
-import { parseUserData } from "#/common/zod-utils";
-import type { UpdateResult, UploadResult } from "./data.repository";
+import { PathsV1 } from "#/common/paths";
 import * as DataService from "./data.services";
 import {
-  type DeleteDataRequest,
   DeleteDataRequestSchema,
-  type FlushDataRequest,
   FlushDataRequestSchema,
-  type ReadDataRequest,
   ReadDataRequestSchema,
-  type TailDataRequest,
   TailDataRequestSchema,
-  type UpdateDataRequest,
   UpdateDataRequestSchema,
-  type UploadDataRequest,
   UploadDataRequestSchema,
 } from "./data.types";
 
-export const deleteData: RequestHandler<
-  EmptyObject,
-  ApiResponse<number>,
-  DeleteDataRequest
-> = async (req, res) => {
-  const { ctx, body } = req;
-  const account = req.account as OrganizationAccountDocument;
+export function deleteD(app: App): void {
+  app.delete(
+    PathsV1.data.root,
+    zValidator("json", DeleteDataRequestSchema),
+    async (c) => {
+      const account = c.var.account as OrganizationAccountDocument;
+      const payload = c.req.valid("json");
 
-  await pipe(
-    parseUserData<DeleteDataRequest>(() => DeleteDataRequestSchema.parse(body)),
-    E.flatMap((payload) =>
-      enforceSchemaOwnership(account, payload.schema, payload),
-    ),
-    E.flatMap((payload) => DataService.deleteRecords(ctx, payload)),
-    foldToApiResponse(req, res),
-    E.runPromise,
+      return await pipe(
+        enforceSchemaOwnership(account, payload.schema, payload),
+        E.flatMap((payload) => DataService.deleteRecords(c.env, payload)),
+        foldToApiResponse(c),
+        E.runPromise,
+      );
+    },
   );
-};
+}
 
-export const updateData: RequestHandler<
-  EmptyObject,
-  ApiResponse<UpdateResult>,
-  UpdateDataRequest
-> = async (req, res) => {
-  const { ctx, body } = req;
-  const account = req.account as OrganizationAccountDocument;
+export function flush(app: App): void {
+  app.post(
+    PathsV1.data.flush,
+    zValidator("json", FlushDataRequestSchema),
+    async (c) => {
+      const account = c.var.account as OrganizationAccountDocument;
+      const payload = c.req.valid("json");
 
-  await pipe(
-    parseUserData<UpdateDataRequest>(() => UpdateDataRequestSchema.parse(body)),
-    E.flatMap((payload) =>
-      enforceSchemaOwnership(account, payload.schema, payload),
-    ),
-    E.flatMap((body) => {
-      return DataService.updateRecords(ctx, body);
-    }),
-    foldToApiResponse(req, res),
-    E.runPromise,
+      return await pipe(
+        enforceSchemaOwnership(account, payload.schema, payload),
+        E.flatMap((payload) =>
+          DataService.flushCollection(c.env, payload.schema),
+        ),
+        foldToApiResponse(c),
+        E.runPromise,
+      );
+    },
   );
-};
+}
 
-export const readData: RequestHandler<
-  EmptyObject,
-  ApiResponse<DocumentBase[]>,
-  ReadDataRequest
-> = async (req, res) => {
-  const { ctx, body } = req;
-  const account = req.account as OrganizationAccountDocument;
+export function read(app: App): void {
+  app.post(
+    PathsV1.data.read,
+    zValidator("json", ReadDataRequestSchema),
+    async (c) => {
+      const account = c.var.account as OrganizationAccountDocument;
+      const payload = c.req.valid("json");
 
-  await pipe(
-    parseUserData<ReadDataRequest>(() => ReadDataRequestSchema.parse(body)),
-    E.flatMap((payload) =>
-      enforceSchemaOwnership(account, payload.schema, payload),
-    ),
-    E.flatMap((payload) => DataService.readRecords(ctx, payload)),
-    foldToApiResponse(req, res),
-    E.runPromise,
+      return await pipe(
+        enforceSchemaOwnership(account, payload.schema, payload),
+        E.flatMap((payload) => DataService.readRecords(c.env, payload)),
+        foldToApiResponse(c),
+        E.runPromise,
+      );
+    },
   );
-};
+}
 
-export const flushData: RequestHandler<
-  EmptyObject,
-  ApiResponse<number>,
-  FlushDataRequest
-> = async (req, res) => {
-  const { ctx, body } = req;
-  const account = req.account as OrganizationAccountDocument;
+export function tail(app: App): void {
+  app.post(
+    PathsV1.data.tail,
+    zValidator("json", TailDataRequestSchema),
+    async (c) => {
+      const account = c.var.account as OrganizationAccountDocument;
+      const payload = c.req.valid("json");
 
-  await pipe(
-    parseUserData<FlushDataRequest>(() => FlushDataRequestSchema.parse(body)),
-    E.flatMap((payload) =>
-      enforceSchemaOwnership(account, payload.schema, payload),
-    ),
-    E.flatMap((payload) => DataService.flushCollection(ctx, payload.schema)),
-    foldToApiResponse(req, res),
-    E.runPromise,
+      return await pipe(
+        enforceSchemaOwnership(account, payload.schema, payload),
+        E.flatMap((payload) => DataService.tailData(c.env, payload.schema)),
+        foldToApiResponse(c),
+        E.runPromise,
+      );
+    },
   );
-};
+}
 
-export const tailData: RequestHandler<
-  EmptyObject,
-  ApiResponse<JsonArray>,
-  TailDataRequest
-> = async (req, res) => {
-  const { ctx, body } = req;
-  const account = req.account as OrganizationAccountDocument;
+export function update(app: App): void {
+  app.put(
+    PathsV1.data.root,
+    zValidator("json", UpdateDataRequestSchema),
+    async (c) => {
+      const account = c.var.account as OrganizationAccountDocument;
+      const payload = c.req.valid("json");
 
-  await pipe(
-    parseUserData<TailDataRequest>(() => TailDataRequestSchema.parse(body)),
-    E.flatMap((payload) =>
-      enforceSchemaOwnership(account, payload.schema, payload),
-    ),
-    E.flatMap((payload) => DataService.tailData(ctx, payload.schema)),
-    foldToApiResponse(req, res),
-    E.runPromise,
+      return await pipe(
+        enforceSchemaOwnership(account, payload.schema, payload),
+        E.flatMap((payload) => DataService.updateRecords(c.env, payload)),
+        foldToApiResponse(c),
+        E.runPromise,
+      );
+    },
   );
-};
+}
 
-export const uploadData: RequestHandler<
-  EmptyObject,
-  ApiResponse<UploadResult>,
-  UploadDataRequest
-> = async (req, res) => {
-  const { ctx, body } = req;
-  const account = req.account as OrganizationAccountDocument;
+export function upload(app: App): void {
+  app.post(
+    PathsV1.data.upload,
+    zValidator("json", UploadDataRequestSchema),
+    async (c) => {
+      const account = c.var.account as OrganizationAccountDocument;
+      const payload = c.req.valid("json");
 
-  await pipe(
-    parseUserData<UploadDataRequest>(() => UploadDataRequestSchema.parse(body)),
-    E.flatMap((payload) =>
-      enforceSchemaOwnership(account, payload.schema, payload),
-    ),
-    E.flatMap((payload) => {
-      return DataService.createRecords(ctx, payload.schema, payload.data);
-    }),
-    foldToApiResponse(req, res),
-    E.runPromise,
+      return await pipe(
+        enforceSchemaOwnership(account, payload.schema, payload),
+        E.flatMap((payload) =>
+          DataService.createRecords(c.env, payload.schema, payload.data),
+        ),
+        foldToApiResponse(c),
+        E.runPromise,
+      );
+    },
   );
-};
+}

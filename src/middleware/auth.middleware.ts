@@ -1,100 +1,92 @@
-import type { JWTPayload } from "did-jwt";
 import * as didJwt from "did-jwt";
 import { Resolver } from "did-resolver";
 import { Effect as E, pipe } from "effect";
-import type { Request, RequestHandler } from "express";
+import type { MiddlewareHandler, Next } from "hono";
 import { StatusCodes } from "http-status-codes";
-import { AccountsEndpointV1 } from "#/accounts/accounts.router";
-import type { AccountDocument, AccountType } from "#/admin/admin.types";
+import type { AccountType } from "#/admin/admin.types";
 import { findAccountByIdWithCache } from "#/common/cache";
 import { NilDid, buildNilMethodResolver } from "#/common/nil-did";
-import { ApiDocsEndpoint } from "#/docs/docs.rotuer";
-import type { Context } from "#/env";
-import { SystemEndpoint } from "#/system/system.router";
-
-// Uses global interface merging so Request is aware of auth on request
-declare global {
-  namespace Express {
-    interface Request {
-      auth: JWTPayload;
-      account: AccountDocument;
-    }
-  }
-}
+import { PathsV1 } from "#/common/paths";
+import type { AppBindings, AppContext } from "#/env";
 
 type Routes = {
   path: string;
   method: "GET" | "POST" | "DELETE";
 }[];
 
-export function isPublicPath(req: Request): boolean {
+export function isPublicPath(reqPath: string, reqMethod: string): boolean {
   // this is in the function because otherwise there are import resolution
   // order issues and some values end up as undefined
   const publicPaths: Routes = [
-    { path: SystemEndpoint.Health, method: "GET" },
-    { path: SystemEndpoint.About, method: "GET" },
-    { path: ApiDocsEndpoint.Docs, method: "GET" },
-    { path: AccountsEndpointV1.Base, method: "POST" },
+    { path: PathsV1.system.health, method: "GET" },
+    { path: PathsV1.system.about, method: "GET" },
+    { path: PathsV1.docs, method: "GET" },
+    { path: PathsV1.accounts, method: "POST" },
   ];
 
   return publicPaths.some(({ path, method }) => {
-    return method === req.method && req.path.startsWith(path);
+    return method === reqMethod && reqPath.startsWith(path);
   });
 }
 
-export function useAuthMiddleware(ctx: Context): RequestHandler {
-  const resolver = new Resolver({ nil: buildNilMethodResolver(ctx).resolve });
+export function useAuthMiddleware(bindings: AppBindings): MiddlewareHandler {
+  const resolver = new Resolver({
+    nil: buildNilMethodResolver(bindings).resolve,
+  });
 
-  return async (req, res, next) => {
+  return async (c: AppContext, next: Next) => {
     try {
-      if (isPublicPath(req)) {
-        next();
-        return;
+      if (isPublicPath(c.req.path, c.req.method)) {
+        return next();
       }
 
-      const header = req.headers.authorization ?? "";
-      const [scheme, token] = header.split(" ");
+      const authHeader = c.req.header("Authorization") ?? "";
+      const [scheme, token] = authHeader.split(" ");
       if (scheme.toLowerCase() !== "bearer") {
-        res.sendStatus(StatusCodes.UNAUTHORIZED);
-        return;
+        return c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
       }
 
       const { payload } = await didJwt.verifyJWT(token, {
-        audience: ctx.node.identity.did,
+        audience: bindings.node.identity.did,
         resolver,
       });
 
       if (!payload) {
-        res.sendStatus(StatusCodes.UNAUTHORIZED);
-        return;
+        return c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
       }
 
       // this should be a cache hit because the resolver ensures the account is loaded
       const account = await pipe(
-        findAccountByIdWithCache(ctx, NilDid.parse(payload.iss)),
+        findAccountByIdWithCache(bindings, NilDid.parse(payload.iss)),
         E.runPromise,
       );
-      req.auth = payload;
-      req.account = account;
 
-      // individual routes to apply Acls from this point
-      next();
+      c.set("jwt", payload);
+      c.set("account", account);
+
+      return next();
     } catch (error) {
-      console.error(error);
-      res.sendStatus(StatusCodes.UNAUTHORIZED);
+      bindings.log.error("Auth error:", error);
+      return c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
     }
   };
 }
 
-export function isRoleAllowed(req: Request, permitted: AccountType[]): boolean {
-  const { ctx, account, path } = req;
+export function isRoleAllowed(
+  c: AppContext,
+  permitted: AccountType[],
+): boolean {
+  const {
+    var: { account },
+    env: { log },
+  } = c;
 
-  if (permitted.includes(account._type)) {
-    return true;
+  const allowed = permitted.includes(account._type);
+  if (!allowed) {
+    log.warn(
+      `Unauthorized(account=${account._id},type=${account._type},path=${c.req.path}`,
+    );
   }
 
-  ctx.log.warn(
-    `Unauthorized(account=${account._id},type=${account._type},path=${path}`,
-  );
-  return false;
+  return allowed;
 }

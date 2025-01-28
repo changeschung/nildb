@@ -11,3 +11,8 @@ export const AddSchemaRequestSchema = z.object({
   schema: z.record(z.string(), z.unknown()),
 });
 export type AddSchemaRequest = z.infer<typeof AddSchemaRequestSchema>;
+
+export const DeleteSchemaRequestSchema = z.object({
+  id: Uuid,
+});
+export type DeleteSchemaRequest = z.infer<typeof DeleteSchemaRequestSchema>;

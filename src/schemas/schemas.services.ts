@@ -5,14 +5,14 @@ import { ServiceError } from "#/common/app-error";
 import type { NilDid } from "#/common/nil-did";
 import { validateSchema } from "#/common/validator";
 import * as DataRepository from "#/data/data.repository";
-import type { Context } from "#/env";
+import type { AppBindings } from "#/env";
 import * as OrganizationRepository from "#/organizations/organizations.repository";
 import type { AddSchemaRequest } from "#/schemas/schemas.types";
 import type { SchemaDocument } from "./schemas.repository";
 import * as SchemasRepository from "./schemas.repository";
 
 export function getOrganizationSchemas(
-  ctx: Context,
+  ctx: AppBindings,
   organization: OrganizationAccountDocument,
 ): E.Effect<SchemaDocument[], ServiceError> {
   return pipe(
@@ -26,7 +26,7 @@ export function getOrganizationSchemas(
 }
 
 export function addSchema(
-  ctx: Context,
+  ctx: AppBindings,
   request: AddSchemaRequest & { owner: NilDid },
 ): E.Effect<UUID, ServiceError> {
   return pipe(
@@ -54,7 +54,7 @@ export function addSchema(
 }
 
 export function deleteSchema(
-  ctx: Context,
+  ctx: AppBindings,
   schemaId: UUID,
 ): E.Effect<SchemaDocument, ServiceError> {
   return pipe(

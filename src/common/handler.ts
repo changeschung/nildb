@@ -1,11 +1,11 @@
 import { ValidationError } from "ajv";
 import { Effect as E, pipe } from "effect";
 import { UnknownException } from "effect/Cause";
-import type { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import type { JsonArray } from "type-fest";
 import { ZodError } from "zod";
 import { AppError } from "#/common/app-error";
+import type { AppContext } from "#/env";
 import { DbError } from "./errors";
 
 export type ApiPath = `/api/v1/${string}`;
@@ -33,21 +33,23 @@ export type Handler<T extends HandlerParams> = {
   response: ApiResponse<T["response"]>;
 };
 
-export function foldToApiResponse<T>(req: Request, res: Response) {
-  const { ctx } = req;
-  return (effect: E.Effect<T, AppError>): E.Effect<void> =>
+export function foldToApiResponse<T>(c: AppContext) {
+  return (effect: E.Effect<T, AppError>): E.Effect<Response> =>
     pipe(
       effect,
       E.match({
         onFailure: (error: AppError) => {
-          ctx.log.debug("Request failed: %O", error);
-          res.status(StatusCodes.BAD_REQUEST).send({
-            errors: error.reason,
-            ts: new Date(),
-          });
+          c.env.log.debug("Request failed: %O", error);
+          return c.json(
+            {
+              errors: error.reason,
+              ts: new Date(),
+            },
+            StatusCodes.BAD_REQUEST,
+          );
         },
         onSuccess: (data) => {
-          res.send({
+          return c.json({
             data,
           });
         },

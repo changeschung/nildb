@@ -4,7 +4,7 @@ import type { RepositoryError } from "#/common/app-error";
 import { succeedOrMapToRepositoryError } from "#/common/errors";
 import { CollectionName, type DocumentBase } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
-import type { Context } from "#/env";
+import type { AppBindings } from "#/env";
 
 export type SchemaDocument = DocumentBase & {
   owner: NilDid;
@@ -14,7 +14,7 @@ export type SchemaDocument = DocumentBase & {
 };
 
 export function insert(
-  ctx: Context,
+  ctx: AppBindings,
   document: SchemaDocument,
 ): E.Effect<UUID, RepositoryError> {
   return pipe(
@@ -38,7 +38,7 @@ export function insert(
 }
 
 export function findMany(
-  ctx: Context,
+  ctx: AppBindings,
   filter: StrictFilter<SchemaDocument>,
 ): E.Effect<SchemaDocument[], RepositoryError> {
   return pipe(
@@ -56,7 +56,7 @@ export function findMany(
 }
 
 export function findOne(
-  ctx: Context,
+  ctx: AppBindings,
   filter: StrictFilter<SchemaDocument>,
 ): E.Effect<SchemaDocument, RepositoryError> {
   return pipe(
@@ -75,7 +75,7 @@ export function findOne(
 }
 
 export function deleteMany(
-  ctx: Context,
+  ctx: AppBindings,
   filter: StrictFilter<SchemaDocument>,
 ): E.Effect<number, RepositoryError> {
   return pipe(
@@ -99,7 +99,7 @@ export function deleteMany(
 }
 
 export function deleteOne(
-  ctx: Context,
+  ctx: AppBindings,
   filter: StrictFilter<SchemaDocument>,
 ): E.Effect<SchemaDocument, RepositoryError> {
   return pipe(

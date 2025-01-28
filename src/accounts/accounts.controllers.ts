@@ -1,83 +1,74 @@
+import { zValidator } from "@hono/zod-validator";
 import { Effect as E, pipe } from "effect";
-import type { RequestHandler } from "express";
 import { StatusCodes } from "http-status-codes";
-import type { EmptyObject } from "type-fest";
+import type { App } from "#/app";
 import { foldToApiResponse } from "#/common/handler";
-import { parseUserData } from "#/common/zod-utils";
+import { PathsV1 } from "#/common/paths";
 import { isRoleAllowed } from "#/middleware/auth.middleware";
 import * as AccountService from "./accounts.services";
 import {
-  type GetAccountResponse,
-  type RegisterAccountRequest,
   RegisterAccountRequestSchema,
-  type RegisterAccountResponse,
-  type RemoveAccountRequest,
   RemoveAccountRequestSchema,
-  type RemoveAccountResponse,
 } from "./accounts.types";
 
-export const get: RequestHandler<
-  EmptyObject,
-  GetAccountResponse,
-  EmptyObject
-> = async (req, res) => {
-  const { ctx, account } = req;
+export function get(app: App): void {
+  app.get(PathsV1.accounts, async (c) => {
+    if (!isRoleAllowed(c, ["admin", "organization"])) {
+      return c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
+    }
 
-  if (!isRoleAllowed(req, ["admin", "organization"])) {
-    res.sendStatus(StatusCodes.UNAUTHORIZED);
-    return;
-  }
+    const account = c.var.account;
+    return await pipe(
+      AccountService.find(c.env, account._id),
+      foldToApiResponse(c),
+      E.runPromise,
+    );
+  });
+}
 
-  await pipe(
-    AccountService.find(ctx, account._id),
-    foldToApiResponse(req, res),
-    E.runPromise,
+export function register(app: App): void {
+  app.post(
+    PathsV1.accounts,
+    zValidator("json", RegisterAccountRequestSchema),
+    async (c) => {
+      // Check if account already exists
+      if (c.var.account?._type) {
+        return c.json(
+          {
+            ts: new Date(),
+            errors: ["Use /admin/* endpoints for account management"],
+          },
+          StatusCodes.BAD_REQUEST,
+        );
+      }
+
+      const payload = c.req.valid("json");
+
+      return await pipe(
+        AccountService.createAccount(c.env, payload),
+        foldToApiResponse(c),
+        E.runPromise,
+      );
+    },
   );
-};
+}
 
-export const register: RequestHandler<
-  EmptyObject,
-  RegisterAccountResponse,
-  RegisterAccountRequest
-> = async (req, res) => {
-  const { ctx, body } = req;
+export function deleteA(app: App): void {
+  app.delete(
+    PathsV1.accounts,
+    zValidator("json", RemoveAccountRequestSchema),
+    async (c) => {
+      if (!isRoleAllowed(c, ["root", "admin"])) {
+        return c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
+      }
 
-  if (req.account?._type) {
-    res.status(400).json({
-      ts: new Date(),
-      errors: ["Use /admin/* endpoints for account management"],
-    });
-    return;
-  }
+      const payload = c.req.valid("json");
 
-  await pipe(
-    parseUserData<RegisterAccountRequest>(() =>
-      RegisterAccountRequestSchema.parse(body),
-    ),
-    E.flatMap((payload) => AccountService.createAccount(ctx, payload)),
-    foldToApiResponse(req, res),
-    E.runPromise,
+      return await pipe(
+        AccountService.remove(c.env, payload.id),
+        foldToApiResponse(c),
+        E.runPromise,
+      );
+    },
   );
-};
-
-export const remove: RequestHandler<
-  EmptyObject,
-  RemoveAccountResponse,
-  RemoveAccountRequest
-> = async (req, res) => {
-  const { ctx, body } = req;
-
-  if (!isRoleAllowed(req, ["root", "admin"])) {
-    res.sendStatus(StatusCodes.UNAUTHORIZED);
-    return;
-  }
-
-  await pipe(
-    parseUserData<RemoveAccountRequest>(() =>
-      RemoveAccountRequestSchema.parse(body),
-    ),
-    E.flatMap((payload) => AccountService.remove(ctx, payload.id)),
-    foldToApiResponse(req, res),
-    E.runPromise,
-  );
-};
+}

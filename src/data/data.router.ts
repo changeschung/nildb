@@ -1,5 +1,7 @@
-import { Router } from "express";
 import { StatusCodes } from "http-status-codes";
+import type { App } from "#/app";
+import { PathsV1 } from "#/common/paths";
+import type { AppBindings } from "#/env";
 import { isRoleAllowed } from "#/middleware/auth.middleware";
 import * as DataController from "./data.controllers";
 
@@ -13,24 +15,18 @@ export const DataEndpointV1 = {
   Tail: "/api/v1/data/tail",
 } as const;
 
-export function buildDataRouter(): Router {
-  const router = Router();
-
-  router.use(DataEndpointV1.Base, (req, res, next): void => {
-    if (!isRoleAllowed(req, ["organization"])) {
-      res.sendStatus(StatusCodes.UNAUTHORIZED);
-      return;
-    }
-    next();
+export function buildDataRouter(app: App, _bindings: AppBindings): void {
+  // biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
+  app.use(PathsV1.data.root, async (c, next): Promise<void | Response> => {
+    return isRoleAllowed(c, ["organization"])
+      ? next()
+      : c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
   });
 
-  router.post(DataEndpointV1.Upload, DataController.uploadData);
-  router.post(DataEndpointV1.Read, DataController.readData);
-  router.post(DataEndpointV1.Update, DataController.updateData);
-  router.post(DataEndpointV1.Delete, DataController.deleteData);
-
-  router.post(DataEndpointV1.Flush, DataController.flushData);
-  router.post(DataEndpointV1.Tail, DataController.tailData);
-
-  return router;
+  DataController.deleteD(app);
+  DataController.flush(app);
+  DataController.read(app);
+  DataController.tail(app);
+  DataController.update(app);
+  DataController.upload(app);
 }

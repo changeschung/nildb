@@ -1,5 +1,7 @@
-import { Router } from "express";
 import { StatusCodes } from "http-status-codes";
+import type { App } from "#/app";
+import { PathsV1 } from "#/common/paths";
+import type { AppBindings } from "#/env";
 import { isRoleAllowed } from "#/middleware/auth.middleware";
 import * as AdminAccountsControllers from "./admin.controllers.accounts";
 import * as AdminDataControllers from "./admin.controllers.data";
@@ -29,57 +31,30 @@ export const AdminEndpointV1 = {
   },
 } as const;
 
-export function buildAdminRouter(): Router {
-  const router = Router();
-
-  router.use(AdminEndpointV1.Base, (req, res, next): void => {
-    if (!isRoleAllowed(req, ["admin", "root"])) {
-      res.sendStatus(StatusCodes.UNAUTHORIZED);
-      return;
-    }
-    next();
+export function buildAdminRouter(app: App, _bindings: AppBindings): void {
+  // biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
+  app.use(PathsV1.admin.root, async (c, next): Promise<void | Response> => {
+    return isRoleAllowed(c, ["admin", "root"])
+      ? next()
+      : c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
   });
 
-  router.get(
-    AdminEndpointV1.Accounts.Base,
-    AdminAccountsControllers.listAccounts,
-  );
-  router.post(
-    AdminEndpointV1.Accounts.Base,
-    AdminAccountsControllers.createAccount,
-  );
-  router.delete(
-    AdminEndpointV1.Accounts.Base,
-    AdminAccountsControllers.deleteAccount,
-  );
+  AdminAccountsControllers.create(app);
+  AdminAccountsControllers.deleteA(app);
+  AdminAccountsControllers.list(app);
+  AdminAccountsControllers.setSubscriptionState(app);
 
-  router.post(
-    AdminEndpointV1.Accounts.Subscriptions,
-    AdminAccountsControllers.setSubscriptionState,
-  );
+  AdminDataControllers.deleteD(app);
+  AdminDataControllers.flush(app);
+  AdminDataControllers.read(app);
+  AdminDataControllers.tail(app);
+  AdminDataControllers.update(app);
+  AdminDataControllers.upload(app);
 
-  router.post(AdminEndpointV1.Data.Delete, AdminDataControllers.deleteData);
-  router.post(AdminEndpointV1.Data.Flush, AdminDataControllers.flushData);
-  router.post(AdminEndpointV1.Data.Read, AdminDataControllers.readData);
-  router.post(AdminEndpointV1.Data.Tail, AdminDataControllers.tailData);
-  router.post(AdminEndpointV1.Data.Update, AdminDataControllers.updateData);
-  router.post(AdminEndpointV1.Data.Upload, AdminDataControllers.uploadData);
+  AdminQueriesControllers.add(app);
+  AdminQueriesControllers.deleteQ(app);
+  AdminQueriesControllers.execute(app);
 
-  router.post(AdminEndpointV1.Queries.Base, AdminQueriesControllers.addQuery);
-  router.delete(
-    AdminEndpointV1.Queries.Base,
-    AdminQueriesControllers.deleteQuery,
-  );
-  router.post(
-    AdminEndpointV1.Queries.Execute,
-    AdminQueriesControllers.executeQuery,
-  );
-
-  router.post(AdminEndpointV1.Schemas.Base, AdminSchemasControllers.addSchema);
-  router.delete(
-    AdminEndpointV1.Schemas.Base,
-    AdminSchemasControllers.deleteSchema,
-  );
-
-  return router;
+  AdminSchemasControllers.add(app);
+  AdminSchemasControllers.deleteS(app);
 }

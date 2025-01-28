@@ -1,49 +1,40 @@
+import { zValidator } from "@hono/zod-validator";
 import { Effect as E, pipe } from "effect";
-import type { RequestHandler } from "express";
-import type { EmptyObject } from "type-fest";
-import { type ApiResponse, foldToApiResponse } from "#/common/handler";
-import type { UuidDto } from "#/common/types";
-import { parseUserData } from "#/common/zod-utils";
-import {
-  type DeleteSchemaRequest,
-  DeleteSchemaRequestSchema,
-} from "#/schemas/schemas.controllers";
+import type { App } from "#/app";
+import { foldToApiResponse } from "#/common/handler";
+import { PathsV1 } from "#/common/paths";
 import * as SchemasService from "#/schemas/schemas.services";
-import {
-  type AdminAddSchemaRequest,
-  AdminAddSchemaRequestSchema,
-} from "./admin.types";
+import { DeleteSchemaRequestSchema } from "#/schemas/schemas.types";
+import { AdminAddSchemaRequestSchema } from "./admin.types";
 
-export const addSchema: RequestHandler<
-  EmptyObject,
-  ApiResponse<UuidDto>,
-  AdminAddSchemaRequest
-> = async (req, res) => {
-  const { ctx, body } = req;
+export function add(app: App): void {
+  app.post(
+    PathsV1.admin.schemas.root,
+    zValidator("json", AdminAddSchemaRequestSchema),
+    async (c) => {
+      const payload = c.req.valid("json");
 
-  await pipe(
-    parseUserData<AdminAddSchemaRequest>(() =>
-      AdminAddSchemaRequestSchema.parse(body),
-    ),
-    E.flatMap((payload) => SchemasService.addSchema(ctx, payload)),
-    foldToApiResponse(req, res),
-    E.runPromise,
+      return await pipe(
+        SchemasService.addSchema(c.env, payload),
+        foldToApiResponse(c),
+        E.runPromise,
+      );
+    },
   );
-};
+}
 
-export const deleteSchema: RequestHandler<
-  EmptyObject,
-  ApiResponse<UuidDto>,
-  DeleteSchemaRequest
-> = async (req, res) => {
-  const { ctx, body } = req;
+export function deleteS(app: App): void {
+  app.delete(
+    PathsV1.admin.schemas.root,
+    zValidator("json", DeleteSchemaRequestSchema),
+    async (c) => {
+      const payload = c.req.valid("json");
 
-  await pipe(
-    parseUserData<DeleteSchemaRequest>(() =>
-      DeleteSchemaRequestSchema.parse(body),
-    ),
-    E.flatMap((payload) => SchemasService.deleteSchema(ctx, payload.id)),
-    foldToApiResponse(req, res),
-    E.runPromise,
+      return await pipe(
+        SchemasService.deleteSchema(c.env, payload.id),
+        foldToApiResponse(c),
+        E.runPromise,
+      );
+    },
   );
-};
+}

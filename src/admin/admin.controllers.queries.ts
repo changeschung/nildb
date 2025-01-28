@@ -1,74 +1,59 @@
+import { zValidator } from "@hono/zod-validator";
 import { Effect as E, pipe } from "effect";
-import type { RequestHandler } from "express";
-import type { EmptyObject, JsonValue } from "type-fest";
-import { type ApiResponse, foldToApiResponse } from "#/common/handler";
-import type { UuidDto } from "#/common/types";
-import { parseUserData } from "#/common/zod-utils";
+import type { App } from "#/app";
+import { foldToApiResponse } from "#/common/handler";
+import { PathsV1 } from "#/common/paths";
 import * as QueriesService from "#/queries/queries.services";
 import {
-  type DeleteQueryRequest,
   DeleteQueryRequestSchema,
-} from "#/queries/queries.types";
-import {
-  type ExecuteQueryRequest,
   ExecuteQueryRequestSchema,
 } from "#/queries/queries.types";
-import {
-  type AdminAddQueryRequest,
-  AdminAddQueryRequestSchema,
-} from "./admin.types";
+import { AdminAddQueryRequestSchema } from "./admin.types";
 
-export const addQuery: RequestHandler<
-  EmptyObject,
-  ApiResponse<UuidDto>,
-  AdminAddQueryRequest
-> = async (req, res) => {
-  const { ctx, body } = req;
+export function add(app: App): void {
+  app.post(
+    PathsV1.admin.queries.root,
+    zValidator("json", AdminAddQueryRequestSchema),
+    async (c) => {
+      const payload = c.req.valid("json");
 
-  await pipe(
-    parseUserData<AdminAddQueryRequest>(() =>
-      AdminAddQueryRequestSchema.parse(body),
-    ),
-    E.flatMap((payload) => QueriesService.addQuery(ctx, payload)),
-    foldToApiResponse(req, res),
-    E.runPromise,
+      return await pipe(
+        QueriesService.addQuery(c.env, payload),
+        foldToApiResponse(c),
+        E.runPromise,
+      );
+    },
   );
-};
+}
 
-export const deleteQuery: RequestHandler<
-  EmptyObject,
-  ApiResponse<boolean>,
-  DeleteQueryRequest
-> = async (req, res) => {
-  const { ctx, body } = req;
+export function deleteQ(app: App): void {
+  app.delete(
+    PathsV1.admin.queries.root,
+    zValidator("json", DeleteQueryRequestSchema),
+    async (c) => {
+      const payload = c.req.valid("json");
 
-  await pipe(
-    parseUserData<DeleteQueryRequest>(() =>
-      DeleteQueryRequestSchema.parse(body),
-    ),
-    E.flatMap((payload) => {
-      return QueriesService.removeQuery(ctx, payload.id);
-    }),
-    foldToApiResponse(req, res),
-    E.runPromise,
+      return await pipe(
+        QueriesService.removeQuery(c.env, payload.id),
+        foldToApiResponse(c),
+        E.runPromise,
+      );
+    },
   );
-};
+}
 
-export const executeQuery: RequestHandler<
-  EmptyObject,
-  ApiResponse<JsonValue>,
-  ExecuteQueryRequest
-> = async (req, res) => {
-  const { ctx, body } = req;
+export function execute(app: App): void {
+  app.post(
+    PathsV1.admin.queries.execute,
+    zValidator("json", ExecuteQueryRequestSchema),
+    async (c) => {
+      const payload = c.req.valid("json");
 
-  await pipe(
-    parseUserData<ExecuteQueryRequest>(() =>
-      ExecuteQueryRequestSchema.parse(body),
-    ),
-    E.flatMap((payload) => {
-      return QueriesService.executeQuery(ctx, payload);
-    }),
-    foldToApiResponse(req, res),
-    E.runPromise,
+      return await pipe(
+        QueriesService.executeQuery(c.env, payload),
+        foldToApiResponse(c),
+        E.runPromise,
+      );
+    },
   );
-};
+}

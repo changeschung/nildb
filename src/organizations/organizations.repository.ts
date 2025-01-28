@@ -5,10 +5,10 @@ import type { RepositoryError } from "#/common/app-error";
 import { succeedOrMapToRepositoryError } from "#/common/errors";
 import { CollectionName } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
-import type { Context } from "#/env";
+import type { AppBindings } from "#/env";
 
 export function addSchema(
-  ctx: Context,
+  ctx: AppBindings,
   owner: NilDid,
   schemaId: UUID,
 ): E.Effect<boolean, RepositoryError> {
@@ -34,7 +34,7 @@ export function addSchema(
 }
 
 export function removeSchema(
-  ctx: Context,
+  ctx: AppBindings,
   orgId: NilDid,
   schemaId: UUID,
 ): E.Effect<boolean, RepositoryError> {
@@ -60,7 +60,7 @@ export function removeSchema(
 }
 
 export function addQuery(
-  ctx: Context,
+  ctx: AppBindings,
   orgId: NilDid,
   queryId: UUID,
 ): E.Effect<boolean, RepositoryError> {
@@ -86,7 +86,7 @@ export function addQuery(
 }
 
 export function removeQuery(
-  ctx: Context,
+  ctx: AppBindings,
   orgId: NilDid,
   queryId: UUID,
 ): E.Effect<boolean, RepositoryError> {

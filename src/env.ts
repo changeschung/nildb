@@ -1,17 +1,26 @@
+import type { JWTPayload } from "did-jwt";
+import type { Context } from "hono";
 import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
 import { z } from "zod";
 import type { AccountDocument, RootAccountDocument } from "#/admin/admin.types";
 import { CACHE_FOREVER, Cache } from "#/common/cache";
 import { Identity } from "#/common/identity";
+import { createLogger } from "#/common/logger";
 import type { NilDid } from "#/common/nil-did";
-import { createLogger } from "#/middleware/logger.middleware";
 import { initAndCreateDbClients } from "./common/mongo";
 
 export const PRIVATE_KEY_LENGTH = 64;
 export const PUBLIC_KEY_LENGTH = 66;
 
-const ConfigSchema = z.object({
+export type AppContext = Context<AppEnv>;
+
+export type AppEnv = {
+  Bindings: AppBindings;
+  Variables: AppVariables;
+};
+
+const EnvVarsSchema = z.object({
   dbNamePrimary: z.string().min(4),
   dbNameData: z.string().min(4),
   dbUri: z.string().startsWith("mongodb"),
@@ -22,10 +31,10 @@ const ConfigSchema = z.object({
   metricsPort: z.number().int().positive(),
   webPort: z.number().int().positive(),
 });
-export type Config = z.infer<typeof ConfigSchema>;
+export type EnvVars = z.infer<typeof EnvVarsSchema>;
 
-export interface Context {
-  config: Config;
+export type AppBindings = {
+  config: EnvVars;
   db: {
     client: MongoClient;
     primary: Db;
@@ -39,10 +48,18 @@ export interface Context {
     endpoint: string;
     identity: Identity;
   };
-}
+};
 
-export async function createContext(): Promise<Context> {
-  const config = ConfigSchema.parse({
+// There are some roots where the JWT won't be present and so this type isn't correct (e.g. registration,
+// health, about). However, narrowing the type here to avoid use in those edge cases would cascade to
+// the majority of routes, which require auth. So the risk is accepted here to avoid the type complexity cascade.
+export type AppVariables = {
+  jwt: JWTPayload;
+  account: AccountDocument;
+};
+
+export async function loadBindings(): Promise<AppBindings> {
+  const config = EnvVarsSchema.parse({
     dbNamePrimary: process.env.APP_DB_NAME_PRIMARY,
     dbNameData: process.env.APP_DB_NAME_DATA,
     dbUri: process.env.APP_DB_URI,
@@ -74,7 +91,7 @@ export async function createContext(): Promise<Context> {
       accounts,
     },
     db: await initAndCreateDbClients(config),
-    log: createLogger(config),
+    log: createLogger(config.logLevel),
     node,
   };
 }

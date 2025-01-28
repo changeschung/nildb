@@ -4,7 +4,7 @@ import type { RepositoryError } from "#/common/app-error";
 import { succeedOrMapToRepositoryError } from "#/common/errors";
 import { CollectionName } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
-import type { Context } from "#/env";
+import type { AppBindings } from "#/env";
 import type {
   OrganizationAccountDocument,
   RegisterAccountRequest,
@@ -34,7 +34,7 @@ export function toOrganizationAccountDocument(
 }
 
 export function insert(
-  ctx: Context,
+  ctx: AppBindings,
   document: OrganizationAccountDocument,
 ): E.Effect<NilDid, RepositoryError> {
   return pipe(
@@ -53,7 +53,7 @@ export function insert(
 }
 
 export function findOne(
-  ctx: Context,
+  ctx: AppBindings,
   filter: StrictFilter<OrganizationAccountDocument>,
 ): E.Effect<OrganizationAccountDocument, RepositoryError> {
   return pipe(
@@ -89,7 +89,7 @@ export function findOne(
 }
 
 export function deleteOneById(
-  ctx: Context,
+  ctx: AppBindings,
   _id: NilDid,
 ): E.Effect<NilDid, RepositoryError> {
   const filter: StrictFilter<OrganizationAccountDocument> = {
@@ -118,7 +118,7 @@ export function deleteOneById(
 }
 
 export function setSubscriptionState(
-  ctx: Context,
+  ctx: AppBindings,
   ids: NilDid[],
   active: boolean,
 ): E.Effect<NilDid[], RepositoryError> {

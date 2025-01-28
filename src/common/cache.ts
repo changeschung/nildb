@@ -5,7 +5,7 @@ import type { RepositoryError } from "#/common/app-error";
 import { succeedOrMapToRepositoryError } from "#/common/errors";
 import { CollectionName } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
-import type { Context } from "#/env";
+import type { AppBindings } from "#/env";
 
 type CacheValue<V> = {
   value: V;
@@ -58,12 +58,12 @@ export class Cache<K, V> {
 }
 
 export function findAccountByIdWithCache(
-  ctx: Context,
+  bindings: AppBindings,
   _id: NilDid,
 ): E.Effect<AccountDocument, RepositoryError> {
   return pipe(
     E.tryPromise(async () => {
-      const accountsCache = ctx.cache.accounts;
+      const accountsCache = bindings.cache.accounts;
 
       const account = accountsCache.get(_id as NilDid);
       if (account) {
@@ -71,7 +71,7 @@ export function findAccountByIdWithCache(
       }
 
       // Cache miss search database
-      const collection = ctx.db.primary.collection<AccountDocument>(
+      const collection = bindings.db.primary.collection<AccountDocument>(
         CollectionName.Accounts,
       );
       const result = await collection.findOne({ _id });

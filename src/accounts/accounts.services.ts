@@ -4,7 +4,7 @@ import type { AdminCreateAccountRequest } from "#/admin/admin.types";
 import { ServiceError } from "#/common/app-error";
 import { Identity } from "#/common/identity";
 import type { NilDid } from "#/common/nil-did";
-import type { Context } from "#/env";
+import type { AppBindings } from "#/env";
 import * as AccountRepository from "./accounts.repository";
 import type {
   OrganizationAccountDocument,
@@ -12,7 +12,7 @@ import type {
 } from "./accounts.types";
 
 export function find(
-  ctx: Context,
+  ctx: AppBindings,
   did: NilDid,
 ): E.Effect<OrganizationAccountDocument, ServiceError> {
   return pipe(
@@ -34,7 +34,7 @@ export function find(
 }
 
 export function createAccount(
-  ctx: Context,
+  ctx: AppBindings,
   data: RegisterAccountRequest | AdminCreateAccountRequest,
 ): E.Effect<NilDid, ServiceError> {
   return pipe(
@@ -85,7 +85,7 @@ export function createAccount(
 }
 
 export function remove(
-  ctx: Context,
+  ctx: AppBindings,
   id: NilDid,
 ): E.Effect<NilDid, ServiceError> {
   return pipe(
@@ -104,7 +104,7 @@ export function remove(
 }
 
 export function setSubscriptionState(
-  ctx: Context,
+  ctx: AppBindings,
   ids: NilDid[],
   active: boolean,
 ): E.Effect<NilDid[], ServiceError> {

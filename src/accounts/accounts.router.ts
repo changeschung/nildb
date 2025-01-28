@@ -1,16 +1,9 @@
-import { Router } from "express";
+import type { App } from "#/app";
+import type { AppBindings } from "#/env";
 import * as AccountController from "./accounts.controllers";
 
-export const AccountsEndpointV1 = {
-  Base: "/api/v1/accounts",
-} as const;
-
-export function buildAccountsRouter(): Router {
-  const router = Router();
-
-  router.get(AccountsEndpointV1.Base, AccountController.get);
-  router.post(AccountsEndpointV1.Base, AccountController.register);
-  router.delete(AccountsEndpointV1.Base, AccountController.remove);
-
-  return router;
+export function buildAccountsRouter(app: App, _bindings: AppBindings): void {
+  AccountController.get(app);
+  AccountController.register(app);
+  AccountController.deleteA(app);
 }

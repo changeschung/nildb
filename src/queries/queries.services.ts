@@ -7,7 +7,7 @@ import type { NilDid } from "#/common/nil-did";
 import { validateData } from "#/common/validator";
 import { flattenZodError } from "#/common/zod-utils";
 import * as DataRepository from "#/data/data.repository";
-import type { Context } from "#/env";
+import type { AppBindings } from "#/env";
 import * as OrganizationRepository from "#/organizations/organizations.repository";
 import pipelineSchema from "./mongodb_pipeline.json";
 import * as QueriesRepository from "./queries.repository";
@@ -15,7 +15,7 @@ import type { AddQueryRequest, ExecuteQueryRequest } from "./queries.types";
 import type { QueryArrayVariable, QueryDocument } from "./queries.types";
 
 export function addQuery(
-  ctx: Context,
+  ctx: AppBindings,
   request: AddQueryRequest & { owner: NilDid },
 ): E.Effect<UUID, ServiceError> {
   return pipe(
@@ -42,7 +42,7 @@ export function addQuery(
 }
 
 export function executeQuery(
-  ctx: Context,
+  ctx: AppBindings,
   request: ExecuteQueryRequest,
 ): E.Effect<JsonValue, DataValidationError | ServiceError> {
   return pipe(
@@ -69,7 +69,7 @@ export function executeQuery(
 }
 
 export function findQueries(
-  ctx: Context,
+  ctx: AppBindings,
   owner: NilDid,
 ): E.Effect<QueryDocument[], ServiceError> {
   return pipe(
@@ -84,7 +84,7 @@ export function findQueries(
 }
 
 export function removeQuery(
-  ctx: Context,
+  ctx: AppBindings,
   _id: UUID,
 ): E.Effect<boolean, ServiceError> {
   return pipe(

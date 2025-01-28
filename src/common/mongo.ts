@@ -1,5 +1,5 @@
 import { MongoClient, type UUID } from "mongodb";
-import type { Config, Context } from "#/env";
+import type { AppBindings, EnvVars } from "#/env";
 
 // A common base for all documents. UUID v4 is used so that records have a unique but stable
 // identifier across the cluster.
@@ -10,8 +10,8 @@ export type DocumentBase = {
 };
 
 export async function initAndCreateDbClients(
-  env: Config,
-): Promise<Context["db"]> {
+  env: EnvVars,
+): Promise<AppBindings["db"]> {
   const client = await MongoClient.connect(env.dbUri);
   const primary = client.db(env.dbNamePrimary);
   const data = client.db(env.dbNameData);

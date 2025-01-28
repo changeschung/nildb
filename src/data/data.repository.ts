@@ -10,13 +10,13 @@ import type { RepositoryError } from "#/common/app-error";
 import { succeedOrMapToRepositoryError } from "#/common/errors";
 import type { DocumentBase } from "#/common/mongo";
 import type { UuidDto } from "#/common/types";
-import type { Context } from "#/env";
+import type { AppBindings } from "#/env";
 import type { QueryDocument } from "#/queries/queries.types";
 import type { SchemaDocument } from "#/schemas/schemas.repository";
 import type { PartialDataDocumentDto } from "./data.types";
 
 export function createCollection(
-  ctx: Context,
+  ctx: AppBindings,
   schemaId: UUID,
   keys: string[],
 ): E.Effect<UUID, RepositoryError> {
@@ -45,7 +45,7 @@ export function createCollection(
 export const TAIL_DATA_LIMIT = 25;
 
 export function tailCollection(
-  ctx: Context,
+  ctx: AppBindings,
   schema: UUID,
 ): E.Effect<DataDocument[], RepositoryError> {
   const collection = ctx.db.data.collection<DataDocument>(schema.toString());
@@ -65,7 +65,7 @@ export function tailCollection(
 }
 
 export function deleteCollection(
-  ctx: Context,
+  ctx: AppBindings,
   schema: UUID,
 ): E.Effect<boolean, RepositoryError> {
   return pipe(
@@ -80,7 +80,7 @@ export function deleteCollection(
 }
 
 export function flushCollection(
-  ctx: Context,
+  ctx: AppBindings,
   schema: UUID,
 ): E.Effect<number, RepositoryError> {
   const collection = ctx.db.data.collection<DataDocument>(schema.toString());
@@ -112,7 +112,7 @@ export type UploadResult = {
 };
 
 export function insert(
-  ctx: Context,
+  ctx: AppBindings,
   schema: SchemaDocument,
   data: PartialDataDocumentDto[],
 ): E.Effect<UploadResult, RepositoryError> {
@@ -189,7 +189,7 @@ export type UpdateResult = {
 };
 
 export function updateMany(
-  ctx: Context,
+  ctx: AppBindings,
   schema: UUID,
   filter: Filter<DocumentBase>,
   update: UpdateFilter<DocumentBase>,
@@ -214,7 +214,7 @@ export function updateMany(
 }
 
 export function deleteMany(
-  ctx: Context,
+  ctx: AppBindings,
   schema: UUID,
   filter: StrictFilter<DocumentBase>,
 ): E.Effect<number, RepositoryError> {
@@ -235,7 +235,7 @@ export function deleteMany(
 }
 
 export function runAggregation(
-  ctx: Context,
+  ctx: AppBindings,
   query: QueryDocument,
   pipeline: Document[],
 ): E.Effect<JsonObject[], RepositoryError> {
@@ -254,7 +254,7 @@ export function runAggregation(
 }
 
 export function findMany(
-  ctx: Context,
+  ctx: AppBindings,
   schema: UUID,
   filter: Filter<DocumentBase>,
 ): E.Effect<DataDocument[], RepositoryError> {

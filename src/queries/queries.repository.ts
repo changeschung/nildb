@@ -4,11 +4,11 @@ import type { RepositoryError } from "#/common/app-error";
 import { succeedOrMapToRepositoryError } from "#/common/errors";
 import { CollectionName } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
-import type { Context } from "#/env";
+import type { AppBindings } from "#/env";
 import type { QueryDocument } from "./queries.types";
 
 export function insert(
-  ctx: Context,
+  ctx: AppBindings,
   document: QueryDocument,
 ): E.Effect<UUID, RepositoryError> {
   return pipe(
@@ -32,7 +32,7 @@ export function insert(
 }
 
 export function findMany(
-  ctx: Context,
+  ctx: AppBindings,
   filter: StrictFilter<QueryDocument>,
 ): E.Effect<QueryDocument[], RepositoryError> {
   return pipe(
@@ -50,7 +50,7 @@ export function findMany(
 }
 
 export function findOne(
-  ctx: Context,
+  ctx: AppBindings,
   filter: StrictFilter<QueryDocument>,
 ): E.Effect<QueryDocument, RepositoryError> {
   return pipe(
@@ -69,7 +69,7 @@ export function findOne(
 }
 
 export function deleteMany(
-  ctx: Context,
+  ctx: AppBindings,
   filter: StrictFilter<QueryDocument>,
 ): E.Effect<number, RepositoryError> {
   return pipe(
@@ -93,7 +93,7 @@ export function deleteMany(
 }
 
 export function findOneAndDelete(
-  ctx: Context,
+  ctx: AppBindings,
   filter: StrictFilter<QueryDocument>,
 ): E.Effect<QueryDocument, RepositoryError> {
   return pipe(

@@ -1,29 +1,20 @@
-import { Router } from "express";
 import { StatusCodes } from "http-status-codes";
-import { AdminEndpointV1 } from "#/admin/admin.router";
+import type { App } from "#/app";
+import { PathsV1 } from "#/common/paths";
+import type { AppBindings } from "#/env";
 import { isRoleAllowed } from "#/middleware/auth.middleware";
 import * as QueriesController from "#/queries/queries.controllers";
 
-export const QueriesEndpointV1 = {
-  Base: "/api/v1/queries",
-  Execute: "/api/v1/queries/execute",
-} as const;
-
-export function buildQueriesRouter(): Router {
-  const router = Router();
-
-  router.use(AdminEndpointV1.Base, (req, res, next): void => {
-    if (!isRoleAllowed(req, ["organization"])) {
-      res.sendStatus(StatusCodes.UNAUTHORIZED);
-      return;
-    }
-    next();
+export function buildQueriesRouter(app: App, _bindings: AppBindings): void {
+  // biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
+  app.use(PathsV1.queries.root, async (c, next): Promise<void | Response> => {
+    return isRoleAllowed(c, ["organization"])
+      ? next()
+      : c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
   });
 
-  router.get(QueriesEndpointV1.Base, QueriesController.listQueries);
-  router.post(QueriesEndpointV1.Base, QueriesController.addQuery);
-  router.delete(QueriesEndpointV1.Base, QueriesController.deleteQuery);
-  router.post(QueriesEndpointV1.Execute, QueriesController.executeQuery);
-
-  return router;
+  QueriesController.add(app);
+  QueriesController.deleteQ(app);
+  QueriesController.execute(app);
+  QueriesController.list(app);
 }

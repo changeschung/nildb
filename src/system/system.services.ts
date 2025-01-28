@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { NilDid } from "#/common/nil-did";
-import type { Context } from "#/env";
+import type { AppBindings } from "#/env";
 
 export type AboutNode = {
   started: Date;
@@ -21,17 +21,17 @@ type BuildInfo = {
 const started = new Date();
 let buildInfo: BuildInfo;
 
-export function getNodeInfo(ctx: Context): AboutNode {
+export function getNodeInfo(bindings: AppBindings): AboutNode {
   return {
     started,
-    build: getBuildInfo(ctx),
-    did: ctx.node.identity.did,
-    publicKey: ctx.node.identity.pk,
-    url: ctx.node.endpoint,
+    build: getBuildInfo(bindings),
+    did: bindings.node.identity.did,
+    publicKey: bindings.node.identity.pk,
+    url: bindings.node.endpoint,
   };
 }
 
-function getBuildInfo(ctx: Context): BuildInfo {
+function getBuildInfo(bindings: AppBindings): BuildInfo {
   if (buildInfo) {
     return buildInfo;
   }
@@ -43,7 +43,7 @@ function getBuildInfo(ctx: Context): BuildInfo {
     const content = fs.readFileSync(buildInfoPath, "utf-8");
     return JSON.parse(content) as BuildInfo;
   } catch (_error) {
-    ctx.log.info("No buildinfo.json found using fallback values");
+    bindings.log.info("No buildinfo.json found using fallback values");
     buildInfo = {
       time: "1970-01-01T00:00:00Z",
       commit: "unknown",

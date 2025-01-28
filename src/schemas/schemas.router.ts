@@ -1,27 +1,19 @@
-import { Router } from "express";
 import { StatusCodes } from "http-status-codes";
-import { AdminEndpointV1 } from "#/admin/admin.router";
+import type { App } from "#/app";
+import { PathsV1 } from "#/common/paths";
+import type { AppBindings } from "#/env";
 import { isRoleAllowed } from "#/middleware/auth.middleware";
 import * as SchemasController from "#/schemas/schemas.controllers";
 
-export const SchemasEndpointV1 = {
-  Base: "/api/v1/schemas",
-} as const;
-
-export function buildSchemasRouter(): Router {
-  const router = Router();
-
-  router.use(AdminEndpointV1.Base, (req, res, next): void => {
-    if (!isRoleAllowed(req, ["organization"])) {
-      res.sendStatus(StatusCodes.UNAUTHORIZED);
-      return;
-    }
-    next();
+export function buildSchemasRouter(app: App, _bindings: AppBindings): void {
+  // biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
+  app.use(PathsV1.schemas.root, async (c, next): Promise<void | Response> => {
+    return isRoleAllowed(c, ["organization"])
+      ? next()
+      : c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
   });
 
-  router.get(SchemasEndpointV1.Base, SchemasController.listSchemas);
-  router.post(SchemasEndpointV1.Base, SchemasController.addSchema);
-  router.delete(SchemasEndpointV1.Base, SchemasController.deleteSchema);
-
-  return router;
+  SchemasController.listSchemas(app);
+  SchemasController.addSchema(app);
+  SchemasController.deleteSchema(app);
 }

@@ -2,7 +2,7 @@ import { Effect as E, pipe } from "effect";
 import { UUID } from "mongodb";
 import { type DataValidationError, ServiceError } from "#/common/app-error";
 import { validateData } from "#/common/validator";
-import type { Context } from "#/env";
+import type { AppBindings } from "#/env";
 import * as SchemasRepository from "#/schemas/schemas.repository";
 import type {
   DataDocument,
@@ -18,7 +18,7 @@ import type {
 } from "./data.types";
 
 export function createRecords(
-  ctx: Context,
+  ctx: AppBindings,
   schemaId: UUID,
   data: Record<string, unknown>[],
 ): E.Effect<UploadResult, DataValidationError | ServiceError> {
@@ -47,7 +47,7 @@ export function createRecords(
 }
 
 export function updateRecords(
-  ctx: Context,
+  ctx: AppBindings,
   request: UpdateDataRequest,
 ): E.Effect<UpdateResult, ServiceError> {
   return pipe(
@@ -65,7 +65,7 @@ export function updateRecords(
 }
 
 export function readRecords(
-  ctx: Context,
+  ctx: AppBindings,
   request: ReadDataRequest,
 ): E.Effect<DataDocument[], ServiceError> {
   return pipe(
@@ -116,7 +116,7 @@ export function readRecords(
 }
 
 export function deleteRecords(
-  ctx: Context,
+  ctx: AppBindings,
   request: DeleteDataRequest,
 ): E.Effect<number, ServiceError> {
   return pipe(
@@ -129,7 +129,7 @@ export function deleteRecords(
 }
 
 export function flushCollection(
-  ctx: Context,
+  ctx: AppBindings,
   schema: UUID,
 ): E.Effect<number, ServiceError> {
   return pipe(
@@ -142,7 +142,7 @@ export function flushCollection(
 }
 
 export function tailData(
-  ctx: Context,
+  ctx: AppBindings,
   schema: UUID,
 ): E.Effect<DataDocument[], ServiceError> {
   return pipe(

@@ -1,116 +1,110 @@
+import { zValidator } from "@hono/zod-validator";
 import { Effect as E, pipe } from "effect";
-import type { RequestHandler } from "express";
-import type { EmptyObject, JsonArray } from "type-fest";
-import { type ApiResponse, foldToApiResponse } from "#/common/handler";
-import type { DocumentBase } from "#/common/mongo";
-import { parseUserData } from "#/common/zod-utils";
-import type { UpdateResult, UploadResult } from "#/data/data.repository";
+import type { App } from "#/app";
+import { foldToApiResponse } from "#/common/handler";
+import { PathsV1 } from "#/common/paths";
 import * as DataService from "#/data/data.services";
 import {
-  type DeleteDataRequest,
   DeleteDataRequestSchema,
-  type FlushDataRequest,
   FlushDataRequestSchema,
-  type ReadDataRequest,
   ReadDataRequestSchema,
-  type TailDataRequest,
   TailDataRequestSchema,
-  type UpdateDataRequest,
   UpdateDataRequestSchema,
-  type UploadDataRequest,
   UploadDataRequestSchema,
 } from "#/data/data.types";
 
-export const deleteData: RequestHandler<
-  EmptyObject,
-  ApiResponse<number>,
-  DeleteDataRequest
-> = async (req, res) => {
-  const { ctx, body } = req;
+export function deleteD(app: App): void {
+  app.delete(
+    PathsV1.data.root,
+    zValidator("json", DeleteDataRequestSchema),
+    async (c) => {
+      const payload = c.req.valid("json");
 
-  await pipe(
-    parseUserData<DeleteDataRequest>(() => DeleteDataRequestSchema.parse(body)),
-    E.flatMap((payload) => DataService.deleteRecords(ctx, payload)),
-    foldToApiResponse(req, res),
-    E.runPromise,
+      return await pipe(
+        DataService.deleteRecords(c.env, payload),
+        foldToApiResponse(c),
+        E.runPromise,
+      );
+    },
   );
-};
+}
 
-export const flushData: RequestHandler<
-  EmptyObject,
-  ApiResponse<number>,
-  FlushDataRequest
-> = async (req, res) => {
-  const { ctx, body } = req;
+export function flush(app: App): void {
+  app.post(
+    PathsV1.data.flush,
+    zValidator("json", FlushDataRequestSchema),
+    async (c) => {
+      const payload = c.req.valid("json");
 
-  await pipe(
-    parseUserData<FlushDataRequest>(() => FlushDataRequestSchema.parse(body)),
-    E.flatMap((payload) => DataService.flushCollection(ctx, payload.schema)),
-    foldToApiResponse(req, res),
-    E.runPromise,
+      return await pipe(
+        DataService.flushCollection(c.env, payload.schema),
+        foldToApiResponse(c),
+        E.runPromise,
+      );
+    },
   );
-};
+}
 
-export const readData: RequestHandler<
-  EmptyObject,
-  ApiResponse<DocumentBase[]>,
-  ReadDataRequest
-> = async (req, res) => {
-  const { ctx, body } = req;
+export function read(app: App): void {
+  app.post(
+    PathsV1.data.read,
+    zValidator("json", ReadDataRequestSchema),
+    async (c) => {
+      const payload = c.req.valid("json");
 
-  await pipe(
-    parseUserData<ReadDataRequest>(() => ReadDataRequestSchema.parse(body)),
-    E.flatMap((payload) => DataService.readRecords(ctx, payload)),
-    foldToApiResponse(req, res),
-    E.runPromise,
+      return await pipe(
+        DataService.readRecords(c.env, payload),
+        foldToApiResponse(c),
+        E.runPromise,
+      );
+    },
   );
-};
+}
 
-export const tailData: RequestHandler<
-  EmptyObject,
-  ApiResponse<JsonArray>,
-  TailDataRequest
-> = async (req, res) => {
-  const { ctx, body } = req;
+export function tail(app: App): void {
+  app.post(
+    PathsV1.data.tail,
+    zValidator("json", TailDataRequestSchema),
+    async (c) => {
+      const payload = c.req.valid("json");
 
-  await pipe(
-    parseUserData<TailDataRequest>(() => TailDataRequestSchema.parse(body)),
-    E.flatMap((payload) => DataService.tailData(ctx, payload.schema)),
-    foldToApiResponse(req, res),
-    E.runPromise,
+      return await pipe(
+        DataService.tailData(c.env, payload.schema),
+        foldToApiResponse(c),
+        E.runPromise,
+      );
+    },
   );
-};
+}
 
-export const uploadData: RequestHandler<
-  EmptyObject,
-  ApiResponse<UploadResult>,
-  UploadDataRequest
-> = async (req, res) => {
-  const { ctx, body } = req;
+export function update(app: App): void {
+  app.put(
+    PathsV1.data.root,
+    zValidator("json", UpdateDataRequestSchema),
+    async (c) => {
+      const payload = c.req.valid("json");
 
-  await pipe(
-    parseUserData<UploadDataRequest>(() => UploadDataRequestSchema.parse(body)),
-    E.flatMap((payload) => {
-      return DataService.createRecords(ctx, payload.schema, payload.data);
-    }),
-    foldToApiResponse(req, res),
-    E.runPromise,
+      return await pipe(
+        DataService.updateRecords(c.env, payload),
+        foldToApiResponse(c),
+        E.runPromise,
+      );
+    },
   );
-};
+}
 
-export const updateData: RequestHandler<
-  EmptyObject,
-  ApiResponse<UpdateResult>,
-  UpdateDataRequest
-> = async (req, res) => {
-  const { ctx, body } = req;
+export function upload(app: App): void {
+  app.post(
+    PathsV1.data.upload,
+    zValidator("json", UploadDataRequestSchema),
+    async (c) => {
+      const payload = c.req.valid("json");
 
-  await pipe(
-    parseUserData<UpdateDataRequest>(() => UpdateDataRequestSchema.parse(body)),
-    E.flatMap((body) => {
-      return DataService.updateRecords(ctx, body);
-    }),
-    foldToApiResponse(req, res),
-    E.runPromise,
+      return await pipe(
+        DataService.createRecords(c.env, payload.schema, payload.data),
+        foldToApiResponse(c),
+        E.runPromise,
+      );
+    },
   );
-};
+}

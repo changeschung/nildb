@@ -1,4 +1,5 @@
-import { Router } from "express";
+import type { App } from "#/app";
+import type { AppBindings } from "#/env";
 import * as SystemController from "./system.controllers";
 
 export const SystemEndpoint = {
@@ -7,11 +8,7 @@ export const SystemEndpoint = {
   Metrics: "/metrics",
 } as const;
 
-export function createSystemRouter(): Router {
-  const router = Router();
-
-  router.get(SystemEndpoint.About, SystemController.aboutNodeController);
-  router.get(SystemEndpoint.Health, SystemController.healthCheckController);
-
-  return router;
+export function buildSystemRouter(app: App, _bindings: AppBindings): void {
+  SystemController.aboutNode(app);
+  SystemController.healthCheck(app);
 }

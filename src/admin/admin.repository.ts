@@ -4,7 +4,7 @@ import type { RepositoryError } from "#/common/app-error";
 import { succeedOrMapToRepositoryError } from "#/common/errors";
 import { CollectionName } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
-import type { Context } from "#/env";
+import type { AppBindings } from "#/env";
 import type {
   AccountDocument,
   AdminAccountDocument,
@@ -28,7 +28,7 @@ export function toAdminAccountDocument(
 }
 
 export function deleteOneById(
-  ctx: Context,
+  ctx: AppBindings,
   _id: NilDid,
 ): E.Effect<NilDid, RepositoryError> {
   const filter: StrictFilter<AccountDocument> = {
@@ -51,7 +51,7 @@ export function deleteOneById(
 }
 
 export function findById(
-  ctx: Context,
+  ctx: AppBindings,
   _id: NilDid,
 ): E.Effect<AccountDocument, RepositoryError> {
   return pipe(
@@ -70,7 +70,7 @@ export function findById(
 }
 
 export function insert(
-  ctx: Context,
+  ctx: AppBindings,
   document: AdminAccountDocument,
 ): E.Effect<NilDid, RepositoryError> {
   return pipe(
@@ -89,7 +89,7 @@ export function insert(
 }
 
 export function listAll(
-  ctx: Context,
+  ctx: AppBindings,
 ): E.Effect<AccountDocument[], RepositoryError> {
   return pipe(
     E.tryPromise(() => {
