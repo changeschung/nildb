@@ -1,23 +1,24 @@
-import { beforeAll, describe, expect, it } from "vitest";
-import { type AppFixture, buildFixture } from "./fixture/app-fixture";
+import { describe } from "vitest";
+import type { AboutNode } from "#/system/system.services";
+import { createTestFixtureExtension } from "./fixture/it";
 
 describe("system.test.ts", () => {
-  let fixture: AppFixture;
+  const { it, beforeAll, afterAll } = createTestFixtureExtension();
+  beforeAll(async (_ctx) => {});
+  afterAll(async (_ctx) => {});
 
-  beforeAll(async () => {
-    fixture = await buildFixture();
+  it("responds to health checks", async ({ expect, admin }) => {
+    const response = await admin.health();
+    expect(response.ok).toBeTruthy();
   });
 
-  it("responds to health checks", () => {
-    return fixture.users.admin.health().expect(200);
-  });
+  it("reports app version", async ({ expect, bindings, admin }) => {
+    const response = await admin.about();
+    expect(response.ok).toBeTruthy();
 
-  it("reports app version", async () => {
-    const response = await fixture.users.admin.about().expect(200);
-    const body = response.body;
-
-    expect(body.build.version).toBe("0.0.0");
-    expect(body.did).toBe(fixture.ctx.node.identity.did);
-    expect(body.publicKey).toBe(fixture.ctx.node.identity.pk);
+    const result = (await response.json()) as unknown as AboutNode;
+    expect(result.build.version).toBe("0.0.0");
+    expect(result.did).toBe(bindings.node.identity.did);
+    expect(result.publicKey).toBe(bindings.node.identity.pk);
   });
 });

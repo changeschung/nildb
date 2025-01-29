@@ -60,7 +60,6 @@
     "@vitest/coverage-v8": "^3.0.3",
     "commander": "^13.1.0",
     "lefthook": "^1.10.10",
-    "supertest": "^7.0.0",
     "type-fest": "^4.33.0",
     "typescript": "^5.7.3",
     "vite": "^6.0.11",

@@ -1,56 +1,63 @@
 import { faker } from "@faker-js/faker";
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe } from "vitest";
 import { type UuidDto, createUuidDto } from "#/common/types";
 import { TAIL_DATA_LIMIT } from "#/data/data.repository";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
-import {
-  type AppFixture,
-  type QueryFixture,
-  type SchemaFixture,
-  buildFixture,
-  registerSchemaAndQuery,
-} from "./fixture/app-fixture";
-import type { TestOrganizationUserClient } from "./fixture/test-org-user-client";
+import { expectSuccessResponse } from "./fixture/assertions";
+import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
+import { createTestFixtureExtension } from "./fixture/it";
 
-describe("read.data.test", () => {
-  let fixture: AppFixture;
-  let organization: TestOrganizationUserClient;
+describe("data reading operations", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
+  const { it, beforeAll, afterAll } = createTestFixtureExtension({
+    schema,
+    query,
+  });
+
+  type Record = {
+    _id: UuidDto;
+    name: string;
+  };
 
   const collectionSize = 100;
-  const data = Array.from({ length: collectionSize }, () => ({
+  const testData: Record[] = Array.from({ length: collectionSize }, () => ({
     _id: createUuidDto(),
     name: faker.person.fullName(),
   }));
 
-  beforeAll(async () => {
-    fixture = await buildFixture();
-    organization = fixture.users.organization;
-    await registerSchemaAndQuery(fixture, schema, query);
-
-    const _response = await organization.uploadData({
+  beforeAll(async ({ organization }) => {
+    const response = await organization.uploadData({
       schema: schema.id,
-      data,
+      data: testData,
     });
+
+    await expectSuccessResponse(response);
   });
 
-  it("can tail a collection", async () => {
-    const response = await organization.tailData({ schema: schema.id });
+  afterAll(async (_ctx) => {});
 
-    expect(response.body.data).toHaveLength(TAIL_DATA_LIMIT);
+  it("can tail a collection", async ({ expect, organization }) => {
+    const response = await organization.tailData({
+      schema: schema.id,
+    });
+
+    const result = await expectSuccessResponse<Record[]>(response);
+    expect(result.data).toHaveLength(TAIL_DATA_LIMIT);
   });
 
-  it("can read data from a collection", async () => {
-    const record = data[Math.floor(Math.random() * collectionSize)];
+  it("can read data from a collection", async ({ expect, organization }) => {
+    const testRecord = testData[Math.floor(Math.random() * collectionSize)];
 
-    const filter = { name: record.name };
-    const response = await organization.readData({ schema: schema.id, filter });
-    const result = response.body.data as { _id: UuidDto; name: string }[];
+    const response = await organization.readData({
+      schema: schema.id,
+      filter: { name: testRecord.name },
+    });
 
-    expect(result).toHaveLength(1);
-    expect(result[0]?._id).toBe(record._id);
-    expect(result[0]?.name).toBe(record.name);
+    const result = await expectSuccessResponse<Record[]>(response);
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0]?._id).toBe(testRecord._id);
+    expect(result.data[0]?.name).toBe(testRecord.name);
   });
 });

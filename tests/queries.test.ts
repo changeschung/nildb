@@ -1,38 +1,36 @@
 import { UUID } from "mongodb";
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe } from "vitest";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import { CollectionName } from "#/common/mongo";
-import type { Context } from "#/env";
+import type { UuidDto } from "#/common/types";
+import type { QueryDocument } from "#/queries/queries.types";
 import type { SchemaDocument } from "#/schemas/schemas.repository";
 import queryJson from "./data/simple.query.json";
-import {
-  type AppFixture,
-  type QueryFixture,
-  buildFixture,
-} from "./fixture/app-fixture";
-import { assertDefined } from "./fixture/assertions";
-import type { TestOrganizationUserClient } from "./fixture/test-org-user-client";
+import schemaJson from "./data/simple.schema.json";
+import { assertDefined, expectSuccessResponse } from "./fixture/assertions";
+import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
+import { createTestFixtureExtension } from "./fixture/it";
 
 describe("query.test.ts", () => {
-  let fixture: AppFixture;
-  let db: Context["db"];
-  let organization: TestOrganizationUserClient;
+  const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
 
-  beforeAll(async () => {
-    fixture = await buildFixture();
-    db = fixture.ctx.db;
-    organization = fixture.users.organization;
-    // placeholder schema id so addQuery passes validation
-    query.schema = new UUID();
+  // don't pass in query since this suite is testing query creation
+  const { it, beforeAll, afterAll } = createTestFixtureExtension({ schema });
+  beforeAll(async (_ctx) => {
+    query.schema = schema.id;
   });
 
-  it("can list queries (expect 0)", async () => {
+  afterAll(async (_ctx) => {});
+
+  it("can list queries (expect 0)", async ({ expect, organization }) => {
     const response = await organization.listQueries();
-    expect(response.body.data).toHaveLength(0);
+
+    const result = await expectSuccessResponse<QueryDocument[]>(response);
+    expect(result.data).toHaveLength(0);
   });
 
-  it("can add a query", async () => {
+  it("can add a query", async ({ expect, organization }) => {
     const response = await organization.addQuery({
       _id: new UUID(),
       name: query.name,
@@ -41,28 +39,33 @@ describe("query.test.ts", () => {
       pipeline: query.pipeline,
     });
 
-    const uuid = new UUID(response.body.data);
+    const result = await expectSuccessResponse<UuidDto>(response);
+    const uuid = new UUID(result.data);
     expect(uuid).toBeTruthy();
-    query.id = new UUID(response.body.data);
+    query.id = uuid;
   });
 
-  it("can list queries (expect 1)", async () => {
+  it("can list queries (expect 1)", async ({ expect, organization }) => {
     const response = await organization.listQueries();
-    expect(response.body.data).toHaveLength(1);
+
+    const result = await expectSuccessResponse<QueryDocument[]>(response);
+    expect(result.data).toHaveLength(1);
   });
 
-  it("can delete a query", async () => {
-    const _response = await organization.deleteQuery({
+  it("can delete a query", async ({ expect, bindings, organization }) => {
+    const response = await organization.deleteQuery({
       id: query.id,
     });
 
-    const queryDocument = await db.primary
+    await expectSuccessResponse(response);
+
+    const queryDocument = await bindings.db.primary
       .collection<SchemaDocument>(CollectionName.Schemas)
       .findOne({ _id: query.id });
 
     expect(queryDocument).toBeNull();
 
-    const record = await db.primary
+    const record = await bindings.db.primary
       .collection<OrganizationAccountDocument>(CollectionName.Accounts)
       .findOne({ _id: organization.did });
     assertDefined(record);

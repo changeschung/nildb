@@ -1,36 +1,34 @@
-import { beforeAll, describe, expect, it } from "vitest";
-import { createUuidDto } from "#/common/types";
+import { describe } from "vitest";
+import { type UuidDto, createUuidDto } from "#/common/types";
 import type { DataDocument, UploadResult } from "#/data/data.repository";
-import type { Context } from "#/env";
 import queryJson from "./data/wallet.query.json";
 import schemaJson from "./data/wallet.schema.json";
 import {
-  type AppFixture,
-  type QueryFixture,
-  type SchemaFixture,
-  buildFixture,
-  registerSchemaAndQuery,
-} from "./fixture/app-fixture";
-import { assertDefined } from "./fixture/assertions";
-import type { TestOrganizationUserClient } from "./fixture/test-org-user-client";
+  expectErrorResponse,
+  expectSuccessResponse,
+} from "./fixture/assertions";
+import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
+import { createTestFixtureExtension } from "./fixture/it";
 
-describe("data.test.ts", () => {
-  let fixture: AppFixture;
-  let db: Context["db"];
-  let organization: TestOrganizationUserClient;
-
+describe("data operations", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
-
-  beforeAll(async () => {
-    fixture = await buildFixture();
-    db = fixture.ctx.db;
-    organization = fixture.users.organization;
-    await registerSchemaAndQuery(fixture, schema, query);
+  const { it, beforeAll, afterAll } = createTestFixtureExtension({
+    schema,
+    query,
   });
+  beforeAll(async (_ctx) => {});
+  afterAll(async (_ctx) => {});
 
-  it("can upload data", async () => {
-    const data = [
+  type Record = {
+    _id: UuidDto;
+    wallet: string;
+    country: string;
+    age: number;
+  };
+
+  it("can upload data", async ({ expect, bindings, organization }) => {
+    const data: Record[] = [
       {
         _id: createUuidDto(),
         wallet: "0x1",
@@ -56,14 +54,19 @@ describe("data.test.ts", () => {
       data,
     });
 
-    expect(response.body.data.created).toHaveLength(3);
+    const result = await expectSuccessResponse<UploadResult>(response);
+    expect(result.data.created).toHaveLength(3);
 
-    const cursor = db.data.collection(schema.id.toString()).find({});
+    const cursor = bindings.db.data.collection(schema.id.toString()).find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(3);
   });
 
-  it("rejects primary key collisions", async () => {
+  it("rejects primary key collisions", async ({
+    expect,
+    bindings,
+    organization,
+  }) => {
     const data = [
       {
         _id: createUuidDto(),
@@ -77,16 +80,17 @@ describe("data.test.ts", () => {
       schema: schema.id,
       data,
     });
-    const result = response.body.data as UploadResult;
-    expect(result.errors).toHaveLength(1);
 
-    const cursor = db.data.collection(schema.id.toString()).find({});
+    const result = await expectSuccessResponse<UploadResult>(response);
+    expect(result.data.errors).toHaveLength(1);
+
+    const cursor = bindings.db.data.collection(schema.id.toString()).find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(3);
   });
 
-  it("allows for partial success", async () => {
-    const data = [
+  it("allows for partial success", async ({ expect, organization }) => {
+    const data: Record[] = [
       {
         _id: createUuidDto(),
         wallet: "0x1", // collides expect failure
@@ -106,13 +110,17 @@ describe("data.test.ts", () => {
       data,
     });
 
-    const result = response.body.data as UploadResult;
-    expect(result.errors).toHaveLength(1);
-    expect(result.created).toHaveLength(1);
+    const result = await expectSuccessResponse<UploadResult>(response);
+    expect(result.data.errors).toHaveLength(1);
+    expect(result.data.created).toHaveLength(1);
   });
 
-  it("rejects duplicates in data payload", async () => {
-    const data = [
+  it("rejects duplicates in data payload", async ({
+    expect,
+    bindings,
+    organization,
+  }) => {
+    const data: Record[] = [
       {
         _id: createUuidDto(),
         wallet: "0x4",
@@ -127,44 +135,44 @@ describe("data.test.ts", () => {
       },
     ];
 
-    const _response = await organization.uploadData({
+    await organization.uploadData({
       schema: schema.id,
       data,
     });
 
-    const cursor = db.data.collection(schema.id.toString()).find({});
+    const cursor = bindings.db.data.collection(schema.id.toString()).find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(4);
   });
 
-  it("rejects data that does not conform", async () => {
-    const data = [
+  it("rejects data that does not conform", async ({ expect, organization }) => {
+    const data: Record[] = [
       {
         _id: createUuidDto(),
-        wallet: true, // should be string
+        // @ts-expect-error should be string but want to check rejection
+        wallet: true,
         country: "GBR",
         age: 30,
       },
     ];
 
-    const response = await organization.uploadData(
-      {
-        schema: schema.id,
-        data,
-      },
-      false,
-    );
+    const response = await organization.uploadData({
+      schema: schema.id,
+      data,
+    });
 
-    expect(response.body.errors).toContain("Schema validation failed");
+    const error = await expectErrorResponse(response);
+    expect(error.errors).toContain("Schema validation failed");
   });
 
-  it("can run a query", async () => {
+  it("can run a query", async ({ expect, organization }) => {
     const response = await organization.executeQuery({
       id: query.id,
       variables: query.variables,
     });
 
-    expect(response.body.data).toEqual([
+    const result = await expectSuccessResponse(response);
+    expect(result.data).toEqual([
       {
         averageAge: 30,
         count: 3,
@@ -172,31 +180,40 @@ describe("data.test.ts", () => {
     ]);
   });
 
-  it("can read data by a single id", async () => {
-    const expected = await db.data
+  it("can read data by a single id", async ({
+    expect,
+    bindings,
+    organization,
+  }) => {
+    const expected = await bindings.db.data
       .collection<DataDocument>(schema.id.toString())
       .findOne({});
 
-    assertDefined(expected);
-    const _id = expected._id.toString();
+    expect(expected).toBeDefined();
+    const _id = expected!._id.toString();
 
     const response = await organization.readData({
       schema: schema.id,
       filter: { _id },
     });
 
-    const actual = response.body.data[0];
+    const result = await expectSuccessResponse<Record[]>(response);
+    const actual = result.data[0];
     expect(actual._id).toBe(_id);
   });
 
-  it("can read data from a list of ids", async () => {
-    const expected = await db.data
+  it("can read data from a list of ids", async ({
+    expect,
+    bindings,
+    organization,
+  }) => {
+    const expected = await bindings.db.data
       .collection<DataDocument>(schema.id.toString())
       .find({})
       .limit(3)
       .toArray();
 
-    assertDefined(expected);
+    expect(expected).toBeDefined();
     const ids = expected.map((document) => document._id.toString());
 
     const response = await organization.readData({
@@ -204,7 +221,7 @@ describe("data.test.ts", () => {
       filter: { _id: { $in: ids } },
     });
 
-    const actual = response.body.data;
-    expect(actual).toHaveLength(3);
+    const result = await expectSuccessResponse(response);
+    expect(result.data).toHaveLength(3);
   });
 });
