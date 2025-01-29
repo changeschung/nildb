@@ -47,7 +47,8 @@ export function deleteQ(app: App): void {
       return await pipe(
         enforceQueryOwnership(account, payload.id, payload),
         E.flatMap((payload) => QueriesService.removeQuery(c.env, payload.id)),
-        foldToApiResponse<boolean>(c),
+        E.map(() => payload.id.toString() as UuidDto),
+        foldToApiResponse<UuidDto>(c),
         E.runPromise,
       );
     },

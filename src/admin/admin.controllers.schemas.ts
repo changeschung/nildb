@@ -4,7 +4,6 @@ import { foldToApiResponse } from "#/common/handler";
 import { PathsV1 } from "#/common/paths";
 import type { UuidDto } from "#/common/types";
 import { payloadValidator } from "#/common/zod-utils";
-import type { SchemaDocument } from "#/schemas/schemas.repository";
 import * as SchemasService from "#/schemas/schemas.services";
 import { DeleteSchemaRequestSchema } from "#/schemas/schemas.types";
 import { AdminAddSchemaRequestSchema } from "./admin.types";
@@ -35,7 +34,8 @@ export function deleteS(app: App): void {
 
       return await pipe(
         SchemasService.deleteSchema(c.env, payload.id),
-        foldToApiResponse<SchemaDocument>(c),
+        E.map((id) => id.toString() as UuidDto),
+        foldToApiResponse<UuidDto>(c),
         E.runPromise,
       );
     },

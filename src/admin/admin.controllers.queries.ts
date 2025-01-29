@@ -38,7 +38,8 @@ export function deleteQ(app: App): void {
 
       return await pipe(
         QueriesService.removeQuery(c.env, payload.id),
-        foldToApiResponse<boolean>(c),
+        E.map(() => payload.id.toString() as UuidDto),
+        foldToApiResponse<UuidDto>(c),
         E.runPromise,
       );
     },

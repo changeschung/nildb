@@ -57,7 +57,8 @@ export function deleteS(app: App): void {
       return await pipe(
         enforceSchemaOwnership(account, payload.id, payload),
         E.flatMap((payload) => SchemasService.deleteSchema(c.env, payload.id)),
-        foldToApiResponse<SchemaDocument>(c),
+        E.map((id) => id.toString() as UuidDto),
+        foldToApiResponse<UuidDto>(c),
         E.runPromise,
       );
     },
