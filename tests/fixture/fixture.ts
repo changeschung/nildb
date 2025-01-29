@@ -5,6 +5,7 @@ import { UUID } from "mongodb";
 import type { JsonObject } from "type-fest";
 import { buildApp } from "#/app";
 import { Identity } from "#/common/identity";
+import { mongoMigrateUp } from "#/common/mongo";
 import type { UuidDto } from "#/common/types";
 import {
   type AppBindings,
@@ -51,6 +52,8 @@ export async function buildFixture(
   });
 
   const bindings = await loadBindings(config);
+  await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
+
   const { app } = buildApp(bindings);
 
   const node = {

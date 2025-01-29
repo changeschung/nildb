@@ -1,5 +1,6 @@
 import { serve } from "@hono/node-server";
 import dotenv from "dotenv";
+import { mongoMigrateUp } from "#/common/mongo";
 import { buildApp } from "./app";
 import { loadBindings } from "./env";
 
@@ -9,6 +10,8 @@ async function main() {
   console.info("! Starting api ...");
 
   const bindings = await loadBindings();
+  await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
+
   const { app, metrics } = buildApp(bindings);
 
   serve(
