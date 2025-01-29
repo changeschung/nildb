@@ -20,7 +20,7 @@ export type AppEnv = {
   Variables: AppVariables;
 };
 
-const EnvVarsSchema = z.object({
+export const EnvVarsSchema = z.object({
   dbNamePrimary: z.string().min(4),
   dbNameData: z.string().min(4),
   dbUri: z.string().startsWith("mongodb"),
@@ -58,18 +58,20 @@ export type AppVariables = {
   account: AccountDocument;
 };
 
-export async function loadBindings(): Promise<AppBindings> {
-  const config = EnvVarsSchema.parse({
-    dbNamePrimary: process.env.APP_DB_NAME_PRIMARY,
-    dbNameData: process.env.APP_DB_NAME_DATA,
-    dbUri: process.env.APP_DB_URI,
-    env: process.env.APP_ENV,
-    logLevel: process.env.APP_LOG_LEVEL,
-    nodeSecretKey: process.env.APP_NODE_SECRET_KEY,
-    nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
-    metricsPort: Number(process.env.APP_METRICS_PORT),
-    webPort: Number(process.env.APP_PORT),
-  });
+export async function loadBindings(override?: EnvVars): Promise<AppBindings> {
+  const config = override
+    ? override
+    : EnvVarsSchema.parse({
+        dbNamePrimary: process.env.APP_DB_NAME_PRIMARY,
+        dbNameData: process.env.APP_DB_NAME_DATA,
+        dbUri: process.env.APP_DB_URI,
+        env: process.env.APP_ENV,
+        logLevel: process.env.APP_LOG_LEVEL,
+        nodeSecretKey: process.env.APP_NODE_SECRET_KEY,
+        nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
+        metricsPort: Number(process.env.APP_METRICS_PORT),
+        webPort: Number(process.env.APP_PORT),
+      });
 
   const node = {
     identity: Identity.fromSk(config.nodeSecretKey),
