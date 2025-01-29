@@ -24,7 +24,7 @@ export function foldToApiResponse<T>(c: AppContext) {
           c.env.log.debug("Request failed: %O", error);
           return c.json(
             {
-              errors: error.reason,
+              errors: Array.from(error.reason),
               ts: new Date(),
             },
             StatusCodes.BAD_REQUEST,

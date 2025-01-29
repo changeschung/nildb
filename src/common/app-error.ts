@@ -5,7 +5,7 @@ type ErrorOptions = {
 };
 
 export abstract class AppError extends Error {
-  public reason: string[];
+  public reason: Set<string>;
   public code?: number;
   public cause?: unknown;
   public context?: Record<string, unknown>;
@@ -17,10 +17,14 @@ export abstract class AppError extends Error {
     super(_tag);
     this.name = this.constructor.name;
 
-    this.reason = [
+    this.reason = new Set([
       _tag,
       ...(Array.isArray(options.reason) ? options.reason : [options.reason]),
-    ];
+    ]);
+
+    if (options.cause && options.cause instanceof AppError) {
+      for (const reason of options.cause.reason) this.reason.add(reason);
+    }
 
     this.cause = options.cause;
     this.context = options.context;
@@ -36,7 +40,7 @@ export abstract class AppError extends Error {
   toJSON() {
     return {
       tag: this._tag,
-      reason: this.reason,
+      reason: Array.from(this.reason),
       cause: this.cause,
       context: this.context,
       stack: this.stack?.split("\n").map((line) => line.trim()),

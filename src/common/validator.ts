@@ -18,7 +18,14 @@ export function validateSchema(
       return true;
     },
     catch: (cause) => {
-      return new ServiceError({ reason: ["Schema compilation failed"], cause });
+      const reason = ["Schema compilation failed"];
+      if (cause instanceof Error && cause.message) {
+        reason.push(cause.message);
+      }
+      return new ServiceError({
+        reason,
+        cause,
+      });
     },
   });
 }

@@ -47,7 +47,7 @@ export function addSchema(
       return OrganizationRepository.addSchema(ctx, request.owner, schemaId);
     }),
     E.mapError((cause) => {
-      const reason = [`Add schema failed: ${request.schema.toString()}`];
+      const reason = ["Add schema failed"];
       return new ServiceError({ reason, cause });
     }),
   );
