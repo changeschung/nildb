@@ -1,32 +1,39 @@
 import { faker } from "@faker-js/faker";
-import { beforeAll, describe, expect, it } from "vitest";
-import { createUuidDto } from "#/common/types";
+import { describe } from "vitest";
+import { type UuidDto, createUuidDto } from "#/common/types";
 import queryJson from "./data/variables.wallet.query.json";
 import schemaJson from "./data/variables.wallet.schema.json";
 import {
-  type AppFixture,
-  type QueryFixture,
-  type SchemaFixture,
-  buildFixture,
-  registerSchemaAndQuery,
-} from "./fixture/app-fixture";
-import type { TestOrganizationUserClient } from "./fixture/test-org-user-client";
+  expectErrorResponse,
+  expectSuccessResponse,
+} from "./fixture/assertions";
+import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
+import { createTestFixtureExtension } from "./fixture/it";
 
-describe("queries.variables.test.ts", () => {
-  let fixture: AppFixture;
-  let organization: TestOrganizationUserClient;
+describe("query variable validation", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
-
-  beforeAll(async () => {
-    fixture = await buildFixture();
-    organization = fixture.users.organization;
-    await registerSchemaAndQuery(fixture, schema, query);
+  const { it, beforeAll, afterAll } = createTestFixtureExtension({
+    schema,
+    query,
   });
 
-  it("creates records", async () => {
-    // generate test data
-    const data = Array.from({ length: 10 }, () => ({
+  type Record = {
+    _id: UuidDto;
+    wallet: string;
+    amount: number;
+    status: "pending" | "completed" | "failed";
+    timestamp: string;
+  };
+
+  type QueryResult = {
+    _id: string;
+    totalAmount: number;
+    count: number;
+  };
+
+  beforeAll(async ({ organization }) => {
+    const data: Record[] = Array.from({ length: 10 }, () => ({
       _id: createUuidDto(),
       wallet: faker.finance.ethereumAddress(),
       amount: faker.number.int({ min: 100, max: 1000 }),
@@ -34,13 +41,17 @@ describe("queries.variables.test.ts", () => {
       timestamp: faker.date.recent().toISOString(),
     }));
 
-    const _response = await organization.uploadData({
+    const response = await organization.uploadData({
       schema: schema.id,
       data,
     });
+
+    await expectSuccessResponse(response);
   });
 
-  it("can execute query with variables", async () => {
+  afterAll(async (_ctx) => {});
+
+  it("can execute query with variables", async ({ expect, organization }) => {
     const variables = {
       minAmount: 500,
       status: "completed",
@@ -52,88 +63,79 @@ describe("queries.variables.test.ts", () => {
       variables,
     });
 
-    const results = response.body.data as unknown as {
-      _id: string;
-      totalAmount: number;
-      count: number;
-    }[];
+    const result = await expectSuccessResponse<QueryResult[]>(response);
 
-    for (const result of results) {
-      expect(result._id).toBe("completed");
-      expect(result.totalAmount).toBeGreaterThanOrEqual(500 * result.count);
-      expect(result.count).toBeGreaterThan(0);
+    for (const record of result.data) {
+      expect(record._id).toBe("completed");
+      expect(record.totalAmount).toBeGreaterThanOrEqual(500 * record.count);
+      expect(record.count).toBeGreaterThan(0);
     }
   });
 
-  it("rejects object as variable value", async () => {
+  it("rejects object as variable value", async ({ expect, organization }) => {
     const variables = {
       minAmount: 500,
       status: { value: "completed" },
       startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     };
 
-    const response = await organization.executeQuery(
-      {
-        id: query.id,
-        variables,
-      },
-      false,
-    );
+    const response = await organization.executeQuery({
+      id: query.id,
+      variables,
+    });
 
-    expect(response.body.errors).toContain("DataValidationError");
+    const error = await expectErrorResponse(response);
+    expect(error.errors).toContain("DataValidationError");
   });
 
-  it("rejects when providing null as variable value", async () => {
+  it("rejects null as variable value", async ({ expect, organization }) => {
     const variables = {
       minAmount: 500,
       status: "completed",
       startDate: null,
     };
 
-    const response = await organization.executeQuery(
-      {
-        id: query.id,
-        variables,
-      },
-      false,
-    );
+    const response = await organization.executeQuery({
+      id: query.id,
+      variables,
+    });
 
-    expect(response.body.errors).toContain("DataValidationError");
+    const error = await expectErrorResponse(response);
+    expect(error.errors).toContain("DataValidationError");
   });
 
-  it("reject undefined as variable value", async () => {
+  it("rejects undefined as variable value", async ({
+    expect,
+    organization,
+  }) => {
     const variables = {
       minAmount: 500,
       status: "completed",
       startDate: undefined,
     };
 
-    const response = await organization.executeQuery(
-      {
-        id: query.id,
-        variables,
-      },
-      false,
-    );
+    const response = await organization.executeQuery({
+      id: query.id,
+      variables,
+    });
 
-    expect(response.body.errors).toContain("DataValidationError");
+    const error = await expectErrorResponse(response);
+    expect(error.errors).toContain("DataValidationError");
   });
 
-  it("rejects function as variable value", async () => {
+  it("rejects function as variable value", async ({ expect, organization }) => {
     const variables = {
       minAmount: 500,
       status: "completed",
       startDate: () => new Date().toISOString(),
     };
 
-    const response = await organization.executeQuery(
-      {
-        id: query.id,
-        variables,
-      },
-      false,
-    );
+    const response = await organization.executeQuery({
+      id: query.id,
+      variables,
+    });
 
-    expect(response.body.errors).toContain("DataValidationError");
+    const error = await expectErrorResponse(response);
+    expect(error.errors).toContain("DataValidationError");
   });
 });

@@ -8,7 +8,7 @@ import { Effect as E, pipe } from "effect";
 import { z } from "zod";
 import type { RepositoryError } from "#/common/app-error";
 import { findAccountByIdWithCache } from "#/common/cache";
-import type { Context } from "#/env";
+import type { AppBindings } from "#/env";
 
 export const NilDidRegex = /^did:nil:(mainnet|testnet):nillion1[a-z0-9]{38}$/;
 export const NilDid = z.custom<NilDid>((data) => NilDidRegex.test(data), {
@@ -20,24 +20,24 @@ export type NilChainAddress = `nillion1${string}`;
 type MainnetNilDid = `did:nil:mainnet:${NilChainAddress}`;
 type TestnetNilDid = `did:nil:testnet:${NilChainAddress}`;
 
-export function buildNilMethodResolver(ctx: Context): Resolvable {
+export function buildNilMethodResolver(bindings: AppBindings): Resolvable {
   const resolve = async (
     did: string,
     _options?: DIDResolutionOptions,
   ): Promise<DIDResolutionResult> => {
     // only supports application/did+json
-    return pipe(findDocument(ctx, did as NilDid), E.runPromise);
+    return pipe(findDocument(bindings, did as NilDid), E.runPromise);
   };
 
   return { resolve };
 }
 
 function findDocument(
-  ctx: Context,
+  bindings: AppBindings,
   did: NilDid,
 ): E.Effect<DIDResolutionResult, RepositoryError> {
   return pipe(
-    findAccountByIdWithCache(ctx, did),
+    findAccountByIdWithCache(bindings, did),
     E.map((account) => ({
       didResolutionMetadata: {
         contentType: "application/did+json",

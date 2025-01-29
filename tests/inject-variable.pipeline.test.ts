@@ -1,19 +1,22 @@
 import { Effect as E, Either, pipe } from "effect";
-import { describe, expect, it } from "vitest";
-import { injectVariablesIntoAggregation } from "#/queries/service";
+import { describe, it } from "vitest";
+import { injectVariablesIntoAggregation } from "#/queries/queries.services";
 
-describe("inject.variable.pipeline.test", () => {
-  it("replaces simple variables", () => {
+describe("pipeline variable injection", () => {
+  it("replaces simple variables", async ({ expect }) => {
     const pipeline = [
       {
         $match: { wallet: "##address" },
       },
     ];
+
     const variables = { address: "abc123" };
+
     const actual = pipe(
       injectVariablesIntoAggregation(pipeline, variables),
       E.runSync,
     );
+
     const expected = [
       {
         $match: { wallet: "abc123" },
@@ -23,7 +26,7 @@ describe("inject.variable.pipeline.test", () => {
     expect(actual).toEqual(expected);
   });
 
-  it("replaces multiple variable types", () => {
+  it("replaces multiple variable types", async ({ expect }) => {
     const pipeline = [
       {
         $match: {
@@ -33,15 +36,18 @@ describe("inject.variable.pipeline.test", () => {
         },
       },
     ];
+
     const variables = {
       address: "abc123",
       value: 1000,
       isActive: false,
     };
+
     const actual = pipe(
       injectVariablesIntoAggregation(pipeline, variables),
       E.runSync,
     );
+
     const expected = [
       {
         $match: {
@@ -55,13 +61,15 @@ describe("inject.variable.pipeline.test", () => {
     expect(actual).toEqual(expected);
   });
 
-  it("throws error for missing variables", () => {
+  it("throws error for missing variables", async ({ expect }) => {
     const pipeline = [
       {
         $match: { wallet: "##address" },
       },
     ];
+
     const variables = {};
+
     const result = pipe(
       injectVariablesIntoAggregation(pipeline, variables),
       E.either,
@@ -77,7 +85,7 @@ describe("inject.variable.pipeline.test", () => {
     }
   });
 
-  it("handles complex pipeline with multiple stages", () => {
+  it("handles complex pipeline with multiple stages", async ({ expect }) => {
     const pipeline = [
       {
         $match: {
@@ -103,6 +111,7 @@ describe("inject.variable.pipeline.test", () => {
         },
       },
     ];
+
     const variables = {
       status: "active",
       startDate: "2024-01-01",
@@ -111,10 +120,12 @@ describe("inject.variable.pipeline.test", () => {
       groupField: "category",
       valueField: 1,
     };
+
     const actual = pipe(
       injectVariablesIntoAggregation(pipeline, variables),
       E.runSync,
     );
+
     const expected = [
       {
         $match: {
@@ -144,7 +155,7 @@ describe("inject.variable.pipeline.test", () => {
     expect(actual).toEqual(expected);
   });
 
-  it("handles deeply nested structures with arrays and objects", () => {
+  it("handles deeply nested structures", async ({ expect }) => {
     const pipeline = [
       {
         $match: {
@@ -167,6 +178,7 @@ describe("inject.variable.pipeline.test", () => {
         },
       },
     ];
+
     const variables = {
       type1: "special",
       category1: "A",
@@ -174,10 +186,12 @@ describe("inject.variable.pipeline.test", () => {
       status: "active",
       deepValue: "nested-value",
     };
+
     const actual = pipe(
       injectVariablesIntoAggregation(pipeline, variables),
       E.runSync,
     );
+
     const expected = [
       {
         $match: {

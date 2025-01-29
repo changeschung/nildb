@@ -1,23 +1,7 @@
-import { Effect as E } from "effect";
-import { ZodError } from "zod";
-import { DataValidationError } from "#/common/app-error";
-
-export function parseUserData<T>(
-  fun: () => T,
-): E.Effect<T, DataValidationError> {
-  return E.try({
-    try: fun,
-    catch: (cause: unknown) => {
-      const reason =
-        cause instanceof ZodError ? flattenZodError(cause) : ["Unknown error"];
-
-      return new DataValidationError({
-        reason,
-        cause,
-      });
-    },
-  });
-}
+import { zValidator } from "@hono/zod-validator";
+import { StatusCodes } from "http-status-codes";
+import { Temporal } from "temporal-polyfill";
+import type { Schema, ZodError } from "zod";
 
 export function flattenZodError(error: ZodError): string[] {
   const reasons = [];
@@ -30,4 +14,18 @@ export function flattenZodError(error: ZodError): string[] {
   reasons.push(...fieldErrors, ...flattened.formErrors);
 
   return reasons;
+}
+
+export function payloadValidator<T extends Schema>(schema: T) {
+  return zValidator("json", schema, (result, c) => {
+    if (result.success) {
+      return result.data;
+    }
+
+    const errors = flattenZodError(result.error);
+    return c.json(
+      { ts: Temporal.Now.instant().toString(), errors },
+      StatusCodes.BAD_REQUEST,
+    );
+  });
 }

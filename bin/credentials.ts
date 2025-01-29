@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { z } from "zod";
 import { Identity } from "#/common/identity";
-import { PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH } from "../src/env";
+import { PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH } from "#/env";
 
 const Args = z.object({
   secretKey: z.string().length(PRIVATE_KEY_LENGTH).optional(),

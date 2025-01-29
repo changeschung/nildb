@@ -1,45 +1,44 @@
 import { faker } from "@faker-js/faker";
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe } from "vitest";
 import { type UuidDto, createUuidDto } from "#/common/types";
-import type { DataDocument } from "#/data/repository";
-import type { Context } from "#/env";
+import type { DataDocument, UpdateResult } from "#/data/data.repository";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
-import {
-  type AppFixture,
-  type QueryFixture,
-  type SchemaFixture,
-  buildFixture,
-  registerSchemaAndQuery,
-} from "./fixture/app-fixture";
-import { assertDefined } from "./fixture/assertions";
-import type { TestOrganizationUserClient } from "./fixture/test-org-user-client";
+import { assertDefined, expectSuccessResponse } from "./fixture/assertions";
+import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
+import { createTestFixtureExtension } from "./fixture/it";
 
 describe("update.data.test", () => {
-  let fixture: AppFixture;
-  let db: Context["db"];
-  let organization: TestOrganizationUserClient;
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
-
+  const { it, beforeAll, afterAll } = createTestFixtureExtension({
+    schema,
+    query,
+  });
+  type Record = {
+    _id: UuidDto;
+    name: string;
+  };
   const collectionSize = 100;
-  const data = Array.from({ length: collectionSize }, () => ({
+  const data: Record[] = Array.from({ length: collectionSize }, () => ({
     _id: createUuidDto(),
     name: faker.person.fullName(),
   }));
 
-  beforeAll(async () => {
-    fixture = await buildFixture();
-    db = fixture.ctx.db;
-    organization = fixture.users.organization;
-    await registerSchemaAndQuery(fixture, schema, query);
-    const _response = await organization.uploadData({
+  beforeAll(async ({ organization }) => {
+    await organization.uploadData({
       schema: schema.id,
       data,
     });
   });
 
-  it("can update data in a collection", async () => {
+  afterAll(async (_ctx) => {});
+
+  it("can update data in a collection", async ({
+    expect,
+    bindings,
+    organization,
+  }) => {
     const record = data[Math.floor(Math.random() * collectionSize)];
 
     const filter = { name: record.name };
@@ -49,14 +48,14 @@ describe("update.data.test", () => {
       filter,
       update,
     });
-    const result = response.body.data as { _id: UuidDto; name: string }[];
 
-    expect(result).toEqual({
+    const result = await expectSuccessResponse<UpdateResult>(response);
+    expect(result.data).toEqual({
       matched: 1,
       updated: 1,
     });
 
-    const actual = await db.data
+    const actual = await bindings.db.data
       .collection<DataDocument>(schema.id.toString())
       .findOne({ name: "foo" });
 

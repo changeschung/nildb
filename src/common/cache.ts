@@ -1,11 +1,11 @@
 import { Effect as E, Option as O, pipe } from "effect";
 import { Temporal } from "temporal-polyfill";
-import type { AccountDocument } from "#/admin/repository";
+import type { AccountDocument } from "#/admin/admin.types";
 import type { RepositoryError } from "#/common/app-error";
 import { succeedOrMapToRepositoryError } from "#/common/errors";
 import { CollectionName } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
-import type { Context } from "#/env";
+import type { AppBindings } from "#/env";
 
 type CacheValue<V> = {
   value: V;
@@ -13,7 +13,7 @@ type CacheValue<V> = {
 };
 
 const DEFAULT_TTL = Temporal.Duration.from({ minutes: 1 });
-// There is a limitation in Duration in taht it does not let you add years directly
+// There is a limitation in Duration in that it does not let you add years directly
 // because of the ambiguity introduced (eg leap years, etc). So we convert 10 years to hours.
 export const CACHE_FOREVER = Temporal.Duration.from({ hours: 87600 });
 
@@ -58,12 +58,12 @@ export class Cache<K, V> {
 }
 
 export function findAccountByIdWithCache(
-  ctx: Context,
+  bindings: AppBindings,
   _id: NilDid,
 ): E.Effect<AccountDocument, RepositoryError> {
   return pipe(
     E.tryPromise(async () => {
-      const accountsCache = ctx.cache.accounts;
+      const accountsCache = bindings.cache.accounts;
 
       const account = accountsCache.get(_id as NilDid);
       if (account) {
@@ -71,7 +71,7 @@ export function findAccountByIdWithCache(
       }
 
       // Cache miss search database
-      const collection = ctx.db.primary.collection<AccountDocument>(
+      const collection = bindings.db.primary.collection<AccountDocument>(
         CollectionName.Accounts,
       );
       const result = await collection.findOne({ _id });

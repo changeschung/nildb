@@ -1,92 +1,101 @@
 import { faker } from "@faker-js/faker";
-import { beforeAll, describe, expect, it } from "vitest";
-import { createUuidDto } from "#/common/types";
-import type { Context } from "#/env";
+import { describe } from "vitest";
+import { type UuidDto, createUuidDto } from "#/common/types";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
 import {
-  type AppFixture,
-  type QueryFixture,
-  type SchemaFixture,
-  buildFixture,
-  registerSchemaAndQuery,
-} from "./fixture/app-fixture";
-import type { TestOrganizationUserClient } from "./fixture/test-org-user-client";
+  expectErrorResponse,
+  expectSuccessResponse,
+} from "./fixture/assertions";
+import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
+import { createTestFixtureExtension } from "./fixture/it";
 
-describe("Schemas delete by filter", () => {
-  let fixture: AppFixture;
-  let db: Context["db"];
-  let organization: TestOrganizationUserClient;
-  const collectionSize = 100;
+describe("schema data deletion", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
+  const { it, beforeAll, afterAll } = createTestFixtureExtension({
+    schema,
+    query,
+  });
 
-  beforeAll(async () => {
-    fixture = await buildFixture();
-    db = fixture.ctx.db;
-    organization = fixture.users.organization;
-    await registerSchemaAndQuery(fixture, schema, query);
+  const collectionSize = 100;
+  type Record = {
+    _id: UuidDto;
+    name: string;
+  };
+  const data: Record[] = Array.from({ length: collectionSize - 3 }, () => ({
+    _id: createUuidDto(),
+    name: faker.person.fullName(),
+  }));
 
-    const data = Array.from({ length: collectionSize - 3 }, () => ({
-      _id: createUuidDto(),
-      name: faker.person.fullName(),
-    }));
-
+  beforeAll(async ({ organization }) => {
     data.push({ _id: createUuidDto(), name: "foo" });
     data.push({ _id: createUuidDto(), name: "bar" });
     data.push({ _id: createUuidDto(), name: "bar" });
 
     const shuffledData = [...data].sort(() => Math.random() - 0.5);
 
-    const _response = await organization.uploadData({
+    await organization.uploadData({
       schema: schema.id,
       data: shuffledData,
     });
   });
 
-  it("rejects empty filter", async () => {
+  afterAll(async (_ctx) => {});
+
+  it("rejects empty filter", async ({ expect, organization }) => {
     const filter = {};
 
-    const response = await organization.deleteData(
-      {
-        schema: schema.id,
-        filter,
-      },
-      false,
-    );
+    const response = await organization.deleteData({
+      schema: schema.id,
+      filter,
+    });
 
-    expect(response.body.errors).toContain(
+    const result = await expectErrorResponse(response);
+    expect(result.errors).toContain(
       "key=filter, reason=Filter cannot be empty",
     );
   });
 
-  it("can remove a single match", async () => {
+  it("can remove a single match", async ({
+    expect,
+    bindings,
+    organization,
+  }) => {
     const filter = { name: "foo" };
 
     const response = await organization.deleteData({
       schema: schema.id,
       filter,
     });
-    const count = await db.data
+
+    const result = await expectSuccessResponse<number>(response);
+    expect(result.data).toBe(1);
+
+    const count = await bindings.db.data
       .collection(schema.id.toString())
       .countDocuments();
-
-    expect(response.body.data).toBe(1);
     expect(count).toBe(collectionSize - 1);
   });
 
-  it("can remove multiple matches", async () => {
+  it("can remove multiple matches", async ({
+    expect,
+    bindings,
+    organization,
+  }) => {
     const filter = { name: "bar" };
 
     const response = await organization.deleteData({
       schema: schema.id,
       filter,
     });
-    const count = await db.data
+
+    const result = await expectSuccessResponse<number>(response);
+    expect(result.data).toBe(2);
+
+    const count = await bindings.db.data
       .collection(schema.id.toString())
       .countDocuments();
-
-    expect(response.body.data).toBe(2);
     expect(count).toBe(collectionSize - 3);
   });
 });
