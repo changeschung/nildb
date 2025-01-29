@@ -32,12 +32,15 @@ export const AdminEndpointV1 = {
 } as const;
 
 export function buildAdminRouter(app: App, _bindings: AppBindings): void {
-  // biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
-  app.use(PathsV1.admin.root, async (c, next): Promise<void | Response> => {
-    return isRoleAllowed(c, ["admin", "root"])
-      ? next()
-      : c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
-  });
+  app.use(
+    `${PathsV1.admin.root}/*`,
+    // biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
+    async (c, next): Promise<void | Response> => {
+      return isRoleAllowed(c, ["admin", "root"])
+        ? next()
+        : c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
+    },
+  );
 
   AdminAccountsControllers.create(app);
   AdminAccountsControllers.deleteA(app);

@@ -16,12 +16,15 @@ export const DataEndpointV1 = {
 } as const;
 
 export function buildDataRouter(app: App, _bindings: AppBindings): void {
-  // biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
-  app.use(PathsV1.data.root, async (c, next): Promise<void | Response> => {
-    return isRoleAllowed(c, ["organization"])
-      ? next()
-      : c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
-  });
+  app.use(
+    `${PathsV1.data.root}/*`,
+    // biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
+    async (c, next): Promise<void | Response> => {
+      return isRoleAllowed(c, ["organization"])
+        ? next()
+        : c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
+    },
+  );
 
   DataController.deleteD(app);
   DataController.flush(app);

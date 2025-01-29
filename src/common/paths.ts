@@ -24,12 +24,12 @@ export const PathsV1 = {
   },
   data: {
     root: "/api/v1/data",
-    upload: "/api/v1/data/create",
-    read: "/api/v1/data/read",
-    update: "/api/v1/data/update",
     delete: "/api/v1/data/delete",
     flush: "/api/v1/data/flush",
+    read: "/api/v1/data/read",
     tail: "/api/v1/data/tail",
+    update: "/api/v1/data/update",
+    upload: "/api/v1/data/create",
   },
   docs: "/api/v1/openapi/docs",
   queries: {

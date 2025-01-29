@@ -13,7 +13,7 @@ export function buildSchemasRouter(app: App, _bindings: AppBindings): void {
       : c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
   });
 
-  SchemasController.listSchemas(app);
-  SchemasController.addSchema(app);
-  SchemasController.deleteSchema(app);
+  SchemasController.list(app);
+  SchemasController.add(app);
+  SchemasController.deleteS(app);
 }

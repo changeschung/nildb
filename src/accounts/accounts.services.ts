@@ -16,7 +16,7 @@ export function find(
   did: NilDid,
 ): E.Effect<OrganizationAccountDocument, ServiceError> {
   return pipe(
-    AccountRepository.findOne(ctx, { _id: did }),
+    AccountRepository.findOne(ctx, { _id: did, type: "organization" }),
     E.mapError(
       (error) =>
         new ServiceError({
