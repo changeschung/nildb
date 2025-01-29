@@ -59,10 +59,9 @@ components:
 
     Filter:
       type: object
-      description: An object representing filter criteria for queries.
-      additionalProperties:
-        type: object
-        description: A flexible object allowing any key-value pairs, where values can be of any type.
+      minProperties: 1
+      additionalProperties: true
+      description: MongoDB-style query filter
 
     DocumentBase:
       type: object
@@ -256,7 +255,7 @@ paths:
       security:
         - jwt: [ ]
       tags:
-        - Data
+        - Schema
       responses:
         '200':
           description: "The organization's schemas"
@@ -271,7 +270,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Schema'
-
         '400':
           description: Validation or processing errors
           content:
@@ -286,7 +284,7 @@ paths:
       security:
         - jwt: [ ]
       tags:
-        - Data
+        - Schema
       requestBody:
         required: true
         content:
@@ -331,6 +329,8 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           description: Missing or invalid JWT
+        '404':
+          description: Unknown resource
 
     delete:
       description: Delete a schema
@@ -369,10 +369,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           description: Missing or invalid JWT
+        '404':
+          description: Unknown resource
 
   /api/v1/queries:
     get:
-      description: "List the organization's queries"
+      description: "List account queries"
       security:
         - jwt: [ ]
       tags:
@@ -399,9 +401,11 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           description: Missing or invalid JWT
+        '404':
+          description: Unknown resource
 
     post:
-      description: Add a new quer
+      description: Add a new query
       security:
         - jwt: [ ]
       tags:
@@ -428,7 +432,9 @@ paths:
                 variables:
                   type: object
                   additionalProperties:
-                    $ref: '#/components/schemas/QueryVariable'
+                    oneOf:
+                      - $ref: '#/components/schemas/QueryVariable'
+                      - $ref: '#/components/schemas/QueryArrayVariable'
                 pipeline:
                   type: array
                   items:
@@ -454,6 +460,8 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           description: Missing or invalid JWT
+        '404':
+          description: Unknown resource
 
     delete:
       description: Delete a query
@@ -483,7 +491,7 @@ paths:
                   - data
                 properties:
                   data:
-                    type: boolean
+                    $ref: '#/components/schemas/UUID'
         '400':
           description: Validation or processing errors
           content:
@@ -492,8 +500,51 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           description: Missing or invalid JWT
-        '403':
-          description: Insufficient permissions or query ownership
+        '404':
+          description: Unknown resource
+
+  /api/v1/queries/execute:
+    post:
+      description: Execute a query with variables
+      security:
+        - jwt: [ ]
+      tags:
+        - Query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - variables
+              properties:
+                id:
+                  $ref: '#/components/schemas/UUID'
+                variables:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Query executed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+        '401':
+          description: Missing or invalid JWT
+        '404':
+          description: Unknown resource
+
 
   /api/v1/data/create:
     post:
@@ -550,7 +601,6 @@ paths:
                           type: string
                         document:
                           type: object
-
         '400':
           description: Validation or processing errors
           content:
@@ -559,6 +609,8 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           description: Missing or invalid JWT
+        '404':
+          description: Unknown resource
 
   /api/v1/data/read:
     post:
@@ -602,6 +654,8 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           description: Missing or invalid JWT
+        '404':
+          description: Unknown resource
 
   /api/v1/data/update:
     post:
@@ -656,6 +710,8 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           description: Missing or invalid JWT
+        '404':
+          description: Unknown resource
 
   /api/v1/data/tail:
     post:
@@ -696,6 +752,8 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           description: Missing or invalid JWT
+        '404':
+          description: Unknown resource
 
   /api/v1/data/delete:
     post:
@@ -716,7 +774,7 @@ paths:
                   $ref: '#/components/schemas/Filter'
       responses:
         '200':
-          description: The number of documents removed
+          description: The number of delete documents
           content:
             application/json:
               schema:
@@ -734,6 +792,8 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           description: Missing or invalid JWT
+        '404':
+          description: Unknown resource
 
   /api/v1/data/flush:
     post:
@@ -775,6 +835,8 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           description: Missing or invalid JWT
+        '404':
+          description: Unknown resource
 
   /health:
     get:
@@ -835,7 +897,7 @@ paths:
                       version:
                         type: string
                         description: Node's api version
-                        example: 0.2.2
+                        example: 0.4.0
                   did:
                     type: string
                     description: Decentralized Identifier (DID) of the node
