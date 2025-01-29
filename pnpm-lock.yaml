@@ -56,9 +56,6 @@ importers:
       hono:
         specifier: ^4.6.19
         version: 4.6.19
-      hono-pino:
-        specifier: ^0.7.0
-        version: 0.7.0(hono@4.6.19)(pino@9.6.0)
       http-status-codes:
         specifier: ^2.3.0
         version: 2.3.0
@@ -1433,9 +1430,6 @@ packages:
     resolution: {integrity: sha512-8QmQKqEASLd5nx0U1B1okLElbUuuttJ/AnYmRXbbbGDWh6uS208EjD4Xqq/I9wK7u0v6O08XhTWnt5XtEbR6Dg==}
     engines: {node: '>= 0.4'}
 
-  defu@6.1.4:
-    resolution: {integrity: sha512-mEQCMmwJu317oSz8CwdIOdwf3xMif1ttiM8LTufzc3g6kR+9Pe236twL8j3IYT1F7GfRgGcW6MWxzZjLIkuHIg==}
-
   depd@2.0.0:
     resolution: {integrity: sha512-g7nH6P6dyDioJogAAGprGpCtVImJhpPk/roCzdb3fIh61/s/nPsfR6onyMwkCAR/OlC3yBC0lESvUoQEAssIrw==}
     engines: {node: '>= 0.8'}
@@ -1745,13 +1739,6 @@ packages:
 
   help-me@5.0.0:
     resolution: {integrity: sha512-7xgomUX6ADmcYzFik0HzAxh/73YlKR9bmFzf51CZwR+b6YtzU2m0u49hQCqV6SvlqIqsaxovfwdvbnsw3b/zpg==}
-
-  hono-pino@0.7.0:
-    resolution: {integrity: sha512-A3LnJ3HBJ10Pmj/axLz77PnVq4STXW73C+7jWPotOj1mSdpNsdIH5b/QZeCZ+tA7mBU74LKj3zUynnBKOSFnlA==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      hono: '>=4.0.0'
-      pino: '>=7.1.0'
 
   hono@4.6.19:
     resolution: {integrity: sha512-Xw5DwU2cewEsQ1DkDCdy6aBJkEBARl5loovoL1gL3/gw81RdaPbXrNJYp3LoQpzpJ7ECC/1OFi/vn3UZTLHFEw==}
@@ -4314,8 +4301,6 @@ snapshots:
       has-property-descriptors: 1.0.2
       object-keys: 1.1.1
 
-  defu@6.1.4: {}
-
   depd@2.0.0: {}
 
   dependency-graph@0.11.0: {}
@@ -4766,12 +4751,6 @@ snapshots:
       function-bind: 1.1.2
 
   help-me@5.0.0: {}
-
-  hono-pino@0.7.0(hono@4.6.19)(pino@9.6.0):
-    dependencies:
-      defu: 6.1.4
-      hono: 4.6.19
-      pino: 9.6.0
 
   hono@4.6.19: {}
 
