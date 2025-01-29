@@ -9,7 +9,7 @@
     "start": "tsx src/main.ts",
     "test": "vitest --run tests/",
     "lint:openapi": "spectral lint src/docs/openapi.yaml",
-    "migrate": "tsx bin/db-migrations.ts",
+    "migrate": "tsx bin/migrate.ts",
     "install-hooks": "lefthook install"
   },
   "engines": {
