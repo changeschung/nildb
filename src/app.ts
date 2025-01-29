@@ -1,11 +1,11 @@
 import { prometheus } from "@hono/prometheus";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { logger } from "hono/logger";
 import { buildAccountsRouter } from "#/accounts/accounts.router";
 import { buildAdminRouter } from "#/admin/admin.router";
 import { buildDataRouter } from "#/data/data.router";
 import { corsMiddleware } from "#/middleware/cors.middleware";
+import { useLoggerMiddleware } from "#/middleware/logger.middleware";
 import { useSubscriptionCheckMiddleware } from "#/middleware/subscription.middleware";
 import { buildQueriesRouter } from "#/queries/queries.router";
 import { buildSchemasRouter } from "#/schemas/schemas.router";
@@ -31,10 +31,10 @@ export function buildApp(bindings: AppBindings): { app: App; metrics: Hono } {
     return next();
   });
 
-  app.use(logger());
   buildSystemRouter(app, bindings);
   createOpenApiRouter(app, bindings);
 
+  app.use(useLoggerMiddleware(bindings.log));
   app.use(useAuthMiddleware(bindings));
   app.use(useSubscriptionCheckMiddleware(bindings));
 
