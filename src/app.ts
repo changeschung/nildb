@@ -1,6 +1,8 @@
 import { prometheus } from "@hono/prometheus";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
+import { timeout } from "hono/timeout";
+import { Temporal } from "temporal-polyfill";
 import { buildAccountsRouter } from "#/accounts/accounts.router";
 import { buildAdminRouter } from "#/admin/admin.router";
 import { buildDataRouter } from "#/data/data.router";
@@ -42,6 +44,8 @@ export function buildApp(bindings: AppBindings): { app: App; metrics: Hono } {
   app.use("*", registerMetrics);
   metricsApp.get("/metrics", printMetrics);
 
+  const limit = Temporal.Duration.from({ minutes: 2 }).total("milliseconds");
+  app.use("*", timeout(limit));
   buildAdminRouter(app, bindings);
   buildAccountsRouter(app, bindings);
   buildSchemasRouter(app, bindings);
