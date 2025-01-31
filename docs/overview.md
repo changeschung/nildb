@@ -52,7 +52,7 @@ nilDB uses a decentralized authentication model based on secp256k1 key pairs. Cl
 
 As RESTful APIs any modern HTTP client can be used to interact with a nilDB. Clients generate their own identities based on a secp256k1 private key. The derived public key and  are then used to register with nodes in the cluster and create authentication tokens.
 
-> ![INFO]
+> ![NOTE]
 > Unlike traditional web2 systems where authentication is centrally controlled, nilDB clients generate and manage their own JWT tokens without central authority.
 
 Example API interaction:
@@ -64,4 +64,4 @@ curl https://nildb-a50d.nillion.network/api/v1/data/create \
   -d @data.json
 ```
 
-> ![INFO] Data encryption is applied using [nilQL-ts](github.com/nillionnetwork/nilql-ts) or [nilQL-py](https://github.com/nillionnetwork/nilql-py) before transmission. 
+> ![NOTE] Data encryption is applied using [nilQL-ts](github.com/nillionnetwork/nilql-ts) or [nilQL-py](https://github.com/nillionnetwork/nilql-py) before transmission. 

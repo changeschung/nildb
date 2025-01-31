@@ -73,7 +73,7 @@ The following endpoints provide operational information:
 - `GET /about` - Node configuration
 - `GET :9091/metrics` - Prometheus metrics (internal access only)
 
-> ![INFO]
+> ![NOTE]
 > `/metrics` shouldn't be exposed publicly. 
 
 ## Logging
