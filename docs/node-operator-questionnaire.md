@@ -18,7 +18,7 @@ A nilDB node is packaged as a Docker image supporting Linux/amd64 and aarch64 pl
 
 ### Data Storage
 
-A nilDB node uses MongoDB version 8+ for data persistence. The database service must be resilient, utilizing clustering, regular backups, and encryption both at rest and in transit. Please describe your MongoDB deployment, including its topology, backup strategy, encryption implementation, and how you monitor and scale the database to meet demand.
+A nilDB node uses MongoDB version 8+ for data persistence. The database service must be resilient, utilizing clustering, undergo regular backups, and encrypt data at rest and in transit. Additionally, as use increases so to will data storage requirements and so operators storage facilities must scale. Please describe your MongoDB deployment, including its topology, backup strategy, encryption implementation, and how you monitor and scale the database to meet demand.
 
 ## Operations & Monitoring
 

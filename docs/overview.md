@@ -15,7 +15,7 @@ nilDb is a structured data persistence service that provides a robust, distribut
 There are two nilDB networks:
 
 1. _Mainnet_ refers to the group of nodes integrated with nilChain mainnet (not yet launched).
-2. _Devnet_ refers to the group of nodes integrated with nilChain testnet.
+2. _Testnet_ refers to the group of nodes integrated with nilChain testnet.
 
 ## Network topology
 
