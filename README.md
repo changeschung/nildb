@@ -9,8 +9,11 @@ nilDB is a structured data persistence service, which when multiple nodes are co
 
 If you're unsure where to start, head over to [docs.nillion.com](https://docs.nillion.com).
 
-- [Build](./docs/build-on-nildb.md) - Developer guide and API reference
-- [Contribute](./CONTRIBUTING.md) - How to help build nilDB
+- [Run a local cluster for development](./docs/build-on-nildb.md)
+- [Help build nilDB](./CONTRIBUTING.md)
+- [nilDB overview and network basics](./docs/overview.md) 
+- [Want to be a node operator?](./docs/node-operator-questionnaire.md)
+- [Node admin guide](./docs/admin-guide.md)
 
 ## Contributing
 
