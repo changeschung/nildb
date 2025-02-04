@@ -1,5 +1,6 @@
 import type { MigrationInterface } from "mongo-migrate-ts";
 import type { Db, MongoClient } from "mongodb";
+import { CollectionName } from "#/common/mongo";
 
 /**
  * Add 'subscription' object to each account and default to active
@@ -9,7 +10,7 @@ export class add_active_subscription_boolean implements MigrationInterface {
     const session = client.startSession();
     try {
       await session.withTransaction(async () => {
-        const collection = db.collection("accounts");
+        const collection = db.collection(CollectionName.Accounts);
         const result = await collection.updateMany(
           {
             _type: "organization",
@@ -33,7 +34,7 @@ export class add_active_subscription_boolean implements MigrationInterface {
     const session = client.startSession();
     try {
       await session.withTransaction(async () => {
-        const collection = db.collection("accounts");
+        const collection = db.collection(CollectionName.Accounts);
         const result = await collection.updateMany(
           {
             _type: "organization",
