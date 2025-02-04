@@ -26,10 +26,20 @@ export function createCollection(
     E.tryPromise(async () => {
       const collection = await ctx.db.data.createCollection(collectionName);
 
-      // _id is a key by default so we remove to avoid the collision
-      const keysWithOutId = keys.filter((key) => key !== "_id");
-      if (keysWithOutId.length > 0) {
-        await collection.createIndex(keysWithOutId, { unique: true });
+      await collection.createIndex(
+        { _updated: 1 },
+        { unique: false, name: "_updated_1" },
+      );
+      await collection.createIndex(
+        { _created: 1 },
+        { unique: false, name: "_created_1" },
+      );
+
+      // _id is a default index, _created and _updated were added so remove to avoid the collision
+      const exclude = ["_id", "_created", "_updated"];
+      const userKeys = keys.filter((key) => !exclude.includes(key));
+      for (const key of userKeys) {
+        await collection.createIndex({ [key]: 1 }, { unique: true });
       }
 
       return schemaId;

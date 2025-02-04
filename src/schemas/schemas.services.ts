@@ -41,7 +41,12 @@ export function addSchema(
       return SchemasRepository.insert(ctx, document);
     }),
     E.tap((schemaId) => {
-      return DataRepository.createCollection(ctx, schemaId, request.keys);
+      const indexes = new Set([...request.keys, "_created", "_updated"]);
+      return DataRepository.createCollection(
+        ctx,
+        schemaId,
+        Array.from(indexes),
+      );
     }),
     E.tap((schemaId) => {
       return OrganizationRepository.addSchema(ctx, request.owner, schemaId);
