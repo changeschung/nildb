@@ -44,7 +44,7 @@ export function buildApp(bindings: AppBindings): { app: App; metrics: Hono } {
   app.use("*", registerMetrics);
   metricsApp.get("/metrics", printMetrics);
 
-  const limit = Temporal.Duration.from({ minutes: 2 }).total("milliseconds");
+  const limit = Temporal.Duration.from({ minutes: 5 }).total("milliseconds");
   app.use("*", timeout(limit));
   buildAdminRouter(app, bindings);
   buildAccountsRouter(app, bindings);
