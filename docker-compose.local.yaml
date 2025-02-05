@@ -1,6 +1,6 @@
 services:
   node-ucct-api:
-    image: local/nildb-api:latest
+    image: public.ecr.aws/k5d9x2g2/nildb-api:latest
     ports:
       - "9181:8080"
     depends_on:
@@ -22,7 +22,7 @@ services:
       - "37011:27017"
 
   node-cr35-api:
-    image: local/nildb-api:latest
+    image: public.ecr.aws/k5d9x2g2/nildb-api:latest
     ports:
       - "9182:8080"
     depends_on:
@@ -44,7 +44,7 @@ services:
       - "37012:27017"
 
   node-dglk-api:
-    image: local/nildb-api:latest
+    image: public.ecr.aws/k5d9x2g2/nildb-api:latest
     ports:
       - "9183:8080"
     depends_on:
