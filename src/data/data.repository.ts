@@ -199,7 +199,9 @@ export function updateMany(
       const collection = ctx.db.data.collection<DocumentBase>(
         schema.toString(),
       );
-      const result = await collection.updateMany(filter, update);
+
+      const filterWithCoercion = coerceIdToUuid<Filter<DocumentBase>>(filter);
+      const result = await collection.updateMany(filterWithCoercion, update);
 
       return {
         matched: result.matchedCount,
@@ -223,7 +225,8 @@ export function deleteMany(
       const collection = ctx.db.data.collection<DocumentBase>(
         schema.toString(),
       );
-      const result = await collection.deleteMany(filter);
+      const filterWithCoercion = coerceIdToUuid<Filter<DocumentBase>>(filter);
+      const result = await collection.deleteMany(filterWithCoercion);
       return result.deletedCount;
     }),
     succeedOrMapToRepositoryError({
@@ -270,4 +273,16 @@ export function findMany(
       schema,
     }),
   );
+}
+
+function coerceIdToUuid<T>(value: Record<string, unknown>): T {
+  const next = {
+    ...value,
+  };
+
+  if ("_id" in value && value._id && typeof value._id === "string") {
+    next._id = new UUID(value._id);
+  }
+
+  return next as unknown as T;
 }
