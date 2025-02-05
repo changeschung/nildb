@@ -1,10 +1,15 @@
 import { Effect as E, Option as O, pipe } from "effect";
-import type { StrictFilter, UUID } from "mongodb";
+import type { MongoError, StrictFilter, UUID } from "mongodb";
 import type { RepositoryError } from "#/common/app-error";
-import { succeedOrMapToRepositoryError } from "#/common/errors";
+import {
+  DatabaseError,
+  type SchemaNotFoundError,
+  succeedOrMapToRepositoryError,
+} from "#/common/errors";
 import { CollectionName, type DocumentBase } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
 import type { AppBindings } from "#/env";
+import type { SchemaMetadata } from "#/schemas/schemas.types";
 
 export type SchemaDocument = DocumentBase & {
   owner: NilDid;
@@ -118,6 +123,95 @@ export function deleteOne(
     succeedOrMapToRepositoryError({
       op: "SchemasRepository.deleteOne",
       filter,
+    }),
+  );
+}
+
+export function getCollectionStats(
+  ctx: AppBindings,
+  id: UUID,
+): E.Effect<SchemaMetadata, SchemaNotFoundError | DatabaseError> {
+  const collection = ctx.db.data.collection(id.toString());
+
+  return E.Do.pipe(
+    E.bind("timeStats", () =>
+      E.tryPromise({
+        try: async () => {
+          const result = await collection
+            .aggregate([
+              {
+                $group: {
+                  _id: null,
+                  firstWrite: { $min: "$_created" },
+                  lastWrite: { $max: "$_created" },
+                },
+              },
+            ])
+            .toArray();
+
+          const { firstWrite, lastWrite } = result[0];
+
+          return {
+            firstWrite,
+            lastWrite,
+          };
+        },
+        catch: (e: unknown) => new DatabaseError(e as MongoError),
+      }),
+    ),
+    E.bind("indexes", () =>
+      E.tryPromise({
+        try: async () => {
+          const result = await collection.indexes();
+          const indexes = result.map((index) => ({
+            v: index.v ?? -1,
+            key: index.key,
+            name: index.name ?? "",
+            unique: index.unique ?? false,
+          }));
+
+          return indexes;
+        },
+        catch: (e: unknown) => new DatabaseError(e as MongoError),
+      }),
+    ),
+    E.bind("counts", () =>
+      E.tryPromise({
+        try: async () => {
+          type CollStats = { count: number; size: number };
+          const result = await collection
+            .aggregate<CollStats>([
+              {
+                $collStats: {
+                  storageStats: {},
+                },
+              },
+              {
+                $project: {
+                  count: "$storageStats.count",
+                  size: "$storageStats.size",
+                },
+              },
+            ])
+            .toArray();
+          const stats = result[0];
+
+          return {
+            count: stats.count,
+            size: stats.size,
+          };
+        },
+        catch: (e: unknown) => new DatabaseError(e as MongoError),
+      }),
+    ),
+
+    E.map(({ timeStats, indexes, counts }) => {
+      return {
+        id,
+        ...timeStats,
+        ...counts,
+        indexes,
+      };
     }),
   );
 }

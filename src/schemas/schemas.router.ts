@@ -16,4 +16,5 @@ export function buildSchemasRouter(app: App, _bindings: AppBindings): void {
   SchemasController.list(app);
   SchemasController.add(app);
   SchemasController.deleteS(app);
+  SchemasController.metadata(app);
 }

@@ -60,4 +60,5 @@ export function buildAdminRouter(app: App, _bindings: AppBindings): void {
 
   AdminSchemasControllers.add(app);
   AdminSchemasControllers.deleteS(app);
+  AdminSchemasControllers.metadata(app);
 }

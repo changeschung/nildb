@@ -8,7 +8,8 @@ import type {
 } from "#/admin/admin.types";
 import type { App } from "#/app";
 import type { Identity } from "#/common/identity";
-import { PathsV1 } from "#/common/paths";
+import { PathsBeta, PathsV1 } from "#/common/paths";
+import type { UuidDto } from "#/common/types";
 import type {
   DeleteDataRequest,
   FlushDataRequest,
@@ -122,6 +123,10 @@ export class TestAdminUserClient extends TestRootUserClient {
     return this.request(PathsV1.admin.schemas.root, { method: "POST", body });
   }
 
+  async getSchemaMetadata(id: UuidDto): Promise<Response> {
+    return this.request(`${PathsBeta.admin.schemas.byId}/${id}`);
+  }
+
   async deleteSchema(body: DeleteSchemaRequest): Promise<Response> {
     return this.request(PathsV1.admin.schemas.root, { method: "DELETE", body });
   }
@@ -180,6 +185,10 @@ export class TestOrganizationUserClient extends TestClient {
 
   async listSchemas(): Promise<Response> {
     return this.request(PathsV1.schemas.root);
+  }
+
+  async getSchemaMetadata(id: UuidDto): Promise<Response> {
+    return this.request(PathsBeta.schemas.byId.replace(":id", id));
   }
 
   async addSchema(body: AddSchemaRequest): Promise<Response> {

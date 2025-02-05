@@ -3,6 +3,7 @@ import { Effect as E, Option as O, pipe } from "effect";
 import { isUnknownException } from "effect/Cause";
 import type { MongoError } from "mongodb";
 import { RepositoryError } from "#/common/app-error";
+import type { UuidDto } from "#/common/types";
 
 export type DbErrorContext = {
   name: string;
@@ -170,4 +171,14 @@ function sanitizedMongoDbErrorMessage(
       return "Internal db error";
     }
   }
+}
+
+export class SchemaNotFoundError {
+  readonly _tag = "SchemaNotFoundError";
+  constructor(readonly id: UuidDto) {}
+}
+
+export class DatabaseError {
+  readonly _tag = "DatabaseError";
+  constructor(readonly error: MongoError) {}
 }

@@ -1,3 +1,4 @@
+import type { IndexDirection, UUID } from "mongodb";
 import { z } from "zod";
 import { Uuid } from "#/common/types";
 /**
@@ -16,3 +17,22 @@ export const DeleteSchemaRequestSchema = z.object({
   id: Uuid,
 });
 export type DeleteSchemaRequest = z.infer<typeof DeleteSchemaRequestSchema>;
+
+/**
+ * Repository types
+ */
+export type SchemaMetadata = {
+  id: UUID;
+  count: number;
+  size: number;
+  firstWrite: Date;
+  lastWrite: Date;
+  indexes: CollectionIndex[];
+};
+
+export type CollectionIndex = {
+  v: number;
+  key: Record<string, IndexDirection>;
+  name: string;
+  unique: boolean;
+};

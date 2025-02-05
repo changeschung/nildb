@@ -44,3 +44,14 @@ export const PathsV1 = {
     health: "/health",
   },
 } as const;
+
+export const PathsBeta = {
+  admin: {
+    schemas: {
+      byId: "/api/beta/admin/schemas/:id",
+    },
+  },
+  schemas: {
+    byId: "/api/beta/schemas/:id",
+  },
+} as const;
