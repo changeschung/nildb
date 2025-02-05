@@ -43,6 +43,15 @@ export const AdminAddSchemaRequestSchema = AddSchemaRequestSchema.extend({
 });
 export type AdminAddSchemaRequest = z.infer<typeof AdminAddSchemaRequestSchema>;
 
+export const AdminSetMaintenanceWindowRequestSchema = z.object({
+  id: NilDid,
+  start: z.coerce.date(),
+  end: z.coerce.date(),
+});
+export type AdminSetMaintenanceWindowRequest = z.infer<
+  typeof AdminSetMaintenanceWindowRequestSchema
+>;
+
 export const CreateSchemaIndexRequestSchema = z.object({
   name: z.string().min(4),
   keys: z.array(

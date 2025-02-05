@@ -7,6 +7,7 @@ import * as AdminAccountsControllers from "./admin.controllers.accounts";
 import * as AdminDataControllers from "./admin.controllers.data";
 import * as AdminQueriesControllers from "./admin.controllers.queries";
 import * as AdminSchemasControllers from "./admin.controllers.schemas";
+import * as AdminSystemControllers from "./admin.controllers.system";
 
 export function buildAdminRouter(app: App, _bindings: AppBindings): void {
   app.use(
@@ -40,4 +41,6 @@ export function buildAdminRouter(app: App, _bindings: AppBindings): void {
   AdminSchemasControllers.metadata(app);
   AdminSchemasControllers.createIndex(app);
   AdminSchemasControllers.dropIndex(app);
+
+  AdminSystemControllers.setMaintenanceWindow(app);
 }

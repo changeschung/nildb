@@ -21,6 +21,9 @@ export const PathsV1 = {
     schemas: {
       root: "/api/v1/admin/schemas",
     },
+    system: {
+      maintenance: "/api/v1/admin/maintenance",
+    },
   },
   data: {
     root: "/api/v1/data",

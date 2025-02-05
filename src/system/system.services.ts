@@ -1,8 +1,17 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { Effect as E, pipe } from "effect";
+import type { AdminSetMaintenanceWindowRequest } from "#/admin/admin.types";
+import {
+  DataValidationError,
+  type DatabaseError,
+  type DocumentNotFoundError,
+  type PrimaryCollectionNotFoundError,
+} from "#/common/errors";
 import type { NilDid } from "#/common/nil-did";
 import type { AppBindings } from "#/env";
+import * as SystemRepository from "./system.repository";
 
 export type AboutNode = {
   started: Date;
@@ -51,4 +60,47 @@ function getBuildInfo(bindings: AppBindings): BuildInfo {
     };
     return buildInfo;
   }
+}
+
+export function setMaintenanceWindow(
+  ctx: AppBindings,
+  request: AdminSetMaintenanceWindowRequest,
+): E.Effect<
+  boolean,
+  | DocumentNotFoundError
+  | DataValidationError
+  | PrimaryCollectionNotFoundError
+  | DatabaseError
+> {
+  return pipe(
+    E.succeed(request),
+    E.flatMap((request) => {
+      if (request.id !== ctx.node.identity.did) {
+        return E.fail(
+          new DataValidationError({
+            issues: ["DID prohibited"],
+            cause: request,
+          }),
+        );
+      }
+
+      const now = new Date();
+      if (request.end < now || request.end <= request.start) {
+        return E.fail(
+          new DataValidationError({
+            issues: ["End date must be in the future and after the start date"],
+            cause: request,
+          }),
+        );
+      }
+
+      return E.succeed(request);
+    }),
+    E.flatMap((request) => SystemRepository.setMaintenanceWindow(ctx, request)),
+    E.tap(() => {
+      ctx.log.debug(
+        `Set maintenance window.start=${request.start.toISOString()} and window.end=${request.end.toISOString()} for node: ${request.id}`,
+      );
+    }),
+  );
 }
