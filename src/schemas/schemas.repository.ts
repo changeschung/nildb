@@ -14,7 +14,6 @@ import type { SchemaMetadata } from "#/schemas/schemas.types";
 export type SchemaDocument = DocumentBase & {
   owner: NilDid;
   name: string;
-  keys: string[];
   schema: Record<string, unknown>;
 };
 

@@ -128,7 +128,6 @@ components:
           required:
             - name
             - owner
-            - keys
             - schema
           properties:
             name:
@@ -138,11 +137,6 @@ components:
               description: The decentralised identifier (DID) of the owning organization
               type: string
               example: 'did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc'
-            keys:
-              description: The schema's keys which must be unique within the associated schema collection (e.g. primary keys)
-              type: array
-              items:
-                type: string
             schema:
               description: The json schema used to validate data before insertion into the schema collection
               type: object
@@ -294,7 +288,6 @@ paths:
               required:
                 - _id
                 - name
-                - keys
                 - schema
               properties:
                 _id:
@@ -302,10 +295,6 @@ paths:
                 name:
                   type: string
                   minLength: 1
-                keys:
-                  type: array
-                  items:
-                    type: string
                 schema:
                   type: object
                   additionalProperties: true
@@ -571,7 +560,7 @@ paths:
                   items:
                     type: object
                     additionalProperties:
-                      description: An object whose shape matches the targeted schema. `_id` and schema `keys` are required.
+                      description: An object whose shape matches the targeted schema.
                       type: object
       responses:
         '200':

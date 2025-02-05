@@ -18,7 +18,6 @@ import type { PartialDataDocumentDto } from "./data.types";
 export function createCollection(
   ctx: AppBindings,
   schemaId: UUID,
-  keys: string[],
 ): E.Effect<UUID, RepositoryError> {
   const collectionName = schemaId.toJSON();
 
@@ -26,6 +25,7 @@ export function createCollection(
     E.tryPromise(async () => {
       const collection = await ctx.db.data.createCollection(collectionName);
 
+      // _id is a default index so does not need explicit creation
       await collection.createIndex(
         { _updated: 1 },
         { unique: false, name: "_updated_1" },
@@ -35,18 +35,10 @@ export function createCollection(
         { unique: false, name: "_created_1" },
       );
 
-      // _id is a default index, _created and _updated were added so remove to avoid the collision
-      const exclude = ["_id", "_created", "_updated"];
-      const userKeys = keys.filter((key) => !exclude.includes(key));
-      for (const key of userKeys) {
-        await collection.createIndex({ [key]: 1 }, { unique: true });
-      }
-
       return schemaId;
     }),
     succeedOrMapToRepositoryError({
       op: "DataRepository.createCollection",
-      keys,
       schemaId,
     }),
   );

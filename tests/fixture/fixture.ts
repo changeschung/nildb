@@ -129,7 +129,6 @@ export async function registerSchemaAndQuery(opts: {
   const response = await organization.addSchema({
     _id: new UUID(),
     name: schema.name,
-    keys: schema.keys,
     schema: schema.schema,
   });
 
