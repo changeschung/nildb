@@ -148,6 +148,13 @@ export function getCollectionStats(
             ])
             .toArray();
 
+          if (result.length === 0) {
+            return {
+              firstWrite: new Date(0),
+              lastWrite: new Date(0),
+            };
+          }
+
           const { firstWrite, lastWrite } = result[0];
 
           return {
