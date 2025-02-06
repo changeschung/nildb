@@ -5,7 +5,6 @@
   "repository": "https://github.com/NillionNetwork/nildb",
   "type": "module",
   "scripts": {
-    "dev": "tsx --watch src/main.ts",
     "start": "tsx src/main.ts",
     "test": "vitest --run tests/",
     "lint:openapi": "spectral lint src/docs/openapi.yaml",
