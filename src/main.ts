@@ -24,7 +24,7 @@ async function main() {
     console.info(`! Using env file: ${options.envFile}`);
     dotenv.config({ path: options.envFile });
   } else {
-    console.info(`! Using env file: .env`);
+    console.info("! Using env file: .env");
     dotenv.config();
   }
 
