@@ -337,7 +337,7 @@ paths:
       security:
         - jwt: [ ]
       tags:
-        - Data
+        - Schema
       requestBody:
         required: true
         content:
