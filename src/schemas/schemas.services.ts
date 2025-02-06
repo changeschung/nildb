@@ -1,8 +1,14 @@
 import { Effect as E, pipe } from "effect";
-import type { UUID } from "mongodb";
+import type { CreateIndexesOptions, IndexSpecification, UUID } from "mongodb";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
+import type { CreateSchemaIndexRequest } from "#/admin/admin.types";
 import { ServiceError } from "#/common/app-error";
-import type { DatabaseError, SchemaNotFoundError } from "#/common/errors";
+import type {
+  DatabaseError,
+  IndexNotFoundError,
+  InvalidIndexOptionsError,
+  SchemaNotFoundError,
+} from "#/common/errors";
 import type { NilDid } from "#/common/nil-did";
 import { validateSchema } from "#/common/validator";
 import * as DataRepository from "#/data/data.repository";
@@ -78,4 +84,42 @@ export function getSchemaMetadata(
   _id: UUID,
 ): E.Effect<SchemaMetadata, SchemaNotFoundError | DatabaseError> {
   return pipe(SchemasRepository.getCollectionStats(ctx, _id));
+}
+
+export function createIndex(
+  ctx: AppBindings,
+  schema: UUID,
+  request: CreateSchemaIndexRequest,
+): E.Effect<
+  void,
+  SchemaNotFoundError | InvalidIndexOptionsError | DatabaseError
+> {
+  const specification: IndexSpecification = request.keys;
+  const options: CreateIndexesOptions = {
+    name: request.name,
+    unique: request.unique,
+  };
+
+  if (request.ttl) {
+    options.expireAfterSeconds = request.ttl;
+  }
+
+  return pipe(
+    SchemasRepository.createIndex(ctx, schema, specification, options),
+    E.as(void 0),
+  );
+}
+
+export function dropIndex(
+  ctx: AppBindings,
+  schema: UUID,
+  name: string,
+): E.Effect<void, SchemaNotFoundError | IndexNotFoundError | DatabaseError> {
+  return pipe(
+    SchemasRepository.dropIndex(ctx, schema, name),
+    E.tap((document) => {
+      ctx.log.info(document);
+    }),
+    E.as(void 0),
+  );
 }

@@ -49,9 +49,13 @@ export const PathsBeta = {
   admin: {
     schemas: {
       byId: "/api/beta/admin/schemas/:id",
+      byIdIndexes: "/api/beta/admin/schemas/:id/indexes",
+      byIdIndexesByName: "/api/beta/admin/schemas/:id/indexes/:indexName",
     },
   },
   schemas: {
     byId: "/api/beta/schemas/:id",
+    byIdIndexes: "/api/beta/schemas/:id/indexes",
+    byIdIndexesByName: "/api/beta/admin/schemas/:id/indexes/:indexName",
   },
 } as const;

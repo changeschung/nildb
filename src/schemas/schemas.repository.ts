@@ -1,13 +1,26 @@
 import { Effect as E, Option as O, pipe } from "effect";
-import type { MongoError, StrictFilter, UUID } from "mongodb";
+import type {
+  Collection,
+  CreateIndexesOptions,
+  Document,
+  IndexSpecification,
+  MongoError,
+  StrictFilter,
+  UUID,
+} from "mongodb";
 import type { RepositoryError } from "#/common/app-error";
 import {
   DatabaseError,
-  type SchemaNotFoundError,
+  IndexNotFoundError,
+  InvalidIndexOptionsError,
+  MongoErrorCode,
+  SchemaNotFoundError,
+  isMongoError,
   succeedOrMapToRepositoryError,
 } from "#/common/errors";
 import { CollectionName, type DocumentBase } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
+import type { UuidDto } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { SchemaMetadata } from "#/schemas/schemas.types";
 
@@ -219,5 +232,71 @@ export function getCollectionStats(
         indexes,
       };
     }),
+  );
+}
+
+export function createIndex(
+  ctx: AppBindings,
+  schema: UUID,
+  specification: IndexSpecification,
+  options: CreateIndexesOptions,
+): E.Effect<
+  string,
+  SchemaNotFoundError | InvalidIndexOptionsError | DatabaseError
+> {
+  return pipe(
+    collectionExists(ctx, schema.toString()),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: async () => collection.createIndex(specification, options),
+        catch: (e: unknown) => {
+          if (isMongoError(e) && e.code === MongoErrorCode.CannotCreateIndex) {
+            return new InvalidIndexOptionsError(e.message);
+          }
+          return new DatabaseError(e as MongoError);
+        },
+      }),
+    ),
+  );
+}
+
+export function dropIndex(
+  ctx: AppBindings,
+  schema: UUID,
+  name: string,
+): E.Effect<
+  Document,
+  SchemaNotFoundError | IndexNotFoundError | DatabaseError
+> {
+  return pipe(
+    collectionExists(ctx, schema.toString()),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: async () => collection.dropIndex(name),
+        catch: (e: unknown) => {
+          if (isMongoError(e) && e.code === MongoErrorCode.IndexNotFound) {
+            return new IndexNotFoundError(schema.toString(), name);
+          }
+          return new DatabaseError(e as MongoError);
+        },
+      }),
+    ),
+  );
+}
+
+function collectionExists<T extends Document>(
+  ctx: AppBindings,
+  name: string,
+): E.Effect<Collection<T>, SchemaNotFoundError | DatabaseError> {
+  return pipe(
+    E.tryPromise({
+      try: () => ctx.db.data.listCollections({ name }).toArray(),
+      catch: (e: unknown) => new DatabaseError(e as MongoError),
+    }),
+    E.flatMap((result) =>
+      result.length === 1
+        ? E.succeed(ctx.db.data.collection<T>(name))
+        : E.fail(new SchemaNotFoundError(name as UuidDto)),
+    ),
   );
 }

@@ -1,7 +1,7 @@
 import util from "node:util";
 import { Effect as E, Option as O, pipe } from "effect";
 import { isUnknownException } from "effect/Cause";
-import type { MongoError } from "mongodb";
+import { MongoError } from "mongodb";
 import { RepositoryError } from "#/common/app-error";
 import type { UuidDto } from "#/common/types";
 
@@ -90,10 +90,6 @@ export function succeedOrMapToDbError<T, E extends Error = Error>(
     );
 }
 
-function isMongoError(error: unknown): error is MongoError {
-  return error instanceof Error && "code" in error;
-}
-
 export function succeedOrMapToRepositoryError<T, E extends Error = Error>(
   context: Record<string, unknown> = {},
 ): (effect: E.Effect<T | O.Option<T>, E>) => E.Effect<T, RepositoryError> {
@@ -173,9 +169,32 @@ function sanitizedMongoDbErrorMessage(
   }
 }
 
+export function isMongoError(value: unknown): value is MongoError {
+  return value instanceof MongoError;
+}
+
+export const MongoErrorCode = {
+  Duplicate: 11000,
+  CannotCreateIndex: 67,
+  IndexNotFound: 27,
+} as const;
+
 export class SchemaNotFoundError {
   readonly _tag = "SchemaNotFoundError";
   constructor(readonly id: UuidDto) {}
+}
+
+export class InvalidIndexOptionsError {
+  readonly _tag = "InvalidIndexOptionsError";
+  constructor(readonly message: string) {}
+}
+
+export class IndexNotFoundError {
+  readonly _tag = "IndexNotFoundError";
+  constructor(
+    readonly collection: string,
+    readonly index: string,
+  ) {}
 }
 
 export class DatabaseError {

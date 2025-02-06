@@ -3,8 +3,9 @@ import { StatusCodes } from "http-status-codes";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
+import { CreateSchemaIndexRequestSchema } from "#/admin/admin.types";
 import type { App } from "#/app";
-import { foldToApiResponse } from "#/common/handler";
+import { foldToApiResponse, handleTaggedErrors } from "#/common/handler";
 import { enforceSchemaOwnership } from "#/common/ownership";
 import { PathsBeta, PathsV1 } from "#/common/paths";
 import { Uuid, type UuidDto } from "#/common/types";
@@ -112,6 +113,55 @@ export function metadata(app: App) {
             ),
           );
         }),
+        E.runPromise,
+      );
+    },
+  );
+}
+
+export function createIndex(app: App): void {
+  app.post(
+    PathsBeta.admin.schemas.byIdIndexes,
+    payloadValidator(CreateSchemaIndexRequestSchema),
+    paramsValidator(
+      z.object({
+        id: Uuid,
+      }),
+    ),
+    async (c) => {
+      const account = c.var.account as OrganizationAccountDocument;
+      const payload = c.req.valid("json");
+      const { id } = c.req.valid("param");
+
+      return pipe(
+        enforceSchemaOwnership(account, id, {}),
+        E.flatMap(() => SchemasService.createIndex(c.env, id, payload)),
+        E.map(() => c.text("", StatusCodes.CREATED)),
+        handleTaggedErrors(c),
+        E.runPromise,
+      );
+    },
+  );
+}
+
+export function deleteIndex(app: App): void {
+  app.delete(
+    PathsBeta.admin.schemas.byIdIndexesByName,
+    paramsValidator(
+      z.object({
+        id: Uuid,
+        indexName: z.string().min(4),
+      }),
+    ),
+    async (c) => {
+      const account = c.var.account as OrganizationAccountDocument;
+      const { id, indexName } = c.req.valid("param");
+
+      return pipe(
+        enforceSchemaOwnership(account, id, {}),
+        E.flatMap(() => SchemasService.dropIndex(c.env, id, indexName)),
+        E.map(() => c.text("", StatusCodes.OK)),
+        handleTaggedErrors(c),
         E.runPromise,
       );
     },
