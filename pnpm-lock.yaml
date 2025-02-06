@@ -35,6 +35,9 @@ importers:
       bech32:
         specifier: ^2.0.0
         version: 2.0.0
+      commander:
+        specifier: ^13.1.0
+        version: 13.1.0
       compression:
         specifier: ^1.7.5
         version: 1.7.5
@@ -129,9 +132,6 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^3.0.4
         version: 3.0.4(vitest@3.0.4(@types/node@22.12.0)(jiti@2.4.2)(tsx@4.19.2))
-      commander:
-        specifier: ^13.1.0
-        version: 13.1.0
       lefthook:
         specifier: ^1.10.10
         version: 1.10.10
