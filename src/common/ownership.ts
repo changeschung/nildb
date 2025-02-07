@@ -1,40 +1,44 @@
-import { Effect as E } from "effect";
+import { Effect as E, pipe } from "effect";
 import type { UUID } from "mongodb";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
-import { ControllerError } from "#/common/app-error";
+import { ResourceAccessDeniedError } from "#/common/errors";
 
-export function enforceQueryOwnership<T>(
+export function enforceQueryOwnership(
   account: OrganizationAccountDocument,
   query: UUID,
-  value: T, // pass through on success
-): E.Effect<T, ControllerError, never> {
-  const isAuthorized = account.queries.some(
-    (s) => s.toString() === query.toString(),
+): E.Effect<void, ResourceAccessDeniedError> {
+  return pipe(
+    E.succeed(account.queries.some((s) => s.toString() === query.toString())),
+    E.flatMap((isAuthorized) => {
+      return isAuthorized
+        ? E.succeed(void 0)
+        : E.fail(
+            new ResourceAccessDeniedError(
+              "query",
+              query.toString(),
+              account._id,
+            ),
+          );
+    }),
   );
-
-  return isAuthorized
-    ? E.succeed(value)
-    : E.fail(
-        new ControllerError({
-          reason: ["Query not found", account._id, query.toString()],
-        }),
-      );
 }
 
-export function enforceSchemaOwnership<T>(
+export function enforceSchemaOwnership(
   account: OrganizationAccountDocument,
   schema: UUID,
-  value: T, // pass through on success
-): E.Effect<T, ControllerError, never> {
-  const isAuthorized = account.schemas.some(
-    (s) => s.toString() === schema.toString(),
+): E.Effect<void, ResourceAccessDeniedError> {
+  return pipe(
+    E.succeed(account.schemas.some((s) => s.toString() === schema.toString())),
+    E.flatMap((isAuthorized) => {
+      return isAuthorized
+        ? E.succeed(void 0)
+        : E.fail(
+            new ResourceAccessDeniedError(
+              "schema",
+              schema.toString(),
+              account._id,
+            ),
+          );
+    }),
   );
-
-  return isAuthorized
-    ? E.succeed(value)
-    : E.fail(
-        new ControllerError({
-          reason: ["Schema not found", account._id, schema.toString()],
-        }),
-      );
 }

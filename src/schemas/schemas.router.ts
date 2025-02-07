@@ -10,14 +10,14 @@ export function buildSchemasRouter(app: App, _bindings: AppBindings): void {
   app.use(PathsV1.schemas.root, async (c, next): Promise<void | Response> => {
     return isRoleAllowed(c, ["organization"])
       ? next()
-      : c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
+      : c.text("Unauthorized", StatusCodes.UNAUTHORIZED);
   });
 
   SchemasController.list(app);
   SchemasController.add(app);
-  SchemasController.deleteS(app);
+  SchemasController.remove(app);
   SchemasController.metadata(app);
 
   SchemasController.createIndex(app);
-  SchemasController.deleteIndex(app);
+  SchemasController.dropIndex(app);
 }

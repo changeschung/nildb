@@ -1,7 +1,13 @@
 import { Effect as E, pipe } from "effect";
 import * as AdminAccountRepository from "#/admin/admin.repository";
 import type { AdminCreateAccountRequest } from "#/admin/admin.types";
-import { ServiceError } from "#/common/app-error";
+import {
+  DataValidationError,
+  type DatabaseError,
+  type DocumentNotFoundError,
+  DuplicateEntryError,
+  type PrimaryCollectionNotFoundError,
+} from "#/common/errors";
 import { Identity } from "#/common/identity";
 import type { NilDid } from "#/common/nil-did";
 import type { AppBindings } from "#/env";
@@ -14,111 +20,74 @@ import type {
 export function find(
   ctx: AppBindings,
   did: NilDid,
-): E.Effect<OrganizationAccountDocument, ServiceError> {
+): E.Effect<
+  OrganizationAccountDocument,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
   return pipe(
-    AccountRepository.findOne(ctx, { _id: did, type: "organization" }),
-    E.mapError(
-      (error) =>
-        new ServiceError({
-          reason: "Failed to find account by DID",
-          cause: error,
-          context: {
-            did,
-          },
-        }),
-    ),
-    E.tap((account) => {
-      ctx.log.debug(`Found ${account._type} account: ${account._id}`);
+    AccountRepository.findOneOrganization(ctx, {
+      _id: did,
+      _type: "organization",
     }),
   );
 }
 
 export function createAccount(
   ctx: AppBindings,
-  data: RegisterAccountRequest | AdminCreateAccountRequest,
-): E.Effect<NilDid, ServiceError> {
-  return pipe(
-    E.succeed(data),
-    E.flatMap((data) => {
-      if (data.did === ctx.node.identity.did) {
-        return E.fail(
-          new ServiceError({
-            reason: "DID prohibited",
-            context: { data },
-          }),
-        );
-      }
+  request: RegisterAccountRequest | AdminCreateAccountRequest,
+): E.Effect<
+  void,
+  | DataValidationError
+  | DuplicateEntryError
+  | DocumentNotFoundError
+  | PrimaryCollectionNotFoundError
+  | DatabaseError
+> {
+  if (request.did === ctx.node.identity.did) {
+    const e = new DuplicateEntryError(request);
+    return E.fail(e);
+  }
 
-      if (!Identity.isDidFromPublicKey(data.did, data.publicKey)) {
-        return E.fail(
-          new ServiceError({
-            reason: "DID not derived from public key",
-            context: { data },
-          }),
-        );
-      }
+  if (!Identity.isDidFromPublicKey(request.did, request.publicKey)) {
+    const e = new DataValidationError(
+      ["DID not derived from public key"],
+      request,
+    );
+    return E.fail(e);
+  }
 
-      return E.succeed(data);
-    }),
-    E.flatMap((data) => {
-      const isAdminRegistration =
-        "type" in data && data.type.toLocaleLowerCase() === "admin";
+  const isAdminRegistration =
+    "type" in request && request.type.toLocaleLowerCase() === "admin";
 
-      if (isAdminRegistration) {
-        const document = AdminAccountRepository.toAdminAccountDocument(data);
-        return AdminAccountRepository.insert(ctx, document);
-      }
+  if (isAdminRegistration) {
+    const document = AdminAccountRepository.toAdminAccountDocument(request);
+    return AdminAccountRepository.insert(ctx, document);
+  }
 
-      const document = AccountRepository.toOrganizationAccountDocument(
-        data,
-        ctx.config.env,
-      );
-      return AccountRepository.insert(ctx, document);
-    }),
-    E.mapError((cause) => {
-      return new ServiceError({
-        reason: "Register organization failure",
-        cause,
-      });
-    }),
+  const document = AccountRepository.toOrganizationAccountDocument(
+    request,
+    ctx.config.env,
   );
+  return AccountRepository.insert(ctx, document);
 }
 
 export function remove(
   ctx: AppBindings,
   id: NilDid,
-): E.Effect<NilDid, ServiceError> {
-  return pipe(
-    AccountRepository.deleteOneById(ctx, id),
-    E.mapError(
-      (error) =>
-        new ServiceError({
-          reason: `Failed to delete account: ${id}`,
-          cause: error,
-        }),
-    ),
-    E.tap((id) => {
-      ctx.log.debug(`Removed organization account: ${id}`);
-    }),
-  );
+): E.Effect<
+  void,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
+  return pipe(AccountRepository.deleteOneById(ctx, id));
 }
 
 export function setSubscriptionState(
   ctx: AppBindings,
   ids: NilDid[],
   active: boolean,
-): E.Effect<NilDid[], ServiceError> {
-  return pipe(
-    AccountRepository.setSubscriptionState(ctx, ids, active),
-    E.mapError(
-      (error) =>
-        new ServiceError({
-          reason: "Failed to set accounts subscription state",
-          cause: error,
-        }),
-    ),
-    E.tap((ids) => {
-      ctx.log.debug(`Set subscription.active=${active} for accounts: %O`, ids);
-    }),
-  );
+): E.Effect<
+  void,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
+  return pipe(AccountRepository.setSubscriptionState(ctx, ids, active));
 }

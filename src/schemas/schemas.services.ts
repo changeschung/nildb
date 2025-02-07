@@ -2,12 +2,13 @@ import { Effect as E, pipe } from "effect";
 import type { CreateIndexesOptions, IndexSpecification, UUID } from "mongodb";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import type { CreateSchemaIndexRequest } from "#/admin/admin.types";
-import { ServiceError } from "#/common/app-error";
 import type {
+  DataCollectionNotFoundError,
   DatabaseError,
+  DocumentNotFoundError,
   IndexNotFoundError,
   InvalidIndexOptionsError,
-  SchemaNotFoundError,
+  PrimaryCollectionNotFoundError,
 } from "#/common/errors";
 import type { NilDid } from "#/common/nil-did";
 import { validateSchema } from "#/common/validator";
@@ -21,68 +22,70 @@ import * as SchemasRepository from "./schemas.repository";
 export function getOrganizationSchemas(
   ctx: AppBindings,
   organization: OrganizationAccountDocument,
-): E.Effect<SchemaDocument[], ServiceError> {
-  return pipe(
-    E.succeed(organization._id),
-    E.flatMap((owner) => SchemasRepository.findMany(ctx, { owner })),
-    E.mapError((cause) => {
-      const reason = [`Get organization schemas failed: ${organization._id}`];
-      return new ServiceError({ reason, cause });
-    }),
-  );
+): E.Effect<
+  SchemaDocument[],
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
+  return SchemasRepository.findMany(ctx, { owner: organization._id });
 }
 
 export function addSchema(
   ctx: AppBindings,
   request: AddSchemaRequest & { owner: NilDid },
-): E.Effect<UUID, ServiceError> {
+): E.Effect<
+  void,
+  | DocumentNotFoundError
+  | InvalidIndexOptionsError
+  | PrimaryCollectionNotFoundError
+  | DatabaseError
+> {
+  const now = new Date();
+  const document: SchemaDocument = {
+    ...request,
+    _created: now,
+    _updated: now,
+  };
+
   return pipe(
     validateSchema(request.schema),
-    E.flatMap(() => {
-      const now = new Date();
-      const document: SchemaDocument = {
-        ...request,
-        _created: now,
-        _updated: now,
-      };
-      return SchemasRepository.insert(ctx, document);
-    }),
-    E.tap((schemaId) => {
-      return DataRepository.createCollection(ctx, schemaId);
-    }),
-    E.tap((schemaId) => {
-      return OrganizationRepository.addSchema(ctx, request.owner, schemaId);
-    }),
-    E.mapError((cause) => {
-      const reason = ["Add schema failed"];
-      return new ServiceError({ reason, cause });
-    }),
+    () => SchemasRepository.insert(ctx, document),
+    E.flatMap(() =>
+      E.all([
+        E.succeed(ctx.cache.accounts.taint(document.owner)),
+        OrganizationRepository.addSchema(ctx, request.owner, document._id),
+        DataRepository.createCollection(ctx, document._id),
+      ]),
+    ),
   );
 }
 
 export function deleteSchema(
   ctx: AppBindings,
   schemaId: UUID,
-): E.Effect<SchemaDocument, ServiceError> {
+): E.Effect<
+  void,
+  | DocumentNotFoundError
+  | DataCollectionNotFoundError
+  | PrimaryCollectionNotFoundError
+  | DatabaseError
+> {
   return pipe(
     SchemasRepository.deleteOne(ctx, { _id: schemaId }),
-    E.tap((schema) => {
-      return OrganizationRepository.removeSchema(ctx, schema.owner, schemaId);
-    }),
-    E.tap((_orgId) => {
-      return DataRepository.deleteCollection(ctx, schemaId);
-    }),
-    E.mapError((cause) => {
-      const reason = [`Delete schema failed: ${schemaId.toString()}`];
-      return new ServiceError({ reason, cause });
-    }),
+    E.flatMap((schema) =>
+      E.all([
+        E.succeed(ctx.cache.accounts.taint(schema.owner)),
+        OrganizationRepository.removeSchema(ctx, schema.owner, schemaId),
+        DataRepository.deleteCollection(ctx, schemaId),
+      ]),
+    ),
+    E.as(void 0),
   );
 }
 
 export function getSchemaMetadata(
   ctx: AppBindings,
   _id: UUID,
-): E.Effect<SchemaMetadata, SchemaNotFoundError | DatabaseError> {
+): E.Effect<SchemaMetadata, DataCollectionNotFoundError | DatabaseError> {
   return pipe(SchemasRepository.getCollectionStats(ctx, _id));
 }
 
@@ -92,7 +95,7 @@ export function createIndex(
   request: CreateSchemaIndexRequest,
 ): E.Effect<
   void,
-  SchemaNotFoundError | InvalidIndexOptionsError | DatabaseError
+  InvalidIndexOptionsError | PrimaryCollectionNotFoundError | DatabaseError
 > {
   const specification: IndexSpecification = request.keys;
   const options: CreateIndexesOptions = {
@@ -114,12 +117,9 @@ export function dropIndex(
   ctx: AppBindings,
   schema: UUID,
   name: string,
-): E.Effect<void, SchemaNotFoundError | IndexNotFoundError | DatabaseError> {
-  return pipe(
-    SchemasRepository.dropIndex(ctx, schema, name),
-    E.tap((document) => {
-      ctx.log.info(document);
-    }),
-    E.as(void 0),
-  );
+): E.Effect<
+  void,
+  IndexNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
+  return pipe(SchemasRepository.dropIndex(ctx, schema, name), E.as(void 0));
 }

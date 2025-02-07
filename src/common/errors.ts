@@ -1,192 +1,39 @@
-import util from "node:util";
-import { Effect as E, Option as O, pipe } from "effect";
-import { isUnknownException } from "effect/Cause";
-import { MongoError } from "mongodb";
-import { RepositoryError } from "#/common/app-error";
-import type { UuidDto } from "#/common/types";
+import type { MongoError } from "mongodb";
+import type { JsonObject } from "type-fest";
+import type { NilDid } from "#/common/nil-did";
 
-export type DbErrorContext = {
-  name: string;
-  params: Record<string, unknown>;
-  code?: string | number;
-  message?: string;
-};
+export class DuplicateEntryError {
+  readonly _tag = "DuplicateEntryError";
+  constructor(readonly document: JsonObject) {}
 
-export class DbError extends Error {
-  readonly _tag = "DbError";
+  toString(): string {
+    return `${this._tag}(document=${JSON.stringify(this.document)})`;
+  }
+}
 
+export class ResourceAccessDeniedError {
+  readonly _tag = "ResourceAccessDeniedError";
   constructor(
-    public readonly context: DbErrorContext,
-    public readonly cause?: unknown,
-  ) {
-    super(`Database operation failed: ${util.inspect(context)}`);
+    readonly type: string,
+    readonly id: string,
+    readonly user: NilDid,
+  ) {}
+
+  toString(): string {
+    return `${this._tag}(type=${this.type},id=${this.id},user=${this.user})`;
   }
-
-  sanitizedMessage(): string {
-    switch (this.context.code) {
-      case "11000": {
-        return "A similar entry is already in the system";
-      }
-      case "NotFound": {
-        return "We couldn't find what you're looking for";
-      }
-      default: {
-        console.error(this.context.message);
-        return "Internal db error";
-      }
-    }
-  }
-}
-
-export function succeedOrMapToDbError<T, E extends Error = Error>(
-  context: DbErrorContext,
-): (effect: E.Effect<T | O.Option<T>, E>) => E.Effect<T, DbError> {
-  return (effect) =>
-    pipe(
-      effect,
-      E.flatMap((result) => {
-        if (O.isOption(result)) {
-          return pipe(
-            result,
-            O.match({
-              onNone: () => {
-                context.code = "NotFound";
-                return E.fail(new DbError(context));
-              },
-              onSome: (value) => E.succeed(value),
-            }),
-          );
-        }
-
-        if (!result) {
-          return E.fail(new DbError({ ...context }));
-        }
-
-        return E.succeed(result as T);
-      }),
-      E.mapError((cause) => {
-        if (cause instanceof DbError) {
-          return cause;
-        }
-
-        const error = isUnknownException(cause)
-          ? (cause.error as Error)
-          : cause;
-
-        const errorContext = {
-          ...context,
-          reason: [error.message],
-        };
-
-        if (isMongoError(error)) {
-          return new DbError({
-            ...errorContext,
-            code: String(error.code),
-          });
-        }
-
-        return new DbError(errorContext, error);
-      }),
-    );
-}
-
-export function succeedOrMapToRepositoryError<T, E extends Error = Error>(
-  context: Record<string, unknown> = {},
-): (effect: E.Effect<T | O.Option<T>, E>) => E.Effect<T, RepositoryError> {
-  return (effect) =>
-    pipe(
-      effect,
-      E.flatMap((result) => {
-        if (O.isOption(result)) {
-          return pipe(
-            result,
-            O.match({
-              onNone: () => {
-                const error = new RepositoryError({
-                  reason: "Document not found",
-                  context,
-                });
-                return E.fail(error);
-              },
-              onSome: (value) => E.succeed(value),
-            }),
-          );
-        }
-
-        if (!result) {
-          return E.fail(
-            new RepositoryError({
-              reason: "Result is null",
-              context,
-            }),
-          );
-        }
-
-        return E.succeed(result as T);
-      }),
-      E.mapError((cause) => {
-        if (cause instanceof RepositoryError) {
-          return cause;
-        }
-
-        const error = isUnknownException(cause)
-          ? (cause.error as Error)
-          : cause;
-
-        if (isMongoError(error)) {
-          return new RepositoryError({
-            reason: [sanitizedMongoDbErrorMessage(error.code)],
-            cause: error,
-            context: {
-              ...context,
-              code: String(error.code),
-            },
-          });
-        }
-
-        return new RepositoryError({
-          reason: ["Unexpected repository error"],
-          cause: error,
-          context,
-        });
-      }),
-    );
-}
-
-function sanitizedMongoDbErrorMessage(
-  code: string | number | undefined,
-): string {
-  switch (String(code)) {
-    case "11000": {
-      return "A similar entry is already in the system";
-    }
-    case "NotFound": {
-      return "We couldn't find what you're looking for";
-    }
-    default: {
-      return "Internal db error";
-    }
-  }
-}
-
-export function isMongoError(value: unknown): value is MongoError {
-  return value instanceof MongoError;
-}
-
-export const MongoErrorCode = {
-  Duplicate: 11000,
-  CannotCreateIndex: 67,
-  IndexNotFound: 27,
-} as const;
-
-export class SchemaNotFoundError {
-  readonly _tag = "SchemaNotFoundError";
-  constructor(readonly id: UuidDto) {}
 }
 
 export class InvalidIndexOptionsError {
   readonly _tag = "InvalidIndexOptionsError";
-  constructor(readonly message: string) {}
+  constructor(
+    readonly collection: string,
+    readonly message: string,
+  ) {}
+
+  toString(): string {
+    return `${this._tag}(message=${this.message})`;
+  }
 }
 
 export class IndexNotFoundError {
@@ -195,9 +42,68 @@ export class IndexNotFoundError {
     readonly collection: string,
     readonly index: string,
   ) {}
+
+  toString(): string {
+    return `${this._tag}(collection=${this.collection},index=${this.index})`;
+  }
 }
 
 export class DatabaseError {
   readonly _tag = "DatabaseError";
   constructor(readonly error: MongoError) {}
+
+  toString(): string {
+    return `${this._tag}(message=${this.error.message})`;
+  }
+}
+
+export class DocumentNotFoundError {
+  readonly _tag = "DocumentNotFoundError";
+  constructor(
+    readonly collection: string,
+    readonly filter: Record<string, unknown>,
+  ) {}
+
+  toString(): string {
+    return `${this._tag}(collection=${this.collection},filter=${this.filter})`;
+  }
+}
+
+export class PrimaryCollectionNotFoundError {
+  readonly _tag = "PrimaryCollectionNotFoundError";
+  constructor(readonly name: string) {}
+
+  toString(): string {
+    return `${this._tag}(name=${this.name})`;
+  }
+}
+
+export class DataCollectionNotFoundError {
+  readonly _tag = "DataCollectionNotFoundError";
+  constructor(readonly name: string) {}
+
+  toString(): string {
+    return `${this._tag}(name=${this.name})`;
+  }
+}
+
+export class DataValidationError {
+  readonly _tag = "DataValidationError";
+  constructor(
+    readonly issues: string[],
+    readonly cause: unknown,
+  ) {}
+
+  toString(): string {
+    return `${this._tag}(issues=${this.issues},cause=${JSON.stringify(this.cause)})`;
+  }
+}
+
+export class VariableInjectionError {
+  readonly _tag = "VariableInjectionError";
+  constructor(readonly message: string) {}
+
+  toString(): string {
+    return `${this._tag}(message=${this.message})`;
+  }
 }

@@ -1,5 +1,18 @@
+import { Effect as E, pipe } from "effect";
 import type { Config as MongoMigrateConfig } from "mongo-migrate-ts/lib/config";
-import { MongoClient, type UUID } from "mongodb";
+import {
+  type Collection,
+  type Document,
+  MongoClient,
+  MongoError,
+  type UUID,
+} from "mongodb";
+import {
+  DataCollectionNotFoundError,
+  DatabaseError,
+  PrimaryCollectionNotFoundError,
+} from "#/common/errors";
+import type { UuidDto } from "#/common/types";
 import type { AppBindings, EnvVars } from "#/env";
 
 // A common base for all documents. UUID v4 is used so that records have a unique but stable
@@ -50,4 +63,48 @@ export async function mongoMigrateUp(
   const migratePath = "mongo-migrate-ts/lib/commands/up" as const;
   const migrate = await import(migratePath);
   await migrate.up({ config });
+}
+
+export function isMongoError(value: unknown): value is MongoError {
+  return value instanceof MongoError;
+}
+
+export const MongoErrorCode = {
+  Duplicate: 11000,
+  CannotCreateIndex: 67,
+  IndexNotFound: 27,
+} as const;
+
+export function checkPrimaryCollectionExists<T extends Document>(
+  ctx: AppBindings,
+  name: string,
+): E.Effect<Collection<T>, PrimaryCollectionNotFoundError | DatabaseError> {
+  return pipe(
+    E.tryPromise({
+      try: () => ctx.db.primary.listCollections({ name }).toArray(),
+      catch: (e: unknown) => new DatabaseError(e as MongoError),
+    }),
+    E.flatMap((result) =>
+      result.length === 1
+        ? E.succeed(ctx.db.primary.collection<T>(name))
+        : E.fail(new PrimaryCollectionNotFoundError(name as UuidDto)),
+    ),
+  );
+}
+
+export function checkDataCollectionExists<T extends Document>(
+  ctx: AppBindings,
+  name: string,
+): E.Effect<Collection<T>, DataCollectionNotFoundError | DatabaseError> {
+  return pipe(
+    E.tryPromise({
+      try: () => ctx.db.data.listCollections({ name }).toArray(),
+      catch: (e: unknown) => new DatabaseError(e as MongoError),
+    }),
+    E.flatMap((result) =>
+      result.length === 1
+        ? E.succeed(ctx.db.data.collection<T>(name))
+        : E.fail(new DataCollectionNotFoundError(name as UuidDto)),
+    ),
+  );
 }

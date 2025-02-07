@@ -1,8 +1,17 @@
-import { Effect as E, Option as O, pipe } from "effect";
-import type { StrictFilter } from "mongodb";
-import type { RepositoryError } from "#/common/app-error";
-import { succeedOrMapToRepositoryError } from "#/common/errors";
-import { CollectionName } from "#/common/mongo";
+import { Effect as E, pipe } from "effect";
+import type {
+  MongoError,
+  StrictFilter,
+  StrictUpdateFilter,
+  UpdateResult,
+} from "mongodb";
+import type { AccountDocument } from "#/admin/admin.types";
+import {
+  DatabaseError,
+  DocumentNotFoundError,
+  type PrimaryCollectionNotFoundError,
+} from "#/common/errors";
+import { CollectionName, checkPrimaryCollectionExists } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
 import type { AppBindings } from "#/env";
 import type {
@@ -36,84 +45,109 @@ export function toOrganizationAccountDocument(
 export function insert(
   ctx: AppBindings,
   document: OrganizationAccountDocument,
-): E.Effect<NilDid, RepositoryError> {
+): E.Effect<void, PrimaryCollectionNotFoundError | DatabaseError> {
   return pipe(
-    E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<OrganizationAccountDocument>(
-        CollectionName.Accounts,
-      );
-      const result = await collection.insertOne(document);
-      return result.insertedId;
-    }),
-    succeedOrMapToRepositoryError({
-      op: "AccountRepository.insert",
-      document,
-    }),
+    checkPrimaryCollectionExists<OrganizationAccountDocument>(
+      ctx,
+      CollectionName.Accounts,
+    ),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.insertOne(document),
+        catch: (e) => new DatabaseError(e as MongoError),
+      }),
+    ),
+    E.as(void 0),
   );
 }
 
-export function findOne(
+export function findByIdWithCache(
+  ctx: AppBindings,
+  _id: NilDid,
+): E.Effect<
+  AccountDocument,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
+  const cache = ctx.cache.accounts;
+  const account = cache.get(_id);
+  if (account) {
+    return E.succeed(account);
+  }
+
+  const filter = { _id };
+
+  return pipe(
+    checkPrimaryCollectionExists<AccountDocument>(ctx, CollectionName.Accounts),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.findOne(filter),
+        catch: (e) => new DatabaseError(e as MongoError),
+      }),
+    ),
+    E.flatMap((result) =>
+      result === null
+        ? E.fail(new DocumentNotFoundError(CollectionName.Accounts, filter))
+        : E.succeed(result),
+    ),
+    E.tap((document) => cache.set(_id, document)),
+  );
+}
+
+export function findOneOrganization(
   ctx: AppBindings,
   filter: StrictFilter<OrganizationAccountDocument>,
-): E.Effect<OrganizationAccountDocument, RepositoryError> {
+): E.Effect<
+  OrganizationAccountDocument,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
   return pipe(
-    E.tryPromise(async () => {
-      const accountsCache = ctx.cache.accounts;
-      filter._type = "organization";
-
-      // Try cache to avoid db query
-      if (filter._id) {
-        const account = accountsCache.get(filter._id as NilDid);
-        if (account && account._type === "organization") {
-          return O.some(account);
-        }
-      }
-
-      // Cache miss search database
-      const collection = ctx.db.primary.collection<OrganizationAccountDocument>(
-        CollectionName.Accounts,
-      );
-      const result = await collection.findOne(filter);
-
-      if (result) {
-        accountsCache.set(result._id, result);
-      }
-
-      return O.fromNullable(result);
-    }),
-    succeedOrMapToRepositoryError({
-      op: "AccountRepository.findOne",
-      filter,
-    }),
+    checkPrimaryCollectionExists<OrganizationAccountDocument>(
+      ctx,
+      CollectionName.Accounts,
+    ),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.findOne(filter),
+        catch: (e) => new DatabaseError(e as MongoError),
+      }),
+    ),
+    E.flatMap((result) =>
+      result === null
+        ? E.fail(new DocumentNotFoundError(CollectionName.Accounts, filter))
+        : E.succeed(result),
+    ),
   );
 }
 
 export function deleteOneById(
   ctx: AppBindings,
   _id: NilDid,
-): E.Effect<NilDid, RepositoryError> {
+): E.Effect<
+  void,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
   const filter: StrictFilter<OrganizationAccountDocument> = {
     _id,
     _type: "organization",
   };
 
   return pipe(
-    E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<OrganizationAccountDocument>(
-        CollectionName.Accounts,
-      );
-      const result = await collection.deleteOne(filter);
-      return result.deletedCount === 1 ? O.some(_id) : O.none();
-    }),
-    E.tap(() =>
-      E.sync(() => {
-        ctx.cache.accounts.delete(_id);
+    checkPrimaryCollectionExists<OrganizationAccountDocument>(
+      ctx,
+      CollectionName.Accounts,
+    ),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.deleteOne(filter),
+        catch: (e) => new DatabaseError(e as MongoError),
       }),
     ),
-    succeedOrMapToRepositoryError({
-      name: "AccountRepository.deleteOne",
-      filter,
-    }),
+    E.flatMap((result) =>
+      result === null
+        ? E.fail(new DocumentNotFoundError(CollectionName.Accounts, filter))
+        : E.succeed(result),
+    ),
+    E.tap(() => ctx.cache.accounts.delete(_id)),
   );
 }
 
@@ -121,28 +155,36 @@ export function setSubscriptionState(
   ctx: AppBindings,
   ids: NilDid[],
   active: boolean,
-): E.Effect<NilDid[], RepositoryError> {
+): E.Effect<
+  UpdateResult,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
   const filter: StrictFilter<OrganizationAccountDocument> = {
     _id: { $in: ids },
     _type: "organization",
   };
+  const update: StrictUpdateFilter<OrganizationAccountDocument> = {
+    $set: { "subscription.active": active },
+  };
 
   return pipe(
-    E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<OrganizationAccountDocument>(
-        CollectionName.Accounts,
-      );
-      const result = await collection.updateMany(filter, {
-        $set: { "subscription.active": active },
-      });
-      return result.modifiedCount === ids.length ? O.some(ids) : O.none();
-    }),
+    checkPrimaryCollectionExists<OrganizationAccountDocument>(
+      ctx,
+      CollectionName.Accounts,
+    ),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.updateMany(filter, update),
+        catch: (e) => new DatabaseError(e as MongoError),
+      }),
+    ),
+    E.flatMap((result) =>
+      result === null
+        ? E.fail(new DocumentNotFoundError(CollectionName.Accounts, filter))
+        : E.succeed(result),
+    ),
     E.tap(() =>
       E.forEach(ids, (id) => E.sync(() => ctx.cache.accounts.taint(id))),
     ),
-    succeedOrMapToRepositoryError({
-      name: "AccountRepository.setSubscriptionState",
-      filter,
-    }),
   );
 }

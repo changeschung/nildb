@@ -1,6 +1,5 @@
-import { Effect as E, Option as O, pipe } from "effect";
+import { Effect as E, pipe } from "effect";
 import type {
-  Collection,
   CreateIndexesOptions,
   Document,
   IndexSpecification,
@@ -8,19 +7,23 @@ import type {
   StrictFilter,
   UUID,
 } from "mongodb";
-import type { RepositoryError } from "#/common/app-error";
 import {
+  type DataCollectionNotFoundError,
   DatabaseError,
+  DocumentNotFoundError,
   IndexNotFoundError,
   InvalidIndexOptionsError,
-  MongoErrorCode,
-  SchemaNotFoundError,
-  isMongoError,
-  succeedOrMapToRepositoryError,
+  type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
-import { CollectionName, type DocumentBase } from "#/common/mongo";
+import {
+  CollectionName,
+  type DocumentBase,
+  MongoErrorCode,
+  checkDataCollectionExists,
+  checkPrimaryCollectionExists,
+  isMongoError,
+} from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
-import type { UuidDto } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { SchemaMetadata } from "#/schemas/schemas.types";
 
@@ -33,197 +36,167 @@ export type SchemaDocument = DocumentBase & {
 export function insert(
   ctx: AppBindings,
   document: SchemaDocument,
-): E.Effect<UUID, RepositoryError> {
+): E.Effect<void, PrimaryCollectionNotFoundError | DatabaseError> {
   return pipe(
-    E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<SchemaDocument>(
-        CollectionName.Schemas,
-      );
-      const result = await collection.insertOne(document);
-      return result.insertedId;
-    }),
-    E.tap(() =>
-      E.sync(() => {
-        ctx.cache.accounts.taint(document.owner);
+    checkPrimaryCollectionExists<SchemaDocument>(ctx, CollectionName.Schemas),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.insertOne(document),
+        catch: (e) => new DatabaseError(e as MongoError),
       }),
     ),
-    succeedOrMapToRepositoryError({
-      op: "SchemasRepository.insert",
-      document,
-    }),
+    E.as(void 0),
   );
 }
 
 export function findMany(
   ctx: AppBindings,
   filter: StrictFilter<SchemaDocument>,
-): E.Effect<SchemaDocument[], RepositoryError> {
+): E.Effect<SchemaDocument[], PrimaryCollectionNotFoundError | DatabaseError> {
   return pipe(
-    E.tryPromise(() => {
-      const collection = ctx.db.primary.collection<SchemaDocument>(
-        CollectionName.Schemas,
-      );
-      return collection.find(filter).toArray();
-    }),
-    succeedOrMapToRepositoryError({
-      op: "SchemasRepository.findMany",
-      filter,
-    }),
+    checkPrimaryCollectionExists<SchemaDocument>(ctx, CollectionName.Schemas),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: async () => collection.find(filter).toArray(),
+        catch: (e) => new DatabaseError(e as MongoError),
+      }),
+    ),
   );
 }
 
 export function findOne(
   ctx: AppBindings,
   filter: StrictFilter<SchemaDocument>,
-): E.Effect<SchemaDocument, RepositoryError> {
+): E.Effect<
+  SchemaDocument,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
   return pipe(
-    E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<SchemaDocument>(
-        CollectionName.Schemas,
-      );
-      const result = await collection.findOne(filter);
-      return O.fromNullable(result);
-    }),
-    succeedOrMapToRepositoryError({
-      op: "SchemasRepository.findOne",
-      filter,
-    }),
-  );
-}
-
-export function deleteMany(
-  ctx: AppBindings,
-  filter: StrictFilter<SchemaDocument>,
-): E.Effect<number, RepositoryError> {
-  return pipe(
-    E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<SchemaDocument>(
-        CollectionName.Schemas,
-      );
-      const result = await collection.deleteMany(filter);
-      return result.deletedCount;
-    }),
-    E.tap(() =>
-      E.sync(() => {
-        ctx.cache.accounts.taint(filter.owner as NilDid);
+    checkPrimaryCollectionExists<SchemaDocument>(ctx, CollectionName.Schemas),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: async () => collection.findOne(filter),
+        catch: (e) => new DatabaseError(e as MongoError),
       }),
     ),
-    succeedOrMapToRepositoryError({
-      op: "SchemasRepository.deleteMany",
-      filter,
-    }),
+    E.flatMap((result) =>
+      result === null
+        ? E.fail(new DocumentNotFoundError(CollectionName.Schemas, filter))
+        : E.succeed(result),
+    ),
   );
 }
 
 export function deleteOne(
   ctx: AppBindings,
   filter: StrictFilter<SchemaDocument>,
-): E.Effect<SchemaDocument, RepositoryError> {
+): E.Effect<
+  SchemaDocument,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
   return pipe(
-    E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<SchemaDocument>(
-        CollectionName.Schemas,
-      );
-      const result = await collection.findOneAndDelete(filter);
-      return O.fromNullable(result);
-    }),
-    E.tap(() =>
-      E.sync(() => {
-        ctx.cache.accounts.taint(filter.owner as NilDid);
+    checkPrimaryCollectionExists<SchemaDocument>(ctx, CollectionName.Schemas),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.findOneAndDelete(filter),
+        catch: (e: unknown) => new DatabaseError(e as MongoError),
       }),
     ),
-    succeedOrMapToRepositoryError({
-      op: "SchemasRepository.deleteOne",
-      filter,
-    }),
+    E.flatMap((result) =>
+      result === null
+        ? E.fail(new DocumentNotFoundError(CollectionName.Schemas, filter))
+        : E.succeed(result),
+    ),
   );
 }
 
 export function getCollectionStats(
   ctx: AppBindings,
   id: UUID,
-): E.Effect<SchemaMetadata, SchemaNotFoundError | DatabaseError> {
-  const collection = ctx.db.data.collection(id.toString());
+): E.Effect<SchemaMetadata, DataCollectionNotFoundError | DatabaseError> {
+  return pipe(
+    checkDataCollectionExists(ctx, id.toString()),
+    E.flatMap((collection) =>
+      E.Do.pipe(
+        E.bind("timeStats", () =>
+          E.tryPromise({
+            try: async () => {
+              const result = await collection
+                .aggregate([
+                  {
+                    $group: {
+                      _id: null,
+                      firstWrite: { $min: "$_created" },
+                      lastWrite: { $max: "$_created" },
+                    },
+                  },
+                ])
+                .toArray();
 
-  return E.Do.pipe(
-    E.bind("timeStats", () =>
-      E.tryPromise({
-        try: async () => {
-          const result = await collection
-            .aggregate([
-              {
-                $group: {
-                  _id: null,
-                  firstWrite: { $min: "$_created" },
-                  lastWrite: { $max: "$_created" },
-                },
-              },
-            ])
-            .toArray();
+              if (result.length === 0) {
+                return {
+                  firstWrite: new Date(0),
+                  lastWrite: new Date(0),
+                };
+              }
 
-          if (result.length === 0) {
-            return {
-              firstWrite: new Date(0),
-              lastWrite: new Date(0),
-            };
-          }
+              const { firstWrite, lastWrite } = result[0];
 
-          const { firstWrite, lastWrite } = result[0];
+              return {
+                firstWrite,
+                lastWrite,
+              };
+            },
+            catch: (e: unknown) => new DatabaseError(e as MongoError),
+          }),
+        ),
+        E.bind("indexes", () =>
+          E.tryPromise({
+            try: async () => {
+              const result = await collection.indexes();
+              const indexes = result.map((index) => ({
+                v: index.v ?? -1,
+                key: index.key,
+                name: index.name ?? "",
+                unique: index.unique ?? false,
+              }));
 
-          return {
-            firstWrite,
-            lastWrite,
-          };
-        },
-        catch: (e: unknown) => new DatabaseError(e as MongoError),
-      }),
+              return indexes;
+            },
+            catch: (e: unknown) => new DatabaseError(e as MongoError),
+          }),
+        ),
+        E.bind("counts", () =>
+          E.tryPromise({
+            try: async () => {
+              type CollStats = { count: number; size: number };
+              const result = await collection
+                .aggregate<CollStats>([
+                  {
+                    $collStats: {
+                      storageStats: {},
+                    },
+                  },
+                  {
+                    $project: {
+                      count: "$storageStats.count",
+                      size: "$storageStats.size",
+                    },
+                  },
+                ])
+                .toArray();
+              const stats = result[0];
+
+              return {
+                count: stats.count,
+                size: stats.size,
+              };
+            },
+            catch: (e: unknown) => new DatabaseError(e as MongoError),
+          }),
+        ),
+      ),
     ),
-    E.bind("indexes", () =>
-      E.tryPromise({
-        try: async () => {
-          const result = await collection.indexes();
-          const indexes = result.map((index) => ({
-            v: index.v ?? -1,
-            key: index.key,
-            name: index.name ?? "",
-            unique: index.unique ?? false,
-          }));
-
-          return indexes;
-        },
-        catch: (e: unknown) => new DatabaseError(e as MongoError),
-      }),
-    ),
-    E.bind("counts", () =>
-      E.tryPromise({
-        try: async () => {
-          type CollStats = { count: number; size: number };
-          const result = await collection
-            .aggregate<CollStats>([
-              {
-                $collStats: {
-                  storageStats: {},
-                },
-              },
-              {
-                $project: {
-                  count: "$storageStats.count",
-                  size: "$storageStats.size",
-                },
-              },
-            ])
-            .toArray();
-          const stats = result[0];
-
-          return {
-            count: stats.count,
-            size: stats.size,
-          };
-        },
-        catch: (e: unknown) => new DatabaseError(e as MongoError),
-      }),
-    ),
-
     E.map(({ timeStats, indexes, counts }) => {
       return {
         id,
@@ -242,16 +215,16 @@ export function createIndex(
   options: CreateIndexesOptions,
 ): E.Effect<
   string,
-  SchemaNotFoundError | InvalidIndexOptionsError | DatabaseError
+  PrimaryCollectionNotFoundError | InvalidIndexOptionsError | DatabaseError
 > {
   return pipe(
-    collectionExists(ctx, schema.toString()),
+    checkPrimaryCollectionExists(ctx, schema.toString()),
     E.flatMap((collection) =>
       E.tryPromise({
         try: async () => collection.createIndex(specification, options),
         catch: (e: unknown) => {
           if (isMongoError(e) && e.code === MongoErrorCode.CannotCreateIndex) {
-            return new InvalidIndexOptionsError(e.message);
+            return new InvalidIndexOptionsError(schema.toString(), e.message);
           }
           return new DatabaseError(e as MongoError);
         },
@@ -266,10 +239,10 @@ export function dropIndex(
   name: string,
 ): E.Effect<
   Document,
-  SchemaNotFoundError | IndexNotFoundError | DatabaseError
+  PrimaryCollectionNotFoundError | IndexNotFoundError | DatabaseError
 > {
   return pipe(
-    collectionExists(ctx, schema.toString()),
+    checkPrimaryCollectionExists(ctx, schema.toString()),
     E.flatMap((collection) =>
       E.tryPromise({
         try: async () => collection.dropIndex(name),
@@ -280,23 +253,6 @@ export function dropIndex(
           return new DatabaseError(e as MongoError);
         },
       }),
-    ),
-  );
-}
-
-function collectionExists<T extends Document>(
-  ctx: AppBindings,
-  name: string,
-): E.Effect<Collection<T>, SchemaNotFoundError | DatabaseError> {
-  return pipe(
-    E.tryPromise({
-      try: () => ctx.db.data.listCollections({ name }).toArray(),
-      catch: (e: unknown) => new DatabaseError(e as MongoError),
-    }),
-    E.flatMap((result) =>
-      result.length === 1
-        ? E.succeed(ctx.db.data.collection<T>(name))
-        : E.fail(new SchemaNotFoundError(name as UuidDto)),
     ),
   );
 }

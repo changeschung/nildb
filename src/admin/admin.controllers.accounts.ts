@@ -1,14 +1,12 @@
 import { Effect as E, pipe } from "effect";
+import { StatusCodes } from "http-status-codes";
 import * as AccountService from "#/accounts/accounts.services";
 import type { App } from "#/app";
-import { foldToApiResponse } from "#/common/handler";
-import type { NilDid } from "#/common/nil-did";
+import { handleTaggedErrors } from "#/common/handler";
 import { PathsV1 } from "#/common/paths";
-import type { UuidDto } from "#/common/types";
 import { payloadValidator } from "#/common/zod-utils";
 import * as AdminService from "./admin.services";
 import {
-  type AccountDocument,
   AdminCreateAccountRequestSchema,
   AdminDeleteAccountRequestSchema,
   AdminSetSubscriptionStateRequestSchema,
@@ -21,26 +19,29 @@ export function create(app: App): void {
     async (c) => {
       const payload = c.req.valid("json");
 
-      return await pipe(
+      console.error("after create org request");
+
+      return pipe(
         AccountService.createAccount(c.env, payload),
-        E.map((id) => id.toString() as UuidDto),
-        foldToApiResponse<UuidDto>(c),
+        E.map(() => new Response(null, { status: StatusCodes.CREATED })),
+        handleTaggedErrors(c),
         E.runPromise,
       );
     },
   );
 }
 
-export function deleteA(app: App): void {
+export function remove(app: App): void {
   app.delete(
     PathsV1.admin.accounts.root,
     payloadValidator(AdminDeleteAccountRequestSchema),
     async (c) => {
       const payload = c.req.valid("json");
 
-      return await pipe(
+      return pipe(
         AdminService.deleteAccount(c.env, payload.id),
-        foldToApiResponse<NilDid>(c),
+        E.map(() => new Response(null, { status: StatusCodes.NO_CONTENT })),
+        handleTaggedErrors(c),
         E.runPromise,
       );
     },
@@ -48,10 +49,11 @@ export function deleteA(app: App): void {
 }
 
 export function list(app: App): void {
-  app.get(PathsV1.admin.accounts.root, async (c): Promise<Response> => {
-    return await pipe(
+  app.get(PathsV1.admin.accounts.root, async (c) => {
+    return pipe(
       AdminService.listAllAccounts(c.env),
-      foldToApiResponse<AccountDocument[]>(c),
+      E.map((data) => c.json({ data })),
+      handleTaggedErrors(c),
       E.runPromise,
     );
   });
@@ -64,9 +66,10 @@ export function setSubscriptionState(app: App): void {
     async (c) => {
       const payload = c.req.valid("json");
 
-      return await pipe(
+      return pipe(
         AccountService.setSubscriptionState(c.env, payload.ids, payload.active),
-        foldToApiResponse<NilDid[]>(c),
+        E.map(() => new Response(null, { status: StatusCodes.OK })),
+        handleTaggedErrors(c),
         E.runPromise,
       );
     },
