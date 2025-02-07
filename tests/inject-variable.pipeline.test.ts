@@ -80,8 +80,8 @@ describe("pipeline variable injection", () => {
 
     if (Either.isLeft(result)) {
       const error = result.left;
-      expect(error.reason).toContain("Missing pipeline variable");
-      expect(error.reason).toContain("##address");
+      expect(error.message).toContain("Missing pipeline variable");
+      expect(error.message).toContain("##address");
     }
   });
 

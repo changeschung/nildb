@@ -1,12 +1,13 @@
 import { faker } from "@faker-js/faker";
 import dotenv from "dotenv";
 import type { Hono } from "hono";
+import { StatusCodes } from "http-status-codes";
 import { UUID } from "mongodb";
 import type { JsonObject } from "type-fest";
+import { expect } from "vitest";
 import { buildApp } from "#/app";
 import { Identity } from "#/common/identity";
 import { mongoMigrateUp } from "#/common/mongo";
-import type { UuidDto } from "#/common/types";
 import {
   type AppBindings,
   type AppEnv,
@@ -14,7 +15,6 @@ import {
   loadBindings,
 } from "#/env";
 import type { QueryVariable } from "#/queries/queries.types";
-import { expectSuccessResponse } from "./assertions";
 import {
   TestAdminUserClient,
   TestOrganizationUserClient,
@@ -79,19 +79,23 @@ export async function buildFixture(
 
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  await root.createAccount({
+  const createAdminResponse = await root.createAccount({
     did: admin._options.identity.did,
     publicKey: admin._options.identity.pk,
     name: faker.person.fullName(),
     type: "admin",
   });
+  expect(createAdminResponse.ok).toBeTruthy();
 
-  await admin.createAccount({
+  console.error("before create org request");
+  const createOrgResponse = await admin.createAccount({
     did: organization._options.identity.did,
     publicKey: organization._options.identity.pk,
     name: faker.person.fullName(),
     type: "organization",
   });
+  console.error("after create org request: ", createOrgResponse);
+  expect(createOrgResponse.ok).toBeTruthy();
 
   if (opts.schema) {
     await registerSchemaAndQuery({
@@ -126,27 +130,26 @@ export async function registerSchemaAndQuery(opts: {
 }): Promise<void> {
   const { organization, schema, query } = opts;
 
+  schema.id = new UUID();
   const response = await organization.addSchema({
-    _id: new UUID(),
+    _id: schema.id,
     name: schema.name,
     schema: schema.schema,
   });
 
-  const body = await expectSuccessResponse<UuidDto>(response);
-  const id = new UUID(body.data);
-  schema.id = id;
+  expect(response.status).toBe(StatusCodes.CREATED);
 
   if (query) {
-    query.schema = id;
+    query.id = new UUID();
+    query.schema = schema.id;
     const response = await organization.addQuery({
-      _id: new UUID(),
+      _id: query.id,
       name: query.name,
       schema: query.schema,
       variables: query.variables,
       pipeline: query.pipeline,
     });
 
-    const body = await expectSuccessResponse<UuidDto>(response);
-    query.id = new UUID(body.data);
+    expect(response.status).toBe(StatusCodes.CREATED);
   }
 }

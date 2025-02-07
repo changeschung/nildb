@@ -1,7 +1,8 @@
 import { faker } from "@faker-js/faker";
+import type { UpdateResult } from "mongodb";
 import { describe } from "vitest";
 import { type UuidDto, createUuidDto } from "#/common/types";
-import type { DataDocument, UpdateResult } from "#/data/data.repository";
+import type { DataDocument } from "#/data/data.repository";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
 import { assertDefined, expectSuccessResponse } from "./fixture/assertions";
@@ -50,10 +51,8 @@ describe("update.data.test", () => {
     });
 
     const result = await expectSuccessResponse<UpdateResult>(response);
-    expect(result.data).toEqual({
-      matched: 1,
-      updated: 1,
-    });
+    expect(result.data.modifiedCount).toBe(1);
+    expect(result.data.matchedCount).toBe(1);
 
     const actual = await bindings.db.data
       .collection<DataDocument>(schema.id.toString())

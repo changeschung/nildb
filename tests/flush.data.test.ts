@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import type { DeleteResult } from "mongodb";
 import { describe } from "vitest";
 import { type UuidDto, createUuidDto } from "#/common/types";
 import queryJson from "./data/simple.query.json";
@@ -41,8 +42,8 @@ describe("flush data collection", () => {
       schema: schema.id,
     });
 
-    const result = await expectSuccessResponse<number>(response);
-    expect(result.data).toBe(collectionSize);
+    const result = await expectSuccessResponse<DeleteResult>(response);
+    expect(result.data.deletedCount).toBe(collectionSize);
 
     const count = await bindings.db.data
       .collection(schema.id.toString())

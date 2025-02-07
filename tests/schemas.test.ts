@@ -1,3 +1,4 @@
+import { StatusCodes } from "http-status-codes";
 import { UUID } from "mongodb";
 import { describe } from "vitest";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
@@ -25,24 +26,23 @@ describe("schemas.test.ts", () => {
   });
 
   it("can add schema", async ({ expect, bindings, organization }) => {
+    const _id = new UUID();
     const response = await organization.addSchema({
-      _id: new UUID(),
+      _id,
       name: schema.name,
       schema: schema.schema,
     });
 
-    const result = await expectSuccessResponse<UuidDto>(response);
-    const uuid = new UUID(result.data);
-    expect(uuid).toBeTruthy;
+    expect(response.status).toBe(StatusCodes.CREATED);
 
     const document = await bindings.db.primary
       .collection(CollectionName.Accounts)
       .findOne({
-        schema: { $elemMatch: { $in: [uuid] } },
+        schema: { $elemMatch: { $in: [_id] } },
       });
     assertDefined(document);
 
-    schema.id = new UUID(result.data);
+    schema.id = _id;
   });
 
   it("can upload data", async ({ expect, bindings, organization }) => {
@@ -92,11 +92,11 @@ describe("schemas.test.ts", () => {
     const response = await organization.deleteSchema({
       id,
     });
-    const result = await expectSuccessResponse<SchemaDocument>(response);
+    expect(response.status).toBe(StatusCodes.NO_CONTENT);
 
     const schemaDocument = await bindings.db.primary
       .collection<SchemaDocument>(CollectionName.Schemas)
-      .findOne({ _id: new UUID(result.data._id) });
+      .findOne({ _id: id });
 
     expect(schemaDocument).toBeNull();
 

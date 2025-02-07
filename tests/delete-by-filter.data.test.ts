@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import type { DeleteResult } from "mongodb";
 import { describe } from "vitest";
 import { type UuidDto, createUuidDto } from "#/common/types";
 import queryJson from "./data/simple.query.json";
@@ -69,8 +70,8 @@ describe("schema data deletion", () => {
       filter,
     });
 
-    const result = await expectSuccessResponse<number>(response);
-    expect(result.data).toBe(1);
+    const result = await expectSuccessResponse<DeleteResult>(response);
+    expect(result.data.deletedCount).toBe(1);
 
     const count = await bindings.db.data
       .collection(schema.id.toString())
@@ -90,8 +91,8 @@ describe("schema data deletion", () => {
       filter,
     });
 
-    const result = await expectSuccessResponse<number>(response);
-    expect(result.data).toBe(2);
+    const result = await expectSuccessResponse<DeleteResult>(response);
+    expect(result.data.deletedCount).toBe(2);
 
     const count = await bindings.db.data
       .collection(schema.id.toString())

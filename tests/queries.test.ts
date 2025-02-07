@@ -1,8 +1,8 @@
+import { StatusCodes } from "http-status-codes";
 import { UUID } from "mongodb";
 import { describe } from "vitest";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import { CollectionName } from "#/common/mongo";
-import type { UuidDto } from "#/common/types";
 import type { QueryDocument } from "#/queries/queries.types";
 import type { SchemaDocument } from "#/schemas/schemas.repository";
 import queryJson from "./data/simple.query.json";
@@ -31,18 +31,16 @@ describe("query.test.ts", () => {
   });
 
   it("can add a query", async ({ expect, organization }) => {
+    query.id = new UUID();
     const response = await organization.addQuery({
-      _id: new UUID(),
+      _id: query.id,
       name: query.name,
       schema: query.schema,
       variables: query.variables,
       pipeline: query.pipeline,
     });
 
-    const result = await expectSuccessResponse<UuidDto>(response);
-    const uuid = new UUID(result.data);
-    expect(uuid).toBeTruthy();
-    query.id = uuid;
+    expect(response.status).toBe(StatusCodes.CREATED);
   });
 
   it("can list queries (expect 1)", async ({ expect, organization }) => {
@@ -57,7 +55,7 @@ describe("query.test.ts", () => {
       id: query.id,
     });
 
-    await expectSuccessResponse(response);
+    expect(response.status).toBe(StatusCodes.NO_CONTENT);
 
     const queryDocument = await bindings.db.primary
       .collection<SchemaDocument>(CollectionName.Schemas)

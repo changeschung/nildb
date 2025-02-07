@@ -29,12 +29,10 @@ describe("array variable queries", () => {
   }));
 
   beforeAll(async ({ organization }) => {
-    const response = await organization.uploadData({
+    await organization.uploadData({
       schema: schema.id,
       data,
     });
-
-    await expectSuccessResponse(response);
   });
 
   afterAll(async (_ctx) => {});
@@ -50,9 +48,7 @@ describe("array variable queries", () => {
     });
 
     const error = await expectErrorResponse(response);
-    expect(error.errors).toContain(
-      "key=values, reason=Expected number, received string",
-    );
+    expect(error.errors.at(0)).include("DataValidationError");
   });
 
   it("can execute with empty array", async ({ expect, organization }) => {

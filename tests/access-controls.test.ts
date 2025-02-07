@@ -96,7 +96,7 @@ describe("restrict cross organization operations", () => {
     });
 
     const error = await expectErrorResponse(response);
-    expect(error.errors).toContain("Schema not found");
+    expect(error.errors.at(0)).includes("ResourceAccessDeniedError");
   });
 
   it("prevents data reads", async ({ expect }) => {
@@ -106,7 +106,7 @@ describe("restrict cross organization operations", () => {
     });
 
     const error = await expectErrorResponse(response);
-    expect(error.errors).toContain("Schema not found");
+    expect(error.errors.at(0)).includes("ResourceAccessDeniedError");
   });
 
   it("prevents data updates", async ({ expect }) => {
@@ -118,7 +118,7 @@ describe("restrict cross organization operations", () => {
     });
 
     const error = await expectErrorResponse(response);
-    expect(error.errors).toContain("Schema not found");
+    expect(error.errors.at(0)).includes("ResourceAccessDeniedError");
   });
 
   it("prevents data deletes", async ({ expect }) => {
@@ -129,7 +129,7 @@ describe("restrict cross organization operations", () => {
     });
 
     const error = await expectErrorResponse(response);
-    expect(error.errors).toContain("Schema not found");
+    expect(error.errors.at(0)).includes("ResourceAccessDeniedError");
   });
 
   it("prevents data flush", async ({ expect }) => {
@@ -138,7 +138,7 @@ describe("restrict cross organization operations", () => {
     });
 
     const error = await expectErrorResponse(response);
-    expect(error.errors).toContain("Schema not found");
+    expect(error.errors.at(0)).includes("ResourceAccessDeniedError");
   });
 
   it("prevents data tail", async ({ expect }) => {
@@ -147,6 +147,6 @@ describe("restrict cross organization operations", () => {
     });
 
     const error = await expectErrorResponse(response);
-    expect(error.errors).toContain("Schema not found");
+    expect(error.errors.at(0)).includes("ResourceAccessDeniedError");
   });
 });

@@ -10,7 +10,7 @@ export function assertDefined<T>(
 export async function expectSuccessResponse<T>(
   response: Response,
 ): Promise<ApiSuccessResponse<T>> {
-  expect(response.status).toBe(200);
+  expect(response.ok).toBeTruthy();
   const body = (await response.json()) as ApiSuccessResponse<T>;
   expect(body.data).toBeDefined();
   return body;
@@ -19,7 +19,7 @@ export async function expectSuccessResponse<T>(
 export async function expectErrorResponse(
   response: Response,
 ): Promise<ApiErrorResponse> {
-  expect(response.status).toBeGreaterThanOrEqual(400);
+  expect(response.ok).toBeFalsy();
   const body = (await response.json()) as ApiErrorResponse;
   expect(body.errors).toBeDefined();
   return body;
