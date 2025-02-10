@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: nilDB API
-  version: 0.4.0
+  version: 0.5.0
   description: |
     Visit [docs.nillion.com](https://docs.nillion.com) and [github.com/NillionNetwork/nildb](https://github.com/NillionNetwork/nildb) to learn more.
 
@@ -29,40 +29,15 @@ components:
         - aud: Target node decentralised identifier (DID)
         - iss: Client's decentralised identifier (DID)
   schemas:
-    Error:
-      type: object
-      required:
-        - ts
-        - errors
-      properties:
-        ts:
-          type: string
-          format: date-time
-          description: The time of the error according to the node.
-        errors:
-          description: List of error messages
-          type: array
-          items:
-            anyOf:
-              - type: string
-              - type: object
-                properties:
-                  code:
-                    type: string
-                  message:
-                    type: string
-
     UUID:
       description: A universally unique identifier for the item.
       type: string
       format: uuid
-
     Filter:
       type: object
       minProperties: 1
       additionalProperties: true
       description: MongoDB-style query filter
-
     DocumentBase:
       type: object
       properties:
@@ -80,7 +55,6 @@ components:
         - _id
         - _created
         - _updated
-
     Account:
       type: object
       required:
@@ -120,7 +94,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/UUID'
-
     Schema:
       allOf:
         - $ref: '#/components/schemas/DocumentBase'
@@ -140,6 +113,55 @@ components:
             schema:
               description: The json schema used to validate data before insertion into the schema collection
               type: object
+    SchemaMetadata:
+      type: object
+      required:
+        - id
+        - count
+        - size
+        - firstWrite
+        - lastWrite
+        - indexes
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        count:
+          type: integer
+          description: An estimate of the collection's size
+        size:
+          type: integer
+          description: The schema data's size in bytes
+        firstWrite:
+          type: string
+          format: date-time
+          description: Date-time of the first document write
+        lastWrite:
+          type: string
+          format: date-time
+          description: Date-time of the most recent document write
+        indexes:
+          type: array
+          items:
+            $ref: '#/components/schemas/CollectionIndex'
+    CollectionIndex:
+      type: object
+      required:
+        - v
+        - key
+        - name
+        - unique
+      properties:
+        v:
+          type: integer
+          description: Index version
+        key:
+          type: object
+          description: A map of the index's key(s) names and their direction (1 asc or -1 desc).
+        name:
+          description: The index name
+          type: string
+        unique:
+          type: boolean
     Query:
       allOf:
         - $ref: '#/components/schemas/DocumentBase'
@@ -214,6 +236,46 @@ components:
           additionalProperties: true
           description: The document's additional properties. Schema dependent.
 
+    Error:
+      type: object
+      required:
+        - ts
+        - errors
+      properties:
+        ts:
+          type: string
+          format: date-time
+          description: The error's timestamp.
+        errors:
+          description: A list of error messages
+          type: array
+          items:
+            anyOf:
+              - type: string
+              - type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+  responses:
+    201:
+      description: Resource created
+    204:
+      description: Resource deleted
+    400:
+      description: Validation or processing errors
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    401:
+      description: Missing or invalid JWT
+    404:
+      description: Resource not found
+    500:
+      description: Internal server error
+
 paths:
   /api/v1/accounts:
     get:
@@ -234,25 +296,22 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/Account'
-        '401':
-          description: Missing or invalid JWT
         '400':
-          description: Validation or processing errors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '500':
+          $ref: '#/components/responses/500'
   /api/v1/schemas:
     get:
-      description: "List the organization's schemas"
+      description: List accounts' schemas
       security:
         - jwt: [ ]
       tags:
         - Schema
       responses:
         '200':
-          description: "The organization's schemas"
+          description: The organization's schemas
           content:
             application/json:
               schema:
@@ -265,13 +324,11 @@ paths:
                     items:
                       $ref: '#/components/schemas/Schema'
         '400':
-          description: Validation or processing errors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/400'
         '401':
-          description: Missing or invalid JWT
+          $ref: '#/components/responses/401'
+        '500':
+          $ref: '#/components/responses/500'
 
     post:
       description: Add a new schema
@@ -299,27 +356,14 @@ paths:
                   type: object
                   additionalProperties: true
       responses:
-        '200':
-          description: Schema created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - data
-                properties:
-                  data:
-                    $ref: '#/components/schemas/UUID'
+        '201':
+          $ref: '#/components/responses/201'
         '400':
-          description: Validation or processing errors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/400'
         '401':
-          description: Missing or invalid JWT
-        '404':
-          description: Unknown resource
+          $ref: '#/components/responses/401'
+        '500':
+          $ref: '#/components/responses/500'
 
     delete:
       description: Delete a schema
@@ -339,28 +383,14 @@ paths:
                 id:
                   $ref: '#/components/schemas/UUID'
       responses:
-        '200':
-          description: Schema deleted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - data
-                properties:
-                  data:
-                    $ref: '#/components/schemas/UUID'
+        '204':
+          $ref: '#/components/responses/204'
         '400':
-          description: Validation or processing errors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/400'
         '401':
-          description: Missing or invalid JWT
-        '404':
-          description: Unknown resource
-
+          $ref: '#/components/responses/401'
+        '500':
+          $ref: '#/components/responses/500'
   /api/v1/queries:
     get:
       description: "List account queries"
@@ -383,15 +413,11 @@ paths:
                     items:
                       $ref: '#/components/schemas/Query'
         '400':
-          description: Validation or processing errors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/400'
         '401':
-          description: Missing or invalid JWT
-        '404':
-          description: Unknown resource
+          $ref: '#/components/responses/401'
+        '500':
+          $ref: '#/components/responses/500'
 
     post:
       description: Add a new query
@@ -430,27 +456,14 @@ paths:
                     type: object
                     additionalProperties: true
       responses:
-        '200':
-          description: Query created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - data
-                properties:
-                  data:
-                    $ref: '#/components/schemas/UUID'
+        '201':
+          $ref: '#/components/responses/201'
         '400':
-          description: Validation or processing errors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/400'
         '401':
-          description: Missing or invalid JWT
-        '404':
-          description: Unknown resource
+          $ref: '#/components/responses/401'
+        '500':
+          $ref: '#/components/responses/500'
 
     delete:
       description: Delete a query
@@ -470,28 +483,14 @@ paths:
                 id:
                   $ref: '#/components/schemas/UUID'
       responses:
-        '200':
-          description: Query deleted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - data
-                properties:
-                  data:
-                    $ref: '#/components/schemas/UUID'
+        '204':
+          $ref: '#/components/responses/204'
         '400':
-          description: Validation or processing errors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/400'
         '401':
-          description: Missing or invalid JWT
-        '404':
-          description: Unknown resource
-
+          $ref: '#/components/responses/401'
+        '500':
+          $ref: '#/components/responses/500'
   /api/v1/queries/execute:
     post:
       description: Execute a query with variables
@@ -529,12 +528,12 @@ paths:
                     items:
                       type: object
                       additionalProperties: true
+        '400':
+          $ref: '#/components/responses/400'
         '401':
-          description: Missing or invalid JWT
-        '404':
-          description: Unknown resource
-
-
+          $ref: '#/components/responses/401'
+        '500':
+          $ref: '#/components/responses/500'
   /api/v1/data/create:
     post:
       description: Upload data to the specified schema collection
@@ -591,16 +590,11 @@ paths:
                         document:
                           type: object
         '400':
-          description: Validation or processing errors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/400'
         '401':
-          description: Missing or invalid JWT
-        '404':
-          description: Unknown resource
-
+          $ref: '#/components/responses/401'
+        '500':
+          $ref: '#/components/responses/500'
   /api/v1/data/read:
     post:
       description: Retrieve data from the specified schema collection that matches the provided filter
@@ -623,7 +617,7 @@ paths:
                   $ref: '#/components/schemas/Filter'
       responses:
         '200':
-          description: Data documents that match the provided filter. Pagenation is not supported.
+          description: Data documents that match the provided filter. Pagination is not supported.
           content:
             application/json:
               schema:
@@ -636,16 +630,11 @@ paths:
                     items:
                       $ref: '#/components/schemas/DataDocument'
         '400':
-          description: Validation or processing errors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/400'
         '401':
-          description: Missing or invalid JWT
-        '404':
-          description: Unknown resource
-
+          $ref: '#/components/responses/401'
+        '500':
+          $ref: '#/components/responses/500'
   /api/v1/data/update:
     post:
       description: Update documents within a schema collection that match the given filter
@@ -684,27 +673,22 @@ paths:
                   data:
                     type: object
                     required:
-                      - matched
-                      - updated
+                      - matchedCount
+                      - modifiedCount
                     properties:
                       matched:
                         type: number
                       updated:
                         type: number
         '400':
-          description: Validation or processing errors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/400'
         '401':
-          description: Missing or invalid JWT
-        '404':
-          description: Unknown resource
-
+          $ref: '#/components/responses/401'
+        '500':
+          $ref: '#/components/responses/500'
   /api/v1/data/tail:
     post:
-      description: Retrieve recently added documents from a schema collection
+      description: List recently added documents from a schema collection
       security:
         - jwt: [ ]
       tags:
@@ -734,16 +718,11 @@ paths:
                     items:
                       $ref: '#/components/schemas/DataDocument'
         '400':
-          description: Validation or processing errors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/400'
         '401':
-          description: Missing or invalid JWT
-        '404':
-          description: Unknown resource
-
+          $ref: '#/components/responses/401'
+        '500':
+          $ref: '#/components/responses/500'
   /api/v1/data/delete:
     post:
       description: Delete data records that match a given filter
@@ -762,28 +741,14 @@ paths:
                 filter:
                   $ref: '#/components/schemas/Filter'
       responses:
-        '200':
-          description: The number of delete documents
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - data
-                properties:
-                  data:
-                    type: number
+        '204':
+          $ref: '#/components/responses/204'
         '400':
-          description: Validation or processing errors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/400'
         '401':
-          description: Missing or invalid JWT
-        '404':
-          description: Unknown resource
-
+          $ref: '#/components/responses/401'
+        '500':
+          $ref: '#/components/responses/500'
   /api/v1/data/flush:
     post:
       description: Remove all documents in a schema collection
@@ -815,18 +780,16 @@ paths:
                   - data
                 properties:
                   data:
-                    type: number
+                    type: object
+                    properties:
+                      deletedCount:
+                        type: number
         '400':
-          description: Validation or processing errors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/400'
         '401':
-          description: Missing or invalid JWT
-        '404':
-          description: Unknown resource
-
+          $ref: '#/components/responses/401'
+        '500':
+          $ref: '#/components/responses/500'
   /health:
     get:
       description: Returns 200 OK if the service is healthy
@@ -841,7 +804,6 @@ paths:
               schema:
                 type: string
                 example: 'OK'
-
   /about:
     get:
       description: Returns information about the node including its DID, public key and build details
