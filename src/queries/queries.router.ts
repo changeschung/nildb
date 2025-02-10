@@ -10,11 +10,11 @@ export function buildQueriesRouter(app: App, _bindings: AppBindings): void {
   app.use(PathsV1.queries.root, async (c, next): Promise<void | Response> => {
     return isRoleAllowed(c, ["organization"])
       ? next()
-      : c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
+      : c.text("Unauthorized", StatusCodes.UNAUTHORIZED);
   });
 
   QueriesController.add(app);
-  QueriesController.deleteQ(app);
+  QueriesController.remove(app);
   QueriesController.execute(app);
   QueriesController.list(app);
 }

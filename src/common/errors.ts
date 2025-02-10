@@ -1,173 +1,119 @@
-import util from "node:util";
-import { Effect as E, Option as O, pipe } from "effect";
-import { isUnknownException } from "effect/Cause";
-import type { MongoError } from "mongodb";
-import { RepositoryError } from "#/common/app-error";
+import { Data } from "effect";
+import type { JsonObject } from "type-fest";
+import type { NilDid } from "#/common/nil-did";
 
-export type DbErrorContext = {
+export class DuplicateEntryError extends Data.TaggedError(
+  "DuplicateEntryError",
+)<{
+  document: JsonObject;
+}> {
+  humanize(): string[] {
+    return [this._tag, `document: ${JSON.stringify(this.document)}`];
+  }
+}
+
+export class ResourceAccessDeniedError extends Data.TaggedError(
+  "ResourceAccessDeniedError",
+)<{
+  type: string;
+  id: string;
+  user: NilDid;
+}> {
+  humanize(): string[] {
+    return [
+      this._tag,
+      `type: ${this.type}`,
+      `object: ${this.id}`,
+      `user: ${this.user}`,
+    ];
+  }
+}
+
+export class InvalidIndexOptionsError extends Data.TaggedError(
+  "InvalidIndexOptionsError",
+)<{
+  collection: string;
+  message: string;
+}> {
+  humanize(): string[] {
+    return [this._tag, `collection: ${this.collection}`, this.message];
+  }
+}
+
+export class IndexNotFoundError extends Data.TaggedError("IndexNotFoundError")<{
+  collection: string;
+  index: string;
+}> {
+  humanize(): string[] {
+    return [
+      this._tag,
+      `collection: ${this.collection}`,
+      `index: ${this.index}`,
+    ];
+  }
+}
+
+export class DatabaseError extends Data.TaggedError("DatabaseError")<{
+  cause: unknown;
+  message: string;
+}> {
+  humanize(): string[] {
+    return [this._tag, this.message, `cause: ${JSON.stringify(this.cause)}`];
+  }
+}
+
+export class DocumentNotFoundError extends Data.TaggedError(
+  "DocumentNotFoundError",
+)<{
+  collection: string;
+  filter: Record<string, unknown>;
+}> {
+  humanize(): string[] {
+    return [
+      this._tag,
+      `collection: ${this.collection}`,
+      `filter: ${JSON.stringify(this.filter)}`,
+    ];
+  }
+}
+
+export class PrimaryCollectionNotFoundError extends Data.TaggedError(
+  "PrimaryCollectionNotFoundError",
+)<{
   name: string;
-  params: Record<string, unknown>;
-  code?: string | number;
-  message?: string;
-};
-
-export class DbError extends Error {
-  readonly _tag = "DbError";
-
-  constructor(
-    public readonly context: DbErrorContext,
-    public readonly cause?: unknown,
-  ) {
-    super(`Database operation failed: ${util.inspect(context)}`);
-  }
-
-  sanitizedMessage(): string {
-    switch (this.context.code) {
-      case "11000": {
-        return "A similar entry is already in the system";
-      }
-      case "NotFound": {
-        return "We couldn't find what you're looking for";
-      }
-      default: {
-        console.error(this.context.message);
-        return "Internal db error";
-      }
-    }
+}> {
+  humanize(): string[] {
+    return [this._tag, `collection: ${this.name}`];
   }
 }
 
-export function succeedOrMapToDbError<T, E extends Error = Error>(
-  context: DbErrorContext,
-): (effect: E.Effect<T | O.Option<T>, E>) => E.Effect<T, DbError> {
-  return (effect) =>
-    pipe(
-      effect,
-      E.flatMap((result) => {
-        if (O.isOption(result)) {
-          return pipe(
-            result,
-            O.match({
-              onNone: () => {
-                context.code = "NotFound";
-                return E.fail(new DbError(context));
-              },
-              onSome: (value) => E.succeed(value),
-            }),
-          );
-        }
-
-        if (!result) {
-          return E.fail(new DbError({ ...context }));
-        }
-
-        return E.succeed(result as T);
-      }),
-      E.mapError((cause) => {
-        if (cause instanceof DbError) {
-          return cause;
-        }
-
-        const error = isUnknownException(cause)
-          ? (cause.error as Error)
-          : cause;
-
-        const errorContext = {
-          ...context,
-          reason: [error.message],
-        };
-
-        if (isMongoError(error)) {
-          return new DbError({
-            ...errorContext,
-            code: String(error.code),
-          });
-        }
-
-        return new DbError(errorContext, error);
-      }),
-    );
+export class DataCollectionNotFoundError extends Data.TaggedError(
+  "DataCollectionNotFoundError",
+)<{
+  name: string;
+}> {
+  humanize(): string[] {
+    return [this._tag, `collection: ${this.name}`];
+  }
 }
 
-function isMongoError(error: unknown): error is MongoError {
-  return error instanceof Error && "code" in error;
+export class DataValidationError extends Data.TaggedError(
+  "DataValidationError",
+)<{
+  issues: string[];
+  cause: unknown;
+}> {
+  humanize(): string[] {
+    return [this._tag, this.issues.join(", ")];
+  }
 }
 
-export function succeedOrMapToRepositoryError<T, E extends Error = Error>(
-  context: Record<string, unknown> = {},
-): (effect: E.Effect<T | O.Option<T>, E>) => E.Effect<T, RepositoryError> {
-  return (effect) =>
-    pipe(
-      effect,
-      E.flatMap((result) => {
-        if (O.isOption(result)) {
-          return pipe(
-            result,
-            O.match({
-              onNone: () => {
-                const error = new RepositoryError({
-                  reason: "Document not found",
-                  context,
-                });
-                return E.fail(error);
-              },
-              onSome: (value) => E.succeed(value),
-            }),
-          );
-        }
-
-        if (!result) {
-          return E.fail(
-            new RepositoryError({
-              reason: "Result is null",
-              context,
-            }),
-          );
-        }
-
-        return E.succeed(result as T);
-      }),
-      E.mapError((cause) => {
-        if (cause instanceof RepositoryError) {
-          return cause;
-        }
-
-        const error = isUnknownException(cause)
-          ? (cause.error as Error)
-          : cause;
-
-        if (isMongoError(error)) {
-          return new RepositoryError({
-            reason: [sanitizedMongoDbErrorMessage(error.code)],
-            cause: error,
-            context: {
-              ...context,
-              code: String(error.code),
-            },
-          });
-        }
-
-        return new RepositoryError({
-          reason: ["Unexpected repository error"],
-          cause: error,
-          context,
-        });
-      }),
-    );
-}
-
-function sanitizedMongoDbErrorMessage(
-  code: string | number | undefined,
-): string {
-  switch (String(code)) {
-    case "11000": {
-      return "A similar entry is already in the system";
-    }
-    case "NotFound": {
-      return "We couldn't find what you're looking for";
-    }
-    default: {
-      return "Internal db error";
-    }
+export class VariableInjectionError extends Data.TaggedError(
+  "VariableInjectionError",
+)<{
+  message: string;
+}> {
+  humanize(): string[] {
+    return [this._tag, this.message];
   }
 }

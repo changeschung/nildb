@@ -1,117 +1,111 @@
-import { Effect as E, Option as O, pipe } from "effect";
-import type { StrictFilter, UUID } from "mongodb";
-import type { RepositoryError } from "#/common/app-error";
-import { succeedOrMapToRepositoryError } from "#/common/errors";
-import { CollectionName } from "#/common/mongo";
-import type { NilDid } from "#/common/nil-did";
+import { Effect as E, pipe } from "effect";
+import type { StrictFilter } from "mongodb";
+import {
+  DatabaseError,
+  DocumentNotFoundError,
+  type PrimaryCollectionNotFoundError,
+} from "#/common/errors";
+import { CollectionName, checkPrimaryCollectionExists } from "#/common/mongo";
 import type { AppBindings } from "#/env";
 import type { QueryDocument } from "./queries.types";
 
 export function insert(
   ctx: AppBindings,
   document: QueryDocument,
-): E.Effect<UUID, RepositoryError> {
+): E.Effect<void, PrimaryCollectionNotFoundError | DatabaseError> {
   return pipe(
-    E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<QueryDocument>(
-        CollectionName.Queries,
-      );
-      const result = await collection.insertOne(document);
-      return result.insertedId;
-    }),
-    E.tap(() =>
-      E.sync(() => {
-        ctx.cache.accounts.taint(document.owner);
+    checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.insertOne(document),
+        catch: (cause) => new DatabaseError({ cause, message: "insert" }),
       }),
     ),
-    succeedOrMapToRepositoryError({
-      op: "QueriesRepository.insert",
-      document,
-    }),
+    E.as(void 0),
   );
 }
 
 export function findMany(
   ctx: AppBindings,
   filter: StrictFilter<QueryDocument>,
-): E.Effect<QueryDocument[], RepositoryError> {
+): E.Effect<
+  QueryDocument[],
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
   return pipe(
-    E.tryPromise(() => {
-      const collection = ctx.db.primary.collection<QueryDocument>(
-        CollectionName.Queries,
-      );
-      return collection.find(filter).toArray();
-    }),
-    succeedOrMapToRepositoryError({
-      op: "QueriesRepository.findMany",
-      filter,
-    }),
+    checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.find(filter).toArray(),
+        catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
+      }),
+    ),
+    E.flatMap((result) =>
+      result === null
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Schemas,
+              filter,
+            }),
+          )
+        : E.succeed(result),
+    ),
   );
 }
 
 export function findOne(
   ctx: AppBindings,
   filter: StrictFilter<QueryDocument>,
-): E.Effect<QueryDocument, RepositoryError> {
+): E.Effect<
+  QueryDocument,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
   return pipe(
-    E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<QueryDocument>(
-        CollectionName.Queries,
-      );
-      const result = await collection.findOne(filter);
-      return O.fromNullable(result);
-    }),
-    succeedOrMapToRepositoryError({
-      op: "QueriesRepository.findOne",
-      filter,
-    }),
-  );
-}
-
-export function deleteMany(
-  ctx: AppBindings,
-  filter: StrictFilter<QueryDocument>,
-): E.Effect<number, RepositoryError> {
-  return pipe(
-    E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<QueryDocument>(
-        CollectionName.Queries,
-      );
-      const result = await collection.deleteMany(filter);
-      return result.deletedCount;
-    }),
-    E.tap(() =>
-      E.sync(() => {
-        ctx.cache.accounts.taint(filter.owner as NilDid);
+    checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.findOne(filter),
+        catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
       }),
     ),
-    succeedOrMapToRepositoryError({
-      op: "QueriesRepository.deleteMany",
-      filter,
-    }),
+    E.flatMap((result) =>
+      result === null
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Schemas,
+              filter,
+            }),
+          )
+        : E.succeed(result),
+    ),
   );
 }
 
 export function findOneAndDelete(
   ctx: AppBindings,
   filter: StrictFilter<QueryDocument>,
-): E.Effect<QueryDocument, RepositoryError> {
+): E.Effect<
+  QueryDocument,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
   return pipe(
-    E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<QueryDocument>(
-        CollectionName.Queries,
-      );
-      const result = await collection.findOneAndDelete(filter);
-      return O.fromNullable(result);
-    }),
-    E.tap(() =>
-      E.sync(() => {
-        ctx.cache.accounts.taint(filter.owner as NilDid);
+    checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.findOneAndDelete(filter),
+        catch: (cause) =>
+          new DatabaseError({ cause, message: "findOneAndDelete" }),
       }),
     ),
-    succeedOrMapToRepositoryError({
-      op: "QueriesRepository.findOneAndDelete",
-      filter,
-    }),
+    E.flatMap((result) =>
+      result === null
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Schemas,
+              filter,
+            }),
+          )
+        : E.succeed(result),
+    ),
   );
 }

@@ -2,7 +2,14 @@ import { Effect as E, pipe } from "effect";
 import type { Document, UUID } from "mongodb";
 import type { JsonObject, JsonValue } from "type-fest";
 import { z } from "zod";
-import { DataValidationError, ServiceError } from "#/common/app-error";
+import {
+  type DataCollectionNotFoundError,
+  DataValidationError,
+  type DatabaseError,
+  type DocumentNotFoundError,
+  type PrimaryCollectionNotFoundError,
+  VariableInjectionError,
+} from "#/common/errors";
 import type { NilDid } from "#/common/nil-did";
 import { validateData } from "#/common/validator";
 import { flattenZodError } from "#/common/zod-utils";
@@ -17,36 +24,43 @@ import type { QueryArrayVariable, QueryDocument } from "./queries.types";
 export function addQuery(
   ctx: AppBindings,
   request: AddQueryRequest & { owner: NilDid },
-): E.Effect<UUID, ServiceError> {
+): E.Effect<
+  void,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
+  const now = new Date();
+  const document: QueryDocument = {
+    ...request,
+    _created: now,
+    _updated: now,
+  };
+
   return pipe(
     validateData(pipelineSchema, request.pipeline),
-    E.flatMap(() => {
-      const now = new Date();
-      const document: QueryDocument = {
-        ...request,
-        _created: now,
-        _updated: now,
-      };
-      return QueriesRepository.insert(ctx, document);
-    }),
-    E.tap((queryId) => {
-      return OrganizationRepository.addQuery(ctx, request.owner, queryId);
-    }),
-    E.mapError((cause) => {
-      return new ServiceError({
-        reason: ["Add organization query failure"],
-        cause,
-      });
-    }),
+    () => QueriesRepository.insert(ctx, document),
+    E.flatMap(() =>
+      E.all([
+        E.succeed(ctx.cache.accounts.taint(document.owner)),
+        OrganizationRepository.addQuery(ctx, document.owner, document._id),
+      ]),
+    ),
+    E.as(void 0),
   );
 }
 
 export function executeQuery(
   ctx: AppBindings,
   request: ExecuteQueryRequest,
-): E.Effect<JsonValue, DataValidationError | ServiceError> {
-  return pipe(
-    E.Do,
+): E.Effect<
+  JsonValue,
+  | DocumentNotFoundError
+  | DataCollectionNotFoundError
+  | PrimaryCollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
+  | VariableInjectionError
+> {
+  return E.Do.pipe(
     E.bind("query", () => QueriesRepository.findOne(ctx, { _id: request.id })),
     E.bind("variables", ({ query }) =>
       validateVariables(query.variables, request.variables),
@@ -55,15 +69,7 @@ export function executeQuery(
       injectVariablesIntoAggregation(query.pipeline, variables),
     ),
     E.flatMap(({ query, pipeline }) => {
-      return pipe(
-        DataRepository.runAggregation(ctx, query, pipeline),
-        E.mapError(
-          (error) =>
-            new ServiceError({
-              reason: ["Execute query failed", ...error.reason],
-            }),
-        ),
-      );
+      return pipe(DataRepository.runAggregation(ctx, query, pipeline));
     }),
   );
 }
@@ -71,33 +77,28 @@ export function executeQuery(
 export function findQueries(
   ctx: AppBindings,
   owner: NilDid,
-): E.Effect<QueryDocument[], ServiceError> {
-  return pipe(
-    QueriesRepository.findMany(ctx, { owner }),
-    E.mapError((cause) => {
-      return new ServiceError({
-        reason: ["Find queries failure"],
-        cause,
-      });
-    }),
-  );
+): E.Effect<
+  QueryDocument[],
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
+  return pipe(QueriesRepository.findMany(ctx, { owner }));
 }
 
 export function removeQuery(
   ctx: AppBindings,
   _id: UUID,
-): E.Effect<boolean, ServiceError> {
+): E.Effect<
+  void,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
   return pipe(
     QueriesRepository.findOneAndDelete(ctx, { _id }),
-    E.flatMap((document) => {
-      return OrganizationRepository.removeQuery(ctx, document.owner, _id);
-    }),
-    E.mapError((cause) => {
-      return new ServiceError({
-        reason: ["Remove query failed"],
-        cause,
-      });
-    }),
+    E.flatMap((document) =>
+      E.all([
+        E.succeed(ctx.cache.accounts.taint(document.owner)),
+        OrganizationRepository.removeQuery(ctx, document.owner, _id),
+      ]),
+    ),
   );
 }
 
@@ -117,11 +118,16 @@ function validateVariables(
   const permittedKeys = Object.keys(template);
 
   if (providedKeys.length !== permittedKeys.length) {
+    const issues = [
+      "Query execution variables count mismatch",
+      `expected=${permittedKeys.length}, received=${providedKeys.length}`,
+    ];
     const error = new DataValidationError({
-      reason: [
-        "Query execution variables count mismatch",
-        `expected=${permittedKeys.length}, received=${providedKeys.length}`,
-      ],
+      issues,
+      cause: {
+        template,
+        provided,
+      },
     });
     return E.fail(error);
   }
@@ -134,11 +140,15 @@ function validateVariables(
 
       const type = variableTemplate.type.toLowerCase();
       if (!permittedTypes.includes(type)) {
-        return E.fail(
-          new DataValidationError({
-            reason: ["Unsupported type", `type=${type}`],
-          }),
-        );
+        const issues = ["Unsupported type", `type=${type}`];
+        const error = new DataValidationError({
+          issues,
+          cause: {
+            template,
+            provided,
+          },
+        });
+        return E.fail(error);
       }
 
       if (type === "array") {
@@ -194,8 +204,10 @@ function parsePrimitiveVariable(
       break;
     }
     default: {
+      const issues = ["Unsupported type"];
       const error = new DataValidationError({
-        reason: ["Unsupported type", `type=${type}`],
+        issues,
+        cause: { key, value, type },
       });
       return E.fail(error);
     }
@@ -205,19 +217,20 @@ function parsePrimitiveVariable(
     return E.succeed(result.data);
   }
 
-  const error = new DataValidationError({
-    reason: flattenZodError(result.error),
-  });
+  const issues = flattenZodError(result.error);
+  const error = new DataValidationError({ issues, cause: null });
   return E.fail(error);
 }
 
 export function injectVariablesIntoAggregation(
   aggregation: Record<string, unknown>[],
   variables: QueryRuntimeVariables,
-): E.Effect<Document[], ServiceError> {
+): E.Effect<Document[], VariableInjectionError> {
   const prefixIdentifier = "##";
 
-  const traverse = (current: unknown): E.Effect<JsonValue, ServiceError> => {
+  const traverse = (
+    current: unknown,
+  ): E.Effect<JsonValue, VariableInjectionError> => {
     // if item is a string and has prefix identifier then attempt inplace injection
     if (typeof current === "string" && current.startsWith(prefixIdentifier)) {
       const key = current.split(prefixIdentifier)[1];
@@ -225,11 +238,10 @@ export function injectVariablesIntoAggregation(
       if (key in variables) {
         return E.succeed(variables[key] as JsonValue);
       }
-      return E.fail(
-        new ServiceError({
-          reason: ["Missing pipeline variable", current],
-        }),
-      );
+      const error = new VariableInjectionError({
+        message: `Missing pipeline variable: ${current}`,
+      });
+      return E.fail(error);
     }
 
     // if item is an array then traverse each array element

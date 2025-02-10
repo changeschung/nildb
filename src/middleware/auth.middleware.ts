@@ -1,10 +1,8 @@
 import * as didJwt from "did-jwt";
 import { Resolver } from "did-resolver";
-import { Effect as E, pipe } from "effect";
 import type { MiddlewareHandler, Next } from "hono";
 import { StatusCodes } from "http-status-codes";
 import type { AccountType } from "#/admin/admin.types";
-import { findAccountByIdWithCache } from "#/common/cache";
 import { NilDid, buildNilMethodResolver } from "#/common/nil-did";
 import { PathsV1 } from "#/common/paths";
 import type { AppBindings, AppContext } from "#/env";
@@ -43,7 +41,7 @@ export function useAuthMiddleware(bindings: AppBindings): MiddlewareHandler {
       const authHeader = c.req.header("Authorization") ?? "";
       const [scheme, token] = authHeader.split(" ");
       if (scheme.toLowerCase() !== "bearer") {
-        return c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
+        return c.text("Unauthorized", StatusCodes.UNAUTHORIZED);
       }
 
       const { payload } = await didJwt.verifyJWT(token, {
@@ -52,14 +50,18 @@ export function useAuthMiddleware(bindings: AppBindings): MiddlewareHandler {
       });
 
       if (!payload) {
-        return c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
+        return c.text("Unauthorized", StatusCodes.UNAUTHORIZED);
       }
 
-      // this should be a cache hit because the resolver ensures the account is loaded
-      const account = await pipe(
-        findAccountByIdWithCache(bindings, NilDid.parse(payload.iss)),
-        E.runPromise,
-      );
+      // should be a cache hit because the resolver primes the cache else it fails
+      const account = c.env.cache.accounts.get(NilDid.parse(payload.iss));
+      if (!account) {
+        c.env.log.debug("Expected account not in cache: %s", payload.iss);
+        return c.text(
+          "Internal Server Error",
+          StatusCodes.INTERNAL_SERVER_ERROR,
+        );
+      }
 
       c.set("jwt", payload);
       c.set("account", account);
@@ -67,7 +69,7 @@ export function useAuthMiddleware(bindings: AppBindings): MiddlewareHandler {
       return next();
     } catch (error) {
       bindings.log.error("Auth error:", error);
-      return c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
+      return c.text("Unauthorized", StatusCodes.UNAUTHORIZED);
     }
   };
 }

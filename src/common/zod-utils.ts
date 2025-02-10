@@ -29,3 +29,17 @@ export function payloadValidator<T extends Schema>(schema: T) {
     );
   });
 }
+
+export function paramsValidator<T extends Schema>(schema: T) {
+  return zValidator("param", schema, (result, c) => {
+    if (result.success) {
+      return result.data;
+    }
+
+    const errors = flattenZodError(result.error);
+    return c.json(
+      { ts: Temporal.Now.instant().toString(), errors },
+      StatusCodes.BAD_REQUEST,
+    );
+  });
+}

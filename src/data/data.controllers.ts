@@ -1,15 +1,10 @@
 import { Effect as E, pipe } from "effect";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import type { App } from "#/app";
-import { foldToApiResponse } from "#/common/handler";
+import { handleTaggedErrors } from "#/common/handler";
 import { enforceSchemaOwnership } from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
 import { payloadValidator } from "#/common/zod-utils";
-import type {
-  DataDocument,
-  UpdateResult,
-  UploadResult,
-} from "#/data/data.repository";
 import * as DataService from "./data.services";
 import {
   DeleteDataRequestSchema,
@@ -20,7 +15,7 @@ import {
   UploadDataRequestSchema,
 } from "./data.types";
 
-export function deleteD(app: App): void {
+export function remove(app: App): void {
   app.post(
     PathsV1.data.delete,
     payloadValidator(DeleteDataRequestSchema),
@@ -28,10 +23,11 @@ export function deleteD(app: App): void {
       const account = c.var.account as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
-      return await pipe(
-        enforceSchemaOwnership(account, payload.schema, payload),
-        E.flatMap((payload) => DataService.deleteRecords(c.env, payload)),
-        foldToApiResponse<number>(c),
+      return pipe(
+        enforceSchemaOwnership(account, payload.schema),
+        E.flatMap(() => DataService.deleteRecords(c.env, payload)),
+        E.map((data) => c.json({ data })),
+        handleTaggedErrors(c),
         E.runPromise,
       );
     },
@@ -46,12 +42,15 @@ export function flush(app: App): void {
       const account = c.var.account as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
-      return await pipe(
-        enforceSchemaOwnership(account, payload.schema, payload),
-        E.flatMap((payload) =>
-          DataService.flushCollection(c.env, payload.schema),
+      return pipe(
+        enforceSchemaOwnership(account, payload.schema),
+        E.flatMap(() => DataService.flushCollection(c.env, payload.schema)),
+        E.map((data) =>
+          c.json({
+            data,
+          }),
         ),
-        foldToApiResponse<number>(c),
+        handleTaggedErrors(c),
         E.runPromise,
       );
     },
@@ -66,10 +65,11 @@ export function read(app: App): void {
       const account = c.var.account as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
-      return await pipe(
-        enforceSchemaOwnership(account, payload.schema, payload),
-        E.flatMap((payload) => DataService.readRecords(c.env, payload)),
-        foldToApiResponse<DataDocument[]>(c),
+      return pipe(
+        enforceSchemaOwnership(account, payload.schema),
+        E.flatMap(() => DataService.readRecords(c.env, payload)),
+        E.map((data) => c.json({ data })),
+        handleTaggedErrors(c),
         E.runPromise,
       );
     },
@@ -84,10 +84,11 @@ export function tail(app: App): void {
       const account = c.var.account as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
-      return await pipe(
-        enforceSchemaOwnership(account, payload.schema, payload),
-        E.flatMap((payload) => DataService.tailData(c.env, payload.schema)),
-        foldToApiResponse<DataDocument[]>(c),
+      return pipe(
+        enforceSchemaOwnership(account, payload.schema),
+        E.flatMap(() => DataService.tailData(c.env, payload.schema)),
+        E.map((data) => c.json({ data })),
+        handleTaggedErrors(c),
         E.runPromise,
       );
     },
@@ -102,10 +103,15 @@ export function update(app: App): void {
       const account = c.var.account as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
-      return await pipe(
-        enforceSchemaOwnership(account, payload.schema, payload),
-        E.flatMap((payload) => DataService.updateRecords(c.env, payload)),
-        foldToApiResponse<UpdateResult>(c),
+      return pipe(
+        enforceSchemaOwnership(account, payload.schema),
+        E.flatMap(() => DataService.updateRecords(c.env, payload)),
+        E.map((data) =>
+          c.json({
+            data,
+          }),
+        ),
+        handleTaggedErrors(c),
         E.runPromise,
       );
     },
@@ -120,12 +126,17 @@ export function upload(app: App): void {
       const account = c.var.account as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
-      return await pipe(
-        enforceSchemaOwnership(account, payload.schema, payload),
-        E.flatMap((payload) =>
+      return pipe(
+        enforceSchemaOwnership(account, payload.schema),
+        E.flatMap(() =>
           DataService.createRecords(c.env, payload.schema, payload.data),
         ),
-        foldToApiResponse<UploadResult>(c),
+        E.map((data) =>
+          c.json({
+            data,
+          }),
+        ),
+        handleTaggedErrors(c),
         E.runPromise,
       );
     },

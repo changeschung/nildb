@@ -1,9 +1,12 @@
-import { Effect as E, Option as O, pipe } from "effect";
+import { Effect as E, pipe } from "effect";
 import type { StrictFilter, StrictUpdateFilter, UUID } from "mongodb";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
-import type { RepositoryError } from "#/common/app-error";
-import { succeedOrMapToRepositoryError } from "#/common/errors";
-import { CollectionName } from "#/common/mongo";
+import {
+  DatabaseError,
+  DocumentNotFoundError,
+  type PrimaryCollectionNotFoundError,
+} from "#/common/errors";
+import { CollectionName, checkPrimaryCollectionExists } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
 import type { AppBindings } from "#/env";
 
@@ -11,25 +14,36 @@ export function addSchema(
   ctx: AppBindings,
   owner: NilDid,
   schemaId: UUID,
-): E.Effect<boolean, RepositoryError> {
+): E.Effect<
+  void,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
   const filter: StrictFilter<OrganizationAccountDocument> = { _id: owner };
   const update: StrictUpdateFilter<OrganizationAccountDocument> = {
     $addToSet: { schemas: schemaId },
   };
 
   return pipe(
-    E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<OrganizationAccountDocument>(
-        CollectionName.Accounts,
-      );
-      const result = await collection.updateOne(filter, update);
-      return result.modifiedCount === 1 ? O.some(true) : O.none();
-    }),
-    succeedOrMapToRepositoryError({
-      operation: "OrganizationRepository.addSchema",
-      filter,
-      update,
-    }),
+    checkPrimaryCollectionExists<OrganizationAccountDocument>(
+      ctx,
+      CollectionName.Accounts,
+    ),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.updateOne(filter, update),
+        catch: (cause) => new DatabaseError({ cause, message: "" }),
+      }),
+    ),
+    E.flatMap((result) =>
+      result.modifiedCount === 1
+        ? E.succeed(void 0)
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Accounts,
+              filter,
+            }),
+          ),
+    ),
   );
 }
 
@@ -37,25 +51,36 @@ export function removeSchema(
   ctx: AppBindings,
   orgId: NilDid,
   schemaId: UUID,
-): E.Effect<boolean, RepositoryError> {
+): E.Effect<
+  void,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
   const filter: StrictFilter<OrganizationAccountDocument> = { _id: orgId };
   const update: StrictUpdateFilter<OrganizationAccountDocument> = {
     $pull: { schemas: schemaId },
   };
 
   return pipe(
-    E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<OrganizationAccountDocument>(
-        CollectionName.Accounts,
-      );
-      const result = await collection.updateOne(filter, update);
-      return result.modifiedCount === 1 ? O.some(true) : O.none();
-    }),
-    succeedOrMapToRepositoryError({
-      operation: "OrganizationRepository.removeSchema",
-      filter,
-      update,
-    }),
+    checkPrimaryCollectionExists<OrganizationAccountDocument>(
+      ctx,
+      CollectionName.Accounts,
+    ),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.updateOne(filter, update),
+        catch: (cause) => new DatabaseError({ cause, message: "" }),
+      }),
+    ),
+    E.flatMap((result) =>
+      result.modifiedCount === 1
+        ? E.succeed(void 0)
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Accounts,
+              filter,
+            }),
+          ),
+    ),
   );
 }
 
@@ -63,25 +88,36 @@ export function addQuery(
   ctx: AppBindings,
   orgId: NilDid,
   queryId: UUID,
-): E.Effect<boolean, RepositoryError> {
+): E.Effect<
+  void,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
   const filter: StrictFilter<OrganizationAccountDocument> = { _id: orgId };
   const update: StrictUpdateFilter<OrganizationAccountDocument> = {
     $addToSet: { queries: queryId },
   };
 
   return pipe(
-    E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<OrganizationAccountDocument>(
-        CollectionName.Accounts,
-      );
-      const result = await collection.updateOne(filter, update);
-      return result.modifiedCount === 1 ? O.some(true) : O.none();
-    }),
-    succeedOrMapToRepositoryError({
-      operation: "OrganizationRepository.addQuery",
-      filter,
-      update,
-    }),
+    checkPrimaryCollectionExists<OrganizationAccountDocument>(
+      ctx,
+      CollectionName.Accounts,
+    ),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.updateOne(filter, update),
+        catch: (cause) => new DatabaseError({ cause, message: "" }),
+      }),
+    ),
+    E.flatMap((result) =>
+      result.modifiedCount === 1
+        ? E.succeed(void 0)
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Accounts,
+              filter,
+            }),
+          ),
+    ),
   );
 }
 
@@ -89,24 +125,35 @@ export function removeQuery(
   ctx: AppBindings,
   orgId: NilDid,
   queryId: UUID,
-): E.Effect<boolean, RepositoryError> {
+): E.Effect<
+  void,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
   const filter: StrictFilter<OrganizationAccountDocument> = { _id: orgId };
   const update: StrictUpdateFilter<OrganizationAccountDocument> = {
     $pull: { queries: queryId },
   };
 
   return pipe(
-    E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<OrganizationAccountDocument>(
-        CollectionName.Accounts,
-      );
-      const result = await collection.updateOne(filter, update);
-      return result.modifiedCount === 1 ? O.some(true) : O.none();
-    }),
-    succeedOrMapToRepositoryError({
-      operation: "OrganizationRepository.removeQuery",
-      filter,
-      update,
-    }),
+    checkPrimaryCollectionExists<OrganizationAccountDocument>(
+      ctx,
+      CollectionName.Accounts,
+    ),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.updateOne(filter, update),
+        catch: (cause) => new DatabaseError({ cause, message: "removeQuery" }),
+      }),
+    ),
+    E.flatMap((result) =>
+      result.modifiedCount === 1
+        ? E.succeed(void 0)
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Accounts,
+              filter,
+            }),
+          ),
+    ),
   );
 }

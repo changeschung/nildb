@@ -1,8 +1,11 @@
-import { Effect as E, Option as O, pipe } from "effect";
+import { Effect as E, pipe } from "effect";
 import type { StrictFilter } from "mongodb";
-import type { RepositoryError } from "#/common/app-error";
-import { succeedOrMapToRepositoryError } from "#/common/errors";
-import { CollectionName } from "#/common/mongo";
+import {
+  DatabaseError,
+  DocumentNotFoundError,
+  type PrimaryCollectionNotFoundError,
+} from "#/common/errors";
+import { CollectionName, checkPrimaryCollectionExists } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
 import type { AppBindings } from "#/env";
 import type {
@@ -30,77 +33,64 @@ export function toAdminAccountDocument(
 export function deleteOneById(
   ctx: AppBindings,
   _id: NilDid,
-): E.Effect<NilDid, RepositoryError> {
+): E.Effect<
+  void,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
   const filter: StrictFilter<AccountDocument> = {
     _id,
   };
 
   return pipe(
-    E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<AccountDocument>(
-        CollectionName.Accounts,
-      );
-      const result = await collection.deleteOne(filter);
-      return result.deletedCount === 1 ? O.some(_id) : O.none();
-    }),
-    succeedOrMapToRepositoryError({
-      name: "AdminAccountRepository.deleteOneById",
-      filter,
-    }),
-  );
-}
-
-export function findById(
-  ctx: AppBindings,
-  _id: NilDid,
-): E.Effect<AccountDocument, RepositoryError> {
-  return pipe(
-    E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<AccountDocument>(
-        CollectionName.Accounts,
-      );
-      const result = await collection.findOne({ _id });
-      return O.fromNullable(result);
-    }),
-    succeedOrMapToRepositoryError({
-      op: "AdminAccountRepository.findById",
-      _id,
-    }),
+    checkPrimaryCollectionExists<AccountDocument>(ctx, CollectionName.Accounts),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.deleteOne(filter),
+        catch: (cause: unknown) =>
+          new DatabaseError({ cause, message: "deleteOneById" }),
+      }),
+    ),
+    E.flatMap((result) =>
+      result === null
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Schemas,
+              filter,
+            }),
+          )
+        : E.succeed(result),
+    ),
   );
 }
 
 export function insert(
   ctx: AppBindings,
   document: AdminAccountDocument,
-): E.Effect<NilDid, RepositoryError> {
+): E.Effect<void, PrimaryCollectionNotFoundError | DatabaseError> {
   return pipe(
-    E.tryPromise(async () => {
-      const collection = ctx.db.primary.collection<AdminAccountDocument>(
-        CollectionName.Accounts,
-      );
-      const result = await collection.insertOne(document);
-      return result.insertedId;
-    }),
-    succeedOrMapToRepositoryError({
-      op: "AdminAccountRepository.insert",
-      document,
-    }),
+    checkPrimaryCollectionExists<AccountDocument>(ctx, CollectionName.Accounts),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.insertOne(document),
+        catch: (cause: unknown) =>
+          new DatabaseError({ cause, message: "insert" }),
+      }),
+    ),
+    E.as(void 0),
   );
 }
 
 export function listAll(
   ctx: AppBindings,
-): E.Effect<AccountDocument[], RepositoryError> {
+): E.Effect<AccountDocument[], PrimaryCollectionNotFoundError | DatabaseError> {
   return pipe(
-    E.tryPromise(() => {
-      // Skip cache.accounts check because this isn't perf sensitive
-      const collection = ctx.db.primary.collection<AccountDocument>(
-        CollectionName.Accounts,
-      );
-      return collection.find({}).toArray();
-    }),
-    succeedOrMapToRepositoryError({
-      op: "AdminAccountRepository.listAll",
-    }),
+    checkPrimaryCollectionExists<AccountDocument>(ctx, CollectionName.Accounts),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.find({}).toArray(),
+        catch: (cause: unknown) =>
+          new DatabaseError({ cause, message: "listAll" }),
+      }),
+    ),
   );
 }

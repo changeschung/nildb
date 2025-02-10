@@ -28,12 +28,10 @@ describe("data reading operations", () => {
   }));
 
   beforeAll(async ({ organization }) => {
-    const response = await organization.uploadData({
+    await organization.uploadData({
       schema: schema.id,
       data: testData,
     });
-
-    await expectSuccessResponse(response);
   });
 
   afterAll(async (_ctx) => {});

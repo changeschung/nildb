@@ -1,18 +1,16 @@
 import { Effect as E, pipe } from "effect";
-import type { JsonValue } from "type-fest";
+import { StatusCodes } from "http-status-codes";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import type { App } from "#/app";
-import { foldToApiResponse } from "#/common/handler";
+import { handleTaggedErrors } from "#/common/handler";
 import { enforceQueryOwnership } from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
-import type { UuidDto } from "#/common/types";
 import { payloadValidator } from "#/common/zod-utils";
 import * as QueriesService from "./queries.services";
 import {
   AddQueryRequestSchema,
   DeleteQueryRequestSchema,
   ExecuteQueryRequestSchema,
-  type QueryDocument,
 } from "./queries.types";
 
 export function add(app: App): void {
@@ -23,20 +21,20 @@ export function add(app: App): void {
       const account = c.var.account as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
-      return await pipe(
+      return pipe(
         QueriesService.addQuery(c.env, {
           ...payload,
           owner: account._id,
         }),
-        E.map((id) => id.toString() as UuidDto),
-        foldToApiResponse<UuidDto>(c),
+        E.map(() => new Response(null, { status: StatusCodes.CREATED })),
+        handleTaggedErrors(c),
         E.runPromise,
       );
     },
   );
 }
 
-export function deleteQ(app: App): void {
+export function remove(app: App): void {
   app.delete(
     PathsV1.queries.root,
     payloadValidator(DeleteQueryRequestSchema),
@@ -44,11 +42,11 @@ export function deleteQ(app: App): void {
       const account = c.var.account as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
-      return await pipe(
-        enforceQueryOwnership(account, payload.id, payload),
-        E.flatMap((payload) => QueriesService.removeQuery(c.env, payload.id)),
-        E.map(() => payload.id.toString() as UuidDto),
-        foldToApiResponse<UuidDto>(c),
+      return pipe(
+        enforceQueryOwnership(account, payload.id),
+        E.flatMap(() => QueriesService.removeQuery(c.env, payload.id)),
+        E.map(() => new Response(null, { status: StatusCodes.NO_CONTENT })),
+        handleTaggedErrors(c),
         E.runPromise,
       );
     },
@@ -63,10 +61,11 @@ export function execute(app: App): void {
       const account = c.var.account as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
-      return await pipe(
-        enforceQueryOwnership(account, payload.id, payload),
-        E.flatMap((payload) => QueriesService.executeQuery(c.env, payload)),
-        foldToApiResponse<JsonValue>(c),
+      return pipe(
+        enforceQueryOwnership(account, payload.id),
+        E.flatMap(() => QueriesService.executeQuery(c.env, payload)),
+        E.map((data) => c.json({ data })),
+        handleTaggedErrors(c),
         E.runPromise,
       );
     },
@@ -74,12 +73,13 @@ export function execute(app: App): void {
 }
 
 export function list(app: App): void {
-  app.get(PathsV1.queries.root, async (c): Promise<Response> => {
+  app.get(PathsV1.queries.root, async (c) => {
     const account = c.var.account as OrganizationAccountDocument;
 
-    return await pipe(
+    return pipe(
       QueriesService.findQueries(c.env, account._id),
-      foldToApiResponse<QueryDocument[]>(c),
+      E.map((data) => c.json({ data })),
+      handleTaggedErrors(c),
       E.runPromise,
     );
   });

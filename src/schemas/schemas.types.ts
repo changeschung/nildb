@@ -1,3 +1,4 @@
+import type { IndexDirection, UUID } from "mongodb";
 import { z } from "zod";
 import { Uuid } from "#/common/types";
 /**
@@ -7,7 +8,6 @@ import { Uuid } from "#/common/types";
 export const AddSchemaRequestSchema = z.object({
   _id: Uuid,
   name: z.string().min(1),
-  keys: z.array(z.string()),
   schema: z.record(z.string(), z.unknown()),
 });
 export type AddSchemaRequest = z.infer<typeof AddSchemaRequestSchema>;
@@ -16,3 +16,22 @@ export const DeleteSchemaRequestSchema = z.object({
   id: Uuid,
 });
 export type DeleteSchemaRequest = z.infer<typeof DeleteSchemaRequestSchema>;
+
+/**
+ * Repository types
+ */
+export type SchemaMetadata = {
+  id: UUID;
+  count: number;
+  size: number;
+  firstWrite: Date;
+  lastWrite: Date;
+  indexes: CollectionIndex[];
+};
+
+export type CollectionIndex = {
+  v: number;
+  key: Record<string, IndexDirection>;
+  name: string;
+  unique: boolean;
+};

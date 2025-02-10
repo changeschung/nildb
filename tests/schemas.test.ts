@@ -1,3 +1,4 @@
+import { StatusCodes } from "http-status-codes";
 import { UUID } from "mongodb";
 import { describe } from "vitest";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
@@ -5,6 +6,7 @@ import { CollectionName } from "#/common/mongo";
 import { type UuidDto, createUuidDto } from "#/common/types";
 import type { UploadResult } from "#/data/data.repository";
 import type { SchemaDocument } from "#/schemas/schemas.repository";
+import type { SchemaMetadata } from "#/schemas/schemas.types";
 import schemaJson from "./data/wallet.schema.json";
 import { assertDefined, expectSuccessResponse } from "./fixture/assertions";
 import type { SchemaFixture } from "./fixture/fixture";
@@ -24,25 +26,23 @@ describe("schemas.test.ts", () => {
   });
 
   it("can add schema", async ({ expect, bindings, organization }) => {
+    const _id = new UUID();
     const response = await organization.addSchema({
-      _id: new UUID(),
+      _id,
       name: schema.name,
-      keys: schema.keys,
       schema: schema.schema,
     });
 
-    const result = await expectSuccessResponse<UuidDto>(response);
-    const uuid = new UUID(result.data);
-    expect(uuid).toBeTruthy;
+    expect(response.status).toBe(StatusCodes.CREATED);
 
     const document = await bindings.db.primary
       .collection(CollectionName.Accounts)
       .findOne({
-        schema: { $elemMatch: { $in: [uuid] } },
+        schema: { $elemMatch: { $in: [_id] } },
       });
     assertDefined(document);
 
-    schema.id = new UUID(result.data);
+    schema.id = _id;
   });
 
   it("can upload data", async ({ expect, bindings, organization }) => {
@@ -77,16 +77,26 @@ describe("schemas.test.ts", () => {
     expect(result.data).toHaveLength(1);
   });
 
+  it("can get schema metadata", async ({ expect, organization }) => {
+    const response = await organization.getSchemaMetadata(
+      schema.id.toString() as UuidDto,
+    );
+
+    const result = await expectSuccessResponse<SchemaMetadata>(response);
+    expect(result.data.id).toBe(schema.id.toString());
+    expect(result.data.count).toBe(1);
+  });
+
   it("can delete schema", async ({ expect, bindings, organization }) => {
     const id = schema.id;
     const response = await organization.deleteSchema({
       id,
     });
-    const result = await expectSuccessResponse<SchemaDocument>(response);
+    expect(response.status).toBe(StatusCodes.NO_CONTENT);
 
     const schemaDocument = await bindings.db.primary
       .collection<SchemaDocument>(CollectionName.Schemas)
-      .findOne({ _id: new UUID(result.data._id) });
+      .findOne({ _id: id });
 
     expect(schemaDocument).toBeNull();
 

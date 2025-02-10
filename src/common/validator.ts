@@ -3,29 +3,29 @@ import * as addFormats from "ajv-formats";
 import type { DataValidationCxt } from "ajv/dist/types";
 import { Effect as E } from "effect";
 import { type SafeParseReturnType, z } from "zod";
-import { DataValidationError, ServiceError } from "#/common/app-error";
+import { DataValidationError } from "#/common/errors";
 import { Uuid } from "#/common/types";
 
 export function validateSchema(
   schema: Record<string, unknown>,
-): E.Effect<boolean, ServiceError> {
+): E.Effect<void, DataValidationError> {
   return E.try({
     try: () => {
       const ajv = new Ajv();
       addFormats.default(ajv);
       registerCoercions(ajv);
       ajv.compile(schema);
-      return true;
     },
     catch: (cause) => {
-      const reason = ["Schema compilation failed"];
-      if (cause instanceof Error && cause.message) {
-        reason.push(cause.message);
+      if (cause instanceof DataValidationError) {
+        return cause;
       }
-      return new ServiceError({
-        reason,
-        cause,
-      });
+
+      const issues = [];
+      if (cause instanceof Error && cause.message) {
+        issues.push(cause.message);
+      }
+      return new DataValidationError({ issues, cause });
     },
   });
 }
@@ -35,27 +35,36 @@ export function validateData<T>(
   data: unknown,
 ): E.Effect<T, DataValidationError> {
   // TODO this is inefficient the ajv instance should be created once ... move to ctx
-  const ajv = new Ajv();
-  addFormats.default(ajv);
-  registerCoercions(ajv);
-  const validator = ajv.compile<T>(schema);
-  if (validator(data)) {
-    return E.succeed(data as T);
-  }
+  return E.try({
+    try: () => {
+      const ajv = new Ajv();
+      addFormats.default(ajv);
+      registerCoercions(ajv);
+      const validator = ajv.compile<T>(schema);
 
-  const cause = validator.errors ?? [];
+      if (validator(data)) {
+        return data as T;
+      }
 
-  const reason = [
-    "Schema validation failed",
-    ...cause.map(
-      (issue) => `${issue.instancePath}: ${issue.message ?? "Unknown error"}`,
-    ),
-  ];
-  const error = new DataValidationError({
-    reason,
-    cause,
+      const cause = validator.errors ?? [];
+      const issues = cause.map(
+        (c) => `${c.instancePath}: ${c.message ?? "Unknown error"}`,
+      );
+
+      throw new DataValidationError({ issues, cause });
+    },
+    catch: (cause) => {
+      if (cause instanceof DataValidationError) {
+        return cause;
+      }
+
+      const issues = [];
+      if (cause instanceof Error && cause.message) {
+        issues.push(cause.message);
+      }
+      return new DataValidationError({ issues, cause });
+    },
   });
-  return E.fail(error);
 }
 
 type SupportedCoercions = "date-time" | "uuid";
@@ -84,16 +93,16 @@ function registerCoercions(ajv: Ajv): void {
       const format = parent.format as SupportedCoercions;
 
       if (!format) {
-        throw new ServiceError({
-          reason: ["coerce keyword requires format to be specified"],
+        throw new DataValidationError({
+          issues: ["coerce keyword requires format to be specified"],
           cause: format,
         });
       }
 
       const coercer = coercers[format];
       if (!coercer) {
-        throw new ServiceError({
-          reason: [`Unsupported format for coercion: ${format}`],
+        throw new DataValidationError({
+          issues: [`Unsupported format for coercion: ${format}`],
           cause: coercers,
         });
       }

@@ -1,7 +1,6 @@
 {
   "id": "",
   "name": "variables.wallet.schema.json",
-  "keys": ["_id"],
   "schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "array",

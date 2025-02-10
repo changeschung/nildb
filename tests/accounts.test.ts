@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import { Identity } from "#/common/identity";
@@ -12,7 +13,7 @@ describe("account management", () => {
   beforeAll(async (_ctx) => {});
   afterAll(async (_ctx) => {});
 
-  it("root can create an admin account", async ({ expect, root }) => {
+  it("root can create an admin account", async ({ expect, bindings, root }) => {
     const admin = Identity.new();
     const response = await root.createAccount({
       did: admin.did,
@@ -21,12 +22,17 @@ describe("account management", () => {
       type: "admin",
     });
 
-    const data = await expectSuccessResponse(response);
-    expect(data.data).toBe(admin.did);
+    expect(response.status).toBe(StatusCodes.CREATED);
+
+    const document = await bindings.db.primary
+      .collection(CollectionName.Accounts)
+      .findOne({ did: admin.did });
+    expect(document).toBeDefined;
   });
 
   it("admin can register an organization account", async ({
     expect,
+    bindings,
     admin,
   }) => {
     const organization = Identity.new();
@@ -37,8 +43,12 @@ describe("account management", () => {
       type: "organization",
     });
 
-    const data = await expectSuccessResponse(response);
-    expect(data.data).toBe(organization.did);
+    expect(response.status).toBe(StatusCodes.CREATED);
+
+    const document = await bindings.db.primary
+      .collection(CollectionName.Accounts)
+      .findOne({ did: organization.did });
+    expect(document).toBeDefined;
   });
 
   it("organization can get its own profile", async ({
@@ -67,8 +77,12 @@ describe("account management", () => {
       name: faker.company.name(),
     });
 
-    const data = await expectSuccessResponse(response);
-    expect(data.data).toBe(newOrganization.did);
+    expect(response.status).toBe(StatusCodes.CREATED);
+
+    const document = await bindings.db.primary
+      .collection(CollectionName.Accounts)
+      .findOne({ did: newOrganization.did });
+    expect(document).toBeDefined;
   });
 
   it("admin can remove an organization account", async ({
@@ -81,8 +95,7 @@ describe("account management", () => {
       id: organization.did,
     });
 
-    const data = await expectSuccessResponse(response);
-    expect(data.data).toBe(organization.did);
+    expect(response.status).toBe(StatusCodes.NO_CONTENT);
 
     const documents = await bindings.db.primary
       .collection<OrganizationAccountDocument>(CollectionName.Accounts)

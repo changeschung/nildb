@@ -43,6 +43,23 @@ export const AdminAddSchemaRequestSchema = AddSchemaRequestSchema.extend({
 });
 export type AdminAddSchemaRequest = z.infer<typeof AdminAddSchemaRequestSchema>;
 
+export const CreateSchemaIndexRequestSchema = z.object({
+  name: z.string().min(4),
+  keys: z.array(
+    z
+      .record(z.string(), z.union([z.literal(1), z.literal(-1)]))
+      .refine(
+        (obj) => Object.keys(obj).length === 1,
+        "Each object must have exactly one key: [{ _id: 1 }, { foo: -1 }]",
+      ),
+  ),
+  unique: z.boolean(),
+  ttl: z.number().optional(),
+});
+
+export type CreateSchemaIndexRequest = z.infer<
+  typeof CreateSchemaIndexRequestSchema
+>;
 /**
  * Repository types
  */

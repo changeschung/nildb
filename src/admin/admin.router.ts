@@ -8,29 +8,6 @@ import * as AdminDataControllers from "./admin.controllers.data";
 import * as AdminQueriesControllers from "./admin.controllers.queries";
 import * as AdminSchemasControllers from "./admin.controllers.schemas";
 
-export const AdminEndpointV1 = {
-  Base: "/api/v1/admin",
-  Accounts: {
-    Base: "/api/v1/admin/accounts",
-    Subscriptions: "/api/v1/admin/accounts/subscription",
-  },
-  Data: {
-    Delete: "/api/v1/admin/data/delete",
-    Flush: "/api/v1/admin/data/flush",
-    Read: "/api/v1/admin/data/read",
-    Tail: "/api/v1/admin/data/tail",
-    Update: "/api/v1/admin/data/update",
-    Upload: "/api/v1/admin/data/create",
-  },
-  Queries: {
-    Base: "/api/v1/admin/queries",
-    Execute: "/api/v1/admin/queries/execute",
-  },
-  Schemas: {
-    Base: "/api/v1/admin/schemas",
-  },
-} as const;
-
 export function buildAdminRouter(app: App, _bindings: AppBindings): void {
   app.use(
     `${PathsV1.admin.root}/*`,
@@ -38,16 +15,16 @@ export function buildAdminRouter(app: App, _bindings: AppBindings): void {
     async (c, next): Promise<void | Response> => {
       return isRoleAllowed(c, ["admin", "root"])
         ? next()
-        : c.text("UNAUTHORIZED", StatusCodes.UNAUTHORIZED);
+        : c.text("Unauthorized", StatusCodes.UNAUTHORIZED);
     },
   );
 
   AdminAccountsControllers.create(app);
-  AdminAccountsControllers.deleteA(app);
+  AdminAccountsControllers.remove(app);
   AdminAccountsControllers.list(app);
   AdminAccountsControllers.setSubscriptionState(app);
 
-  AdminDataControllers.deleteD(app);
+  AdminDataControllers.remove(app);
   AdminDataControllers.flush(app);
   AdminDataControllers.read(app);
   AdminDataControllers.tail(app);
@@ -55,9 +32,12 @@ export function buildAdminRouter(app: App, _bindings: AppBindings): void {
   AdminDataControllers.upload(app);
 
   AdminQueriesControllers.add(app);
-  AdminQueriesControllers.deleteQ(app);
+  AdminQueriesControllers.remove(app);
   AdminQueriesControllers.execute(app);
 
   AdminSchemasControllers.add(app);
-  AdminSchemasControllers.deleteS(app);
+  AdminSchemasControllers.remove(app);
+  AdminSchemasControllers.metadata(app);
+  AdminSchemasControllers.createIndex(app);
+  AdminSchemasControllers.dropIndex(app);
 }

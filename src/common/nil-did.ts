@@ -6,8 +6,7 @@ import type {
 } from "did-resolver";
 import { Effect as E, pipe } from "effect";
 import { z } from "zod";
-import type { RepositoryError } from "#/common/app-error";
-import { findAccountByIdWithCache } from "#/common/cache";
+import * as AccountsRepository from "#/accounts/accounts.repository";
 import type { AppBindings } from "#/env";
 
 export const NilDidRegex = /^did:nil:(mainnet|testnet):nillion1[a-z0-9]{38}$/;
@@ -33,11 +32,11 @@ export function buildNilMethodResolver(bindings: AppBindings): Resolvable {
 }
 
 function findDocument(
-  bindings: AppBindings,
+  ctx: AppBindings,
   did: NilDid,
-): E.Effect<DIDResolutionResult, RepositoryError> {
+): E.Effect<DIDResolutionResult> {
   return pipe(
-    findAccountByIdWithCache(bindings, did),
+    AccountsRepository.findByIdWithCache(ctx, did),
     E.map((account) => ({
       didResolutionMetadata: {
         contentType: "application/did+json",
@@ -45,7 +44,7 @@ function findDocument(
       didDocument: createDocument(did, account.publicKey),
       didDocumentMetadata: {},
     })),
-    E.catchAll((_error) =>
+    E.catchAll((_e) =>
       E.succeed({
         didResolutionMetadata: {
           error: "notFound",
