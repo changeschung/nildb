@@ -82,12 +82,13 @@ export function checkPrimaryCollectionExists<T extends Document>(
   return pipe(
     E.tryPromise({
       try: () => ctx.db.primary.listCollections({ name }).toArray(),
-      catch: (e: unknown) => new DatabaseError(e as MongoError),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "checkPrimaryCollectionExists" }),
     }),
     E.flatMap((result) =>
       result.length === 1
         ? E.succeed(ctx.db.primary.collection<T>(name))
-        : E.fail(new PrimaryCollectionNotFoundError(name as UuidDto)),
+        : E.fail(new PrimaryCollectionNotFoundError({ name: name as UuidDto })),
     ),
   );
 }
@@ -99,12 +100,13 @@ export function checkDataCollectionExists<T extends Document>(
   return pipe(
     E.tryPromise({
       try: () => ctx.db.data.listCollections({ name }).toArray(),
-      catch: (e: unknown) => new DatabaseError(e as MongoError),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "checkDataCollectionExists" }),
     }),
     E.flatMap((result) =>
       result.length === 1
         ? E.succeed(ctx.db.data.collection<T>(name))
-        : E.fail(new DataCollectionNotFoundError(name as UuidDto)),
+        : E.fail(new DataCollectionNotFoundError({ name: name as UuidDto })),
     ),
   );
 }

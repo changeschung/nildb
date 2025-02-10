@@ -170,7 +170,7 @@ describe("data operations", () => {
     });
 
     const error = await expectErrorResponse(response);
-    expect(error.errors.at(0)).includes("DataValidationError");
+    expect(error.errors).includes("DataValidationError");
   });
 
   it("can run a query", async ({ expect, skip, organization }) => {

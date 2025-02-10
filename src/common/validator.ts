@@ -16,16 +16,16 @@ export function validateSchema(
       registerCoercions(ajv);
       ajv.compile(schema);
     },
-    catch: (e) => {
-      if (e instanceof DataValidationError) {
-        return e;
+    catch: (cause) => {
+      if (cause instanceof DataValidationError) {
+        return cause;
       }
 
       const issues = [];
-      if (e instanceof Error && e.message) {
-        issues.push(e.message);
+      if (cause instanceof Error && cause.message) {
+        issues.push(cause.message);
       }
-      return new DataValidationError(issues, e);
+      return new DataValidationError({ issues, cause });
     },
   });
 }
@@ -51,18 +51,18 @@ export function validateData<T>(
         (c) => `${c.instancePath}: ${c.message ?? "Unknown error"}`,
       );
 
-      throw new DataValidationError(issues, cause);
+      throw new DataValidationError({ issues, cause });
     },
-    catch: (e) => {
-      if (e instanceof DataValidationError) {
-        return e;
+    catch: (cause) => {
+      if (cause instanceof DataValidationError) {
+        return cause;
       }
 
       const issues = [];
-      if (e instanceof Error && e.message) {
-        issues.push(e.message);
+      if (cause instanceof Error && cause.message) {
+        issues.push(cause.message);
       }
-      return new DataValidationError(issues, e);
+      return new DataValidationError({ issues, cause });
     },
   });
 }
@@ -93,18 +93,18 @@ function registerCoercions(ajv: Ajv): void {
       const format = parent.format as SupportedCoercions;
 
       if (!format) {
-        throw new DataValidationError(
-          ["coerce keyword requires format to be specified"],
-          format,
-        );
+        throw new DataValidationError({
+          issues: ["coerce keyword requires format to be specified"],
+          cause: format,
+        });
       }
 
       const coercer = coercers[format];
       if (!coercer) {
-        throw new DataValidationError(
-          [`Unsupported format for coercion: ${format}`],
-          coercers,
-        );
+        throw new DataValidationError({
+          issues: [`Unsupported format for coercion: ${format}`],
+          cause: coercers,
+        });
       }
 
       return (data: unknown, dataCtx?: DataValidationCxt): boolean => {

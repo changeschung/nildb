@@ -1,109 +1,119 @@
-import type { MongoError } from "mongodb";
+import { Data } from "effect";
 import type { JsonObject } from "type-fest";
 import type { NilDid } from "#/common/nil-did";
 
-export class DuplicateEntryError {
-  readonly _tag = "DuplicateEntryError";
-  constructor(readonly document: JsonObject) {}
-
-  toString(): string {
-    return `${this._tag}(document=${JSON.stringify(this.document)})`;
+export class DuplicateEntryError extends Data.TaggedError(
+  "DuplicateEntryError",
+)<{
+  document: JsonObject;
+}> {
+  humanize(): string[] {
+    return [this._tag, `document: ${JSON.stringify(this.document)}`];
   }
 }
 
-export class ResourceAccessDeniedError {
-  readonly _tag = "ResourceAccessDeniedError";
-  constructor(
-    readonly type: string,
-    readonly id: string,
-    readonly user: NilDid,
-  ) {}
-
-  toString(): string {
-    return `${this._tag}(type=${this.type},id=${this.id},user=${this.user})`;
+export class ResourceAccessDeniedError extends Data.TaggedError(
+  "ResourceAccessDeniedError",
+)<{
+  type: string;
+  id: string;
+  user: NilDid;
+}> {
+  humanize(): string[] {
+    return [
+      this._tag,
+      `type: ${this.type}`,
+      `object: ${this.id}`,
+      `user: ${this.user}`,
+    ];
   }
 }
 
-export class InvalidIndexOptionsError {
-  readonly _tag = "InvalidIndexOptionsError";
-  constructor(
-    readonly collection: string,
-    readonly message: string,
-  ) {}
-
-  toString(): string {
-    return `${this._tag}(message=${this.message})`;
+export class InvalidIndexOptionsError extends Data.TaggedError(
+  "InvalidIndexOptionsError",
+)<{
+  collection: string;
+  message: string;
+}> {
+  humanize(): string[] {
+    return [this._tag, `collection: ${this.collection}`, this.message];
   }
 }
 
-export class IndexNotFoundError {
-  readonly _tag = "IndexNotFoundError";
-  constructor(
-    readonly collection: string,
-    readonly index: string,
-  ) {}
-
-  toString(): string {
-    return `${this._tag}(collection=${this.collection},index=${this.index})`;
+export class IndexNotFoundError extends Data.TaggedError("IndexNotFoundError")<{
+  collection: string;
+  index: string;
+}> {
+  humanize(): string[] {
+    return [
+      this._tag,
+      `collection: ${this.collection}`,
+      `index: ${this.index}`,
+    ];
   }
 }
 
-export class DatabaseError {
-  readonly _tag = "DatabaseError";
-  constructor(readonly error: MongoError) {}
-
-  toString(): string {
-    return `${this._tag}(message=${this.error.message})`;
+export class DatabaseError extends Data.TaggedError("DatabaseError")<{
+  cause: unknown;
+  message: string;
+}> {
+  humanize(): string[] {
+    return [this._tag, this.message, `cause: ${JSON.stringify(this.cause)}`];
   }
 }
 
-export class DocumentNotFoundError {
-  readonly _tag = "DocumentNotFoundError";
-  constructor(
-    readonly collection: string,
-    readonly filter: Record<string, unknown>,
-  ) {}
-
-  toString(): string {
-    return `${this._tag}(collection=${this.collection},filter=${this.filter})`;
+export class DocumentNotFoundError extends Data.TaggedError(
+  "DocumentNotFoundError",
+)<{
+  collection: string;
+  filter: Record<string, unknown>;
+}> {
+  humanize(): string[] {
+    return [
+      this._tag,
+      `collection: ${this.collection}`,
+      `filter: ${JSON.stringify(this.filter)}`,
+    ];
   }
 }
 
-export class PrimaryCollectionNotFoundError {
-  readonly _tag = "PrimaryCollectionNotFoundError";
-  constructor(readonly name: string) {}
-
-  toString(): string {
-    return `${this._tag}(name=${this.name})`;
+export class PrimaryCollectionNotFoundError extends Data.TaggedError(
+  "PrimaryCollectionNotFoundError",
+)<{
+  name: string;
+}> {
+  humanize(): string[] {
+    return [this._tag, `collection: ${this.name}`];
   }
 }
 
-export class DataCollectionNotFoundError {
-  readonly _tag = "DataCollectionNotFoundError";
-  constructor(readonly name: string) {}
-
-  toString(): string {
-    return `${this._tag}(name=${this.name})`;
+export class DataCollectionNotFoundError extends Data.TaggedError(
+  "DataCollectionNotFoundError",
+)<{
+  name: string;
+}> {
+  humanize(): string[] {
+    return [this._tag, `collection: ${this.name}`];
   }
 }
 
-export class DataValidationError {
-  readonly _tag = "DataValidationError";
-  constructor(
-    readonly issues: string[],
-    readonly cause: unknown,
-  ) {}
-
-  toString(): string {
-    return `${this._tag}(issues=${this.issues},cause=${JSON.stringify(this.cause)})`;
+export class DataValidationError extends Data.TaggedError(
+  "DataValidationError",
+)<{
+  issues: string[];
+  cause: unknown;
+}> {
+  humanize(): string[] {
+    return [this._tag, this.issues.join(", ")];
   }
 }
 
-export class VariableInjectionError {
-  readonly _tag = "VariableInjectionError";
-  constructor(readonly message: string) {}
-
-  toString(): string {
-    return `${this._tag}(message=${this.message})`;
+export class VariableInjectionError extends Data.TaggedError(
+  "VariableInjectionError",
+)<{
+  message: string;
+}> {
+  humanize(): string[] {
+    return [this._tag, this.message];
   }
 }

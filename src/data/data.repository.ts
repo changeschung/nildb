@@ -2,7 +2,6 @@ import { Effect as E, pipe } from "effect";
 import {
   type DeleteResult,
   type Document,
-  type MongoError,
   type StrictFilter,
   UUID,
   type UpdateResult,
@@ -37,7 +36,7 @@ export function createCollection(
   return pipe(
     E.tryPromise({
       try: () => ctx.db.data.createCollection(schemaId.toString()),
-      catch: (e) => new DatabaseError(e as MongoError),
+      catch: (cause) => new DatabaseError({ cause, message: "" }),
     }),
     E.flatMap((collection) =>
       E.all([
@@ -47,14 +46,17 @@ export function createCollection(
               { _updated: 1 },
               { unique: false, name: "_updated_1" },
             ),
-          catch: (e) => {
-            if (isMongoError(e) && e.code === MongoErrorCode.IndexNotFound) {
-              return new InvalidIndexOptionsError(
-                schemaId.toString(),
-                "_updated_1",
-              );
+          catch: (cause) => {
+            if (
+              isMongoError(cause) &&
+              cause.code === MongoErrorCode.IndexNotFound
+            ) {
+              return new InvalidIndexOptionsError({
+                collection: schemaId.toString(),
+                message: "_updated_1",
+              });
             }
-            return new DatabaseError(e as MongoError);
+            return new DatabaseError({ cause, message: "" });
           },
         }),
         E.tryPromise({
@@ -63,14 +65,17 @@ export function createCollection(
               { _created: 1 },
               { unique: false, name: "_created_1" },
             ),
-          catch: (e) => {
-            if (isMongoError(e) && e.code === MongoErrorCode.IndexNotFound) {
-              return new InvalidIndexOptionsError(
-                schemaId.toString(),
-                "_created_1",
-              );
+          catch: (cause) => {
+            if (
+              isMongoError(cause) &&
+              cause.code === MongoErrorCode.IndexNotFound
+            ) {
+              return new InvalidIndexOptionsError({
+                collection: schemaId.toString(),
+                message: "_created_1",
+              });
             }
-            return new DatabaseError(e as MongoError);
+            return new DatabaseError({ cause, message: "" });
           },
         }),
       ]),
@@ -95,7 +100,8 @@ export function tailCollection(
             .sort({ _created: -1 })
             .limit(TAIL_DATA_LIMIT)
             .toArray(),
-        catch: (e: unknown) => new DatabaseError(e as MongoError),
+        catch: (cause) =>
+          new DatabaseError({ cause, message: "tailCollection" }),
       }),
     ),
   );
@@ -110,7 +116,8 @@ export function deleteCollection(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => ctx.db.data.dropCollection(collection.collectionName),
-        catch: (e: unknown) => new DatabaseError(e as MongoError),
+        catch: (cause) =>
+          new DatabaseError({ cause, message: "deleteCollection" }),
       }),
     ),
     E.as(void 0),
@@ -126,7 +133,8 @@ export function flushCollection(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.deleteMany(),
-        catch: (e: unknown) => new DatabaseError(e as MongoError),
+        catch: (cause) =>
+          new DatabaseError({ cause, message: "flushCollection" }),
       }),
     ),
   );
@@ -209,7 +217,7 @@ export function insert(
             errors,
           };
         },
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) => new DatabaseError({ cause, message: "" }),
       }),
     ),
   );
@@ -230,7 +238,7 @@ export function updateMany(
             coerceIdToUuid<Filter<DocumentBase>>(filter),
             update,
           ),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) => new DatabaseError({ cause, message: "updateMany" }),
       }),
     ),
   );
@@ -247,7 +255,7 @@ export function deleteMany(
       E.tryPromise({
         try: () =>
           collection.deleteMany(coerceIdToUuid<Filter<DocumentBase>>(filter)),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) => new DatabaseError({ cause, message: "deleteMany" }),
       }),
     ),
   );
@@ -263,7 +271,8 @@ export function runAggregation(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.aggregate(pipeline).toArray(),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) =>
+          new DatabaseError({ cause, message: "runAggregation" }),
       }),
     ),
   );
@@ -279,7 +288,7 @@ export function findMany(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.find(filter).sort({ _created: -1 }).toArray(),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
       }),
     ),
   );

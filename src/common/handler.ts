@@ -2,7 +2,6 @@ import { Effect as E, pipe } from "effect";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { StatusCodes } from "http-status-codes";
 import { Temporal } from "temporal-polyfill";
-import type { JsonArray } from "type-fest";
 import type {
   DataCollectionNotFoundError,
   DataValidationError,
@@ -22,7 +21,7 @@ export type ApiSuccessResponse<T> = {
 };
 
 export type ApiErrorResponse = {
-  errors: JsonArray;
+  errors: string[];
   ts: string;
 };
 
@@ -45,11 +44,11 @@ export function handleTaggedErrors(c: AppContext) {
     e: KnownError,
     statusCode: ContentfulStatusCode,
   ): E.Effect<Response> => {
-    const message = e.toString();
-    c.env.log.debug(message);
+    const errors = e.humanize();
+    c.env.log.debug(errors);
     const payload: ApiErrorResponse = {
       ts: Temporal.Now.instant().toString(),
-      errors: [message],
+      errors,
     };
     return E.succeed(c.json(payload, statusCode));
   };

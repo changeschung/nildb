@@ -13,11 +13,11 @@ export function enforceQueryOwnership(
       return isAuthorized
         ? E.succeed(void 0)
         : E.fail(
-            new ResourceAccessDeniedError(
-              "query",
-              query.toString(),
-              account._id,
-            ),
+            new ResourceAccessDeniedError({
+              type: "query",
+              id: query.toString(),
+              user: account._id,
+            }),
           );
     }),
   );
@@ -33,11 +33,11 @@ export function enforceSchemaOwnership(
       return isAuthorized
         ? E.succeed(void 0)
         : E.fail(
-            new ResourceAccessDeniedError(
-              "schema",
-              schema.toString(),
-              account._id,
-            ),
+            new ResourceAccessDeniedError({
+              type: "schema",
+              id: schema.toString(),
+              user: account._id,
+            }),
           );
     }),
   );

@@ -56,7 +56,7 @@ describe("schemas.datetime.test", () => {
       });
 
       const result = await expectErrorResponse(response);
-      expect(result.errors.at(0)).includes("DataValidationError");
+      expect(result.errors).includes("DataValidationError");
     }
   });
 

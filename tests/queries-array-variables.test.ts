@@ -48,7 +48,7 @@ describe("array variable queries", () => {
     });
 
     const error = await expectErrorResponse(response);
-    expect(error.errors.at(0)).include("DataValidationError");
+    expect(error.errors).includes("DataValidationError");
   });
 
   it("can execute with empty array", async ({ expect, organization }) => {

@@ -85,7 +85,7 @@ describe("query variable validation", () => {
     });
 
     const error = await expectErrorResponse(response);
-    expect(error.errors.at(0)).includes("DataValidationError");
+    expect(error.errors).includes("DataValidationError");
   });
 
   it("rejects null as variable value", async ({ expect, organization }) => {
@@ -101,7 +101,7 @@ describe("query variable validation", () => {
     });
 
     const error = await expectErrorResponse(response);
-    expect(error.errors.at(0)).includes("DataValidationError");
+    expect(error.errors).includes("DataValidationError");
   });
 
   it("rejects undefined as variable value", async ({
@@ -120,7 +120,7 @@ describe("query variable validation", () => {
     });
 
     const error = await expectErrorResponse(response);
-    expect(error.errors.at(0)).includes("DataValidationError");
+    expect(error.errors).includes("DataValidationError");
   });
 
   it("rejects function as variable value", async ({ expect, organization }) => {
@@ -136,6 +136,6 @@ describe("query variable validation", () => {
     });
 
     const error = await expectErrorResponse(response);
-    expect(error.errors.at(0)).includes("DataValidationError");
+    expect(error.errors).includes("DataValidationError");
   });
 });

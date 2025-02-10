@@ -44,15 +44,15 @@ export function createAccount(
   | DatabaseError
 > {
   if (request.did === ctx.node.identity.did) {
-    const e = new DuplicateEntryError(request);
+    const e = new DuplicateEntryError({ document: request });
     return E.fail(e);
   }
 
   if (!Identity.isDidFromPublicKey(request.did, request.publicKey)) {
-    const e = new DataValidationError(
-      ["DID not derived from public key"],
-      request,
-    );
+    const e = new DataValidationError({
+      issues: ["DID not derived from public key"],
+      cause: request,
+    });
     return E.fail(e);
   }
 

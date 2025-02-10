@@ -3,7 +3,6 @@ import type {
   CreateIndexesOptions,
   Document,
   IndexSpecification,
-  MongoError,
   StrictFilter,
   UUID,
 } from "mongodb";
@@ -42,7 +41,7 @@ export function insert(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.insertOne(document),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) => new DatabaseError({ cause, message: "" }),
       }),
     ),
     E.as(void 0),
@@ -58,7 +57,7 @@ export function findMany(
     E.flatMap((collection) =>
       E.tryPromise({
         try: async () => collection.find(filter).toArray(),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) => new DatabaseError({ cause, message: "" }),
       }),
     ),
   );
@@ -76,12 +75,17 @@ export function findOne(
     E.flatMap((collection) =>
       E.tryPromise({
         try: async () => collection.findOne(filter),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) => new DatabaseError({ cause, message: "" }),
       }),
     ),
     E.flatMap((result) =>
       result === null
-        ? E.fail(new DocumentNotFoundError(CollectionName.Schemas, filter))
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Schemas,
+              filter,
+            }),
+          )
         : E.succeed(result),
     ),
   );
@@ -99,12 +103,17 @@ export function deleteOne(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.findOneAndDelete(filter),
-        catch: (e: unknown) => new DatabaseError(e as MongoError),
+        catch: (cause) => new DatabaseError({ cause, message: "deleteOne" }),
       }),
     ),
     E.flatMap((result) =>
       result === null
-        ? E.fail(new DocumentNotFoundError(CollectionName.Schemas, filter))
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Schemas,
+              filter,
+            }),
+          )
         : E.succeed(result),
     ),
   );
@@ -147,7 +156,8 @@ export function getCollectionStats(
                 lastWrite,
               };
             },
-            catch: (e: unknown) => new DatabaseError(e as MongoError),
+            catch: (cause) =>
+              new DatabaseError({ cause, message: "Failed to get writes" }),
           }),
         ),
         E.bind("indexes", () =>
@@ -163,7 +173,8 @@ export function getCollectionStats(
 
               return indexes;
             },
-            catch: (e: unknown) => new DatabaseError(e as MongoError),
+            catch: (cause) =>
+              new DatabaseError({ cause, message: "Failed to get indexes" }),
           }),
         ),
         E.bind("counts", () =>
@@ -192,7 +203,8 @@ export function getCollectionStats(
                 size: stats.size,
               };
             },
-            catch: (e: unknown) => new DatabaseError(e as MongoError),
+            catch: (cause) =>
+              new DatabaseError({ cause, message: "Failed to get counts" }),
           }),
         ),
       ),
@@ -222,11 +234,17 @@ export function createIndex(
     E.flatMap((collection) =>
       E.tryPromise({
         try: async () => collection.createIndex(specification, options),
-        catch: (e: unknown) => {
-          if (isMongoError(e) && e.code === MongoErrorCode.CannotCreateIndex) {
-            return new InvalidIndexOptionsError(schema.toString(), e.message);
+        catch: (cause) => {
+          if (
+            isMongoError(cause) &&
+            cause.code === MongoErrorCode.CannotCreateIndex
+          ) {
+            return new InvalidIndexOptionsError({
+              collection: schema.toString(),
+              message: cause.message,
+            });
           }
-          return new DatabaseError(e as MongoError);
+          return new DatabaseError({ cause, message: "Failed to drop index" });
         },
       }),
     ),
@@ -246,11 +264,17 @@ export function dropIndex(
     E.flatMap((collection) =>
       E.tryPromise({
         try: async () => collection.dropIndex(name),
-        catch: (e: unknown) => {
-          if (isMongoError(e) && e.code === MongoErrorCode.IndexNotFound) {
-            return new IndexNotFoundError(schema.toString(), name);
+        catch: (cause) => {
+          if (
+            isMongoError(cause) &&
+            cause.code === MongoErrorCode.IndexNotFound
+          ) {
+            return new IndexNotFoundError({
+              collection: schema.toString(),
+              index: name,
+            });
           }
-          return new DatabaseError(e as MongoError);
+          return new DatabaseError({ cause, message: "Failed to drop index" });
         },
       }),
     ),

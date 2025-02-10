@@ -1,10 +1,5 @@
 import { Effect as E, pipe } from "effect";
-import type {
-  MongoError,
-  StrictFilter,
-  StrictUpdateFilter,
-  UpdateResult,
-} from "mongodb";
+import type { StrictFilter, StrictUpdateFilter, UpdateResult } from "mongodb";
 import type { AccountDocument } from "#/admin/admin.types";
 import {
   DatabaseError,
@@ -54,7 +49,7 @@ export function insert(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.insertOne(document),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) => new DatabaseError({ cause, message: "insert" }),
       }),
     ),
     E.as(void 0),
@@ -81,12 +76,18 @@ export function findByIdWithCache(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.findOne(filter),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) =>
+          new DatabaseError({ cause, message: "findByIdWithCache" }),
       }),
     ),
     E.flatMap((result) =>
       result === null
-        ? E.fail(new DocumentNotFoundError(CollectionName.Accounts, filter))
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Accounts,
+              filter,
+            }),
+          )
         : E.succeed(result),
     ),
     E.tap((document) => cache.set(_id, document)),
@@ -108,12 +109,18 @@ export function findOneOrganization(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.findOne(filter),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) =>
+          new DatabaseError({ cause, message: "findOneOrganization" }),
       }),
     ),
     E.flatMap((result) =>
       result === null
-        ? E.fail(new DocumentNotFoundError(CollectionName.Accounts, filter))
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Accounts,
+              filter,
+            }),
+          )
         : E.succeed(result),
     ),
   );
@@ -139,12 +146,18 @@ export function deleteOneById(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.deleteOne(filter),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) =>
+          new DatabaseError({ cause, message: "deleteOneById" }),
       }),
     ),
     E.flatMap((result) =>
       result === null
-        ? E.fail(new DocumentNotFoundError(CollectionName.Accounts, filter))
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Accounts,
+              filter,
+            }),
+          )
         : E.succeed(result),
     ),
     E.tap(() => ctx.cache.accounts.delete(_id)),
@@ -175,12 +188,18 @@ export function setSubscriptionState(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.updateMany(filter, update),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) =>
+          new DatabaseError({ cause, message: "setSubscriptionState" }),
       }),
     ),
     E.flatMap((result) =>
       result === null
-        ? E.fail(new DocumentNotFoundError(CollectionName.Accounts, filter))
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Accounts,
+              filter,
+            }),
+          )
         : E.succeed(result),
     ),
     E.tap(() =>

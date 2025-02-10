@@ -122,7 +122,13 @@ function validateVariables(
       "Query execution variables count mismatch",
       `expected=${permittedKeys.length}, received=${providedKeys.length}`,
     ];
-    const error = new DataValidationError(issues, { template, provided });
+    const error = new DataValidationError({
+      issues,
+      cause: {
+        template,
+        provided,
+      },
+    });
     return E.fail(error);
   }
 
@@ -135,7 +141,13 @@ function validateVariables(
       const type = variableTemplate.type.toLowerCase();
       if (!permittedTypes.includes(type)) {
         const issues = ["Unsupported type", `type=${type}`];
-        const error = new DataValidationError(issues, { template, provided });
+        const error = new DataValidationError({
+          issues,
+          cause: {
+            template,
+            provided,
+          },
+        });
         return E.fail(error);
       }
 
@@ -193,7 +205,10 @@ function parsePrimitiveVariable(
     }
     default: {
       const issues = ["Unsupported type"];
-      const error = new DataValidationError(issues, { key, value, type });
+      const error = new DataValidationError({
+        issues,
+        cause: { key, value, type },
+      });
       return E.fail(error);
     }
   }
@@ -203,7 +218,7 @@ function parsePrimitiveVariable(
   }
 
   const issues = flattenZodError(result.error);
-  const error = new DataValidationError(issues, {});
+  const error = new DataValidationError({ issues, cause: null });
   return E.fail(error);
 }
 
@@ -223,9 +238,9 @@ export function injectVariablesIntoAggregation(
       if (key in variables) {
         return E.succeed(variables[key] as JsonValue);
       }
-      const error = new VariableInjectionError(
-        `Missing pipeline variable: ${current}`,
-      );
+      const error = new VariableInjectionError({
+        message: `Missing pipeline variable: ${current}`,
+      });
       return E.fail(error);
     }
 

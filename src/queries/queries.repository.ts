@@ -1,5 +1,5 @@
 import { Effect as E, pipe } from "effect";
-import type { MongoError, StrictFilter } from "mongodb";
+import type { StrictFilter } from "mongodb";
 import {
   DatabaseError,
   DocumentNotFoundError,
@@ -18,7 +18,7 @@ export function insert(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.insertOne(document),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) => new DatabaseError({ cause, message: "insert" }),
       }),
     ),
     E.as(void 0),
@@ -37,12 +37,17 @@ export function findMany(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.find(filter).toArray(),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
       }),
     ),
     E.flatMap((result) =>
       result === null
-        ? E.fail(new DocumentNotFoundError(CollectionName.Schemas, filter))
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Schemas,
+              filter,
+            }),
+          )
         : E.succeed(result),
     ),
   );
@@ -60,12 +65,17 @@ export function findOne(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.findOne(filter),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
       }),
     ),
     E.flatMap((result) =>
       result === null
-        ? E.fail(new DocumentNotFoundError(CollectionName.Schemas, filter))
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Schemas,
+              filter,
+            }),
+          )
         : E.succeed(result),
     ),
   );
@@ -83,12 +93,18 @@ export function findOneAndDelete(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.findOneAndDelete(filter),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) =>
+          new DatabaseError({ cause, message: "findOneAndDelete" }),
       }),
     ),
     E.flatMap((result) =>
       result === null
-        ? E.fail(new DocumentNotFoundError(CollectionName.Schemas, filter))
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Schemas,
+              filter,
+            }),
+          )
         : E.succeed(result),
     ),
   );

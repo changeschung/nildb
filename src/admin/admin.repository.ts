@@ -1,5 +1,5 @@
 import { Effect as E, pipe } from "effect";
-import type { MongoError, StrictFilter } from "mongodb";
+import type { StrictFilter } from "mongodb";
 import {
   DatabaseError,
   DocumentNotFoundError,
@@ -46,12 +46,18 @@ export function deleteOneById(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.deleteOne(filter),
-        catch: (e: unknown) => new DatabaseError(e as MongoError),
+        catch: (cause: unknown) =>
+          new DatabaseError({ cause, message: "deleteOneById" }),
       }),
     ),
     E.flatMap((result) =>
       result === null
-        ? E.fail(new DocumentNotFoundError(CollectionName.Schemas, filter))
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Schemas,
+              filter,
+            }),
+          )
         : E.succeed(result),
     ),
   );
@@ -66,7 +72,8 @@ export function insert(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.insertOne(document),
-        catch: (e: unknown) => new DatabaseError(e as MongoError),
+        catch: (cause: unknown) =>
+          new DatabaseError({ cause, message: "insert" }),
       }),
     ),
     E.as(void 0),
@@ -81,7 +88,8 @@ export function listAll(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.find({}).toArray(),
-        catch: (e: unknown) => new DatabaseError(e as MongoError),
+        catch: (cause: unknown) =>
+          new DatabaseError({ cause, message: "listAll" }),
       }),
     ),
   );

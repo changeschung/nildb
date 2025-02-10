@@ -1,10 +1,5 @@
 import { Effect as E, pipe } from "effect";
-import type {
-  MongoError,
-  StrictFilter,
-  StrictUpdateFilter,
-  UUID,
-} from "mongodb";
+import type { StrictFilter, StrictUpdateFilter, UUID } from "mongodb";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import {
   DatabaseError,
@@ -36,13 +31,18 @@ export function addSchema(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.updateOne(filter, update),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) => new DatabaseError({ cause, message: "" }),
       }),
     ),
     E.flatMap((result) =>
       result.modifiedCount === 1
         ? E.succeed(void 0)
-        : E.fail(new DocumentNotFoundError(CollectionName.Accounts, filter)),
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Accounts,
+              filter,
+            }),
+          ),
     ),
   );
 }
@@ -68,13 +68,18 @@ export function removeSchema(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.updateOne(filter, update),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) => new DatabaseError({ cause, message: "" }),
       }),
     ),
     E.flatMap((result) =>
       result.modifiedCount === 1
         ? E.succeed(void 0)
-        : E.fail(new DocumentNotFoundError(CollectionName.Accounts, filter)),
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Accounts,
+              filter,
+            }),
+          ),
     ),
   );
 }
@@ -100,13 +105,18 @@ export function addQuery(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.updateOne(filter, update),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) => new DatabaseError({ cause, message: "" }),
       }),
     ),
     E.flatMap((result) =>
       result.modifiedCount === 1
         ? E.succeed(void 0)
-        : E.fail(new DocumentNotFoundError(CollectionName.Accounts, filter)),
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Accounts,
+              filter,
+            }),
+          ),
     ),
   );
 }
@@ -132,13 +142,18 @@ export function removeQuery(
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.updateOne(filter, update),
-        catch: (e) => new DatabaseError(e as MongoError),
+        catch: (cause) => new DatabaseError({ cause, message: "removeQuery" }),
       }),
     ),
     E.flatMap((result) =>
       result.modifiedCount === 1
         ? E.succeed(void 0)
-        : E.fail(new DocumentNotFoundError(CollectionName.Accounts, filter)),
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Accounts,
+              filter,
+            }),
+          ),
     ),
   );
 }
