@@ -101,14 +101,14 @@ export function dropIndex(app: App): void {
     paramsValidator(
       z.object({
         id: Uuid,
-        indexName: z.string().min(4),
+        name: z.string().min(4),
       }),
     ),
     async (c) => {
-      const { id, indexName } = c.req.valid("param");
+      const { id, name } = c.req.valid("param");
 
       return pipe(
-        SchemasService.dropIndex(c.env, id, indexName),
+        SchemasService.dropIndex(c.env, id, name),
         E.map(() => new Response(null, { status: StatusCodes.NO_CONTENT })),
         handleTaggedErrors(c),
         E.runPromise,
