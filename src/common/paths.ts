@@ -48,13 +48,13 @@ export const PathsV1 = {
 export const PathsBeta = {
   admin: {
     schemas: {
-      byId: "/api/beta/admin/schemas/:id",
+      byIdMeta: "/api/beta/admin/schemas/:id/meta",
       byIdIndexes: "/api/beta/admin/schemas/:id/indexes",
       byIdIndexesByName: "/api/beta/admin/schemas/:id/indexes/:indexName",
     },
   },
   schemas: {
-    byId: "/api/beta/schemas/:id",
+    byIdMeta: "/api/beta/schemas/:id/meta",
     byIdIndexes: "/api/beta/schemas/:id/indexes",
     byIdIndexesByName: "/api/beta/admin/schemas/:id/indexes/:indexName",
   },

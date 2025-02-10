@@ -124,7 +124,7 @@ export class TestAdminUserClient extends TestRootUserClient {
   }
 
   async getSchemaMetadata(id: UuidDto): Promise<Response> {
-    return this.request(`${PathsBeta.admin.schemas.byId}/${id}`);
+    return this.request(`${PathsBeta.admin.schemas.byIdMeta}/${id}`);
   }
 
   async deleteSchema(body: DeleteSchemaRequest): Promise<Response> {
@@ -188,7 +188,7 @@ export class TestOrganizationUserClient extends TestClient {
   }
 
   async getSchemaMetadata(id: UuidDto): Promise<Response> {
-    return this.request(PathsBeta.schemas.byId.replace(":id", id));
+    return this.request(PathsBeta.schemas.byIdMeta.replace(":id", id));
   }
 
   async addSchema(body: AddSchemaRequest): Promise<Response> {

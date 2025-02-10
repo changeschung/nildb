@@ -49,7 +49,7 @@ export function remove(app: App): void {
 
 export function metadata(app: App): void {
   app.get(
-    PathsBeta.admin.schemas.byId,
+    PathsBeta.admin.schemas.byIdMeta,
     paramsValidator(
       z.object({
         id: Uuid,

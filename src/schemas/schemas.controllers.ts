@@ -70,7 +70,7 @@ export function remove(app: App): void {
 
 export function metadata(app: App) {
   app.get(
-    PathsBeta.schemas.byId,
+    PathsBeta.schemas.byIdMeta,
     paramsValidator(
       z.object({
         id: Uuid,
@@ -97,7 +97,7 @@ export function metadata(app: App) {
 
 export function createIndex(app: App): void {
   app.post(
-    PathsBeta.admin.schemas.byIdIndexes,
+    PathsBeta.schemas.byIdIndexes,
     payloadValidator(CreateSchemaIndexRequestSchema),
     paramsValidator(
       z.object({
@@ -122,7 +122,7 @@ export function createIndex(app: App): void {
 
 export function dropIndex(app: App): void {
   app.delete(
-    PathsBeta.admin.schemas.byIdIndexesByName,
+    PathsBeta.schemas.byIdIndexesByName,
     paramsValidator(
       z.object({
         id: Uuid,
