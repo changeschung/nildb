@@ -104,3 +104,26 @@ export function setMaintenanceWindow(
     }),
   );
 }
+
+type MaintenanceStatus = {
+  active: boolean;
+};
+
+export function getMaintenanceStatus(
+  ctx: AppBindings,
+): E.Effect<MaintenanceStatus, PrimaryCollectionNotFoundError | DatabaseError> {
+  return pipe(
+    SystemRepository.findMaintenanceWindow(ctx),
+    E.flatMap((window) => {
+      if (!window) {
+        return E.succeed({ active: false } as MaintenanceStatus);
+      }
+
+      const now = new Date();
+      if (now >= window.start && now <= window.end) {
+        return E.succeed({ active: true });
+      }
+      return E.succeed({ active: false });
+    }),
+  );
+}

@@ -51,3 +51,37 @@ export function setMaintenanceWindow(
     ),
   );
 }
+
+export function findMaintenanceWindow(
+  ctx: AppBindings,
+): E.Effect<
+  MaintenanceDocument["window"] | null,
+  PrimaryCollectionNotFoundError | DatabaseError
+> {
+  const filter: StrictFilter<MaintenanceDocument> = {
+    _id: ctx.node.identity.did,
+  };
+
+  return pipe(
+    checkPrimaryCollectionExists<MaintenanceDocument>(
+      ctx,
+      CollectionName.Maintenance,
+    ),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.findOne(filter),
+        catch: (cause) =>
+          new DatabaseError({ cause, message: "findMaintenanceWindow" }),
+      }),
+    ),
+    E.flatMap((result) => O.fromNullable(result?.window)),
+    E.mapError(
+      () =>
+        new DocumentNotFoundError({
+          collection: CollectionName.Maintenance,
+          filter,
+        }),
+    ),
+    E.catchTag("DocumentNotFoundError", () => E.succeed(null)),
+  );
+}
