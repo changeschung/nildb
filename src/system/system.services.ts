@@ -115,15 +115,15 @@ export function getMaintenanceStatus(
   return pipe(
     SystemRepository.findMaintenanceWindow(ctx),
     E.flatMap((window) => {
+      const maintenanceStatus = { active: false };
+
       if (!window) {
-        return E.succeed({ active: false } as MaintenanceStatus);
+        return E.succeed(maintenanceStatus);
       }
 
       const now = new Date();
-      if (now >= window.start && now <= window.end) {
-        return E.succeed({ active: true });
-      }
-      return E.succeed({ active: false });
+      maintenanceStatus.active = now >= window.start && now <= window.end;
+      return E.succeed(maintenanceStatus);
     }),
   );
 }
