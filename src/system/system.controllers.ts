@@ -5,9 +5,12 @@ import { SystemEndpoint } from "#/system/system.router";
 import * as SystemService from "./system.services";
 
 export function aboutNode(app: App): void {
-  app.get(SystemEndpoint.About, (c): Response => {
-    const aboutNode = SystemService.getNodeInfo(c.env);
-    return c.json(aboutNode);
+  app.get(SystemEndpoint.About, async (c) => {
+    return await pipe(
+      SystemService.getNodeInfo(c.env),
+      E.flatMap((aboutNode) => E.succeed(c.json(aboutNode))),
+      E.runPromise,
+    );
   });
 }
 

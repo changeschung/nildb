@@ -12,6 +12,7 @@ import {
 import type { NilDid } from "#/common/nil-did";
 import type { AppBindings } from "#/env";
 import * as SystemRepository from "./system.repository";
+import type { MaintenanceDocument } from "./system.types";
 
 export type AboutNode = {
   started: Date;
@@ -19,6 +20,7 @@ export type AboutNode = {
   did: NilDid;
   publicKey: string;
   url: string;
+  maintenance?: MaintenanceDocument["window"];
 };
 
 type BuildInfo = {
@@ -30,14 +32,26 @@ type BuildInfo = {
 const started = new Date();
 let buildInfo: BuildInfo;
 
-export function getNodeInfo(bindings: AppBindings): AboutNode {
-  return {
+export function getNodeInfo(
+  bindings: AppBindings,
+): E.Effect<AboutNode, PrimaryCollectionNotFoundError | DatabaseError> {
+  const nodeInfo: AboutNode = {
     started,
     build: getBuildInfo(bindings),
     did: bindings.node.identity.did,
     publicKey: bindings.node.identity.pk,
     url: bindings.node.endpoint,
   };
+
+  return pipe(
+    getMaintenanceStatus(bindings),
+    E.flatMap((maintenanceStatus) => {
+      if (maintenanceStatus.active && maintenanceStatus.window) {
+        nodeInfo.maintenance = maintenanceStatus.window;
+      }
+      return E.succeed(nodeInfo);
+    }),
+  );
 }
 
 function getBuildInfo(bindings: AppBindings): BuildInfo {
@@ -107,6 +121,7 @@ export function setMaintenanceWindow(
 
 type MaintenanceStatus = {
   active: boolean;
+  window: MaintenanceDocument["window"] | null;
 };
 
 export function getMaintenanceStatus(
@@ -115,7 +130,10 @@ export function getMaintenanceStatus(
   return pipe(
     SystemRepository.findMaintenanceWindow(ctx),
     E.flatMap((window) => {
-      const maintenanceStatus = { active: false };
+      const maintenanceStatus = {
+        active: false,
+        window,
+      };
 
       if (!window) {
         return E.succeed(maintenanceStatus);
