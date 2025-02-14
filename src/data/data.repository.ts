@@ -11,6 +11,10 @@ import { succeedOrMapToRepositoryError } from "#/common/errors";
 import type { DocumentBase } from "#/common/mongo";
 import type { UuidDto } from "#/common/types";
 import type { AppBindings } from "#/env";
+import {
+  isSoarchainHotFixedQuery,
+  runSoarchainHotFixedQuery,
+} from "#/queries/hotfix/soarchain-queries";
 import type { QueryDocument } from "#/queries/queries.types";
 import type { SchemaDocument } from "#/schemas/schemas.repository";
 import type { PartialDataDocumentDto } from "./data.types";
@@ -239,6 +243,10 @@ export function runAggregation(
   query: QueryDocument,
   pipeline: Document[],
 ): E.Effect<JsonObject[], RepositoryError> {
+  if (isSoarchainHotFixedQuery(query)) {
+    return runSoarchainHotFixedQuery(ctx, query);
+  }
+
   return pipe(
     E.tryPromise(() => {
       return ctx.db.data
