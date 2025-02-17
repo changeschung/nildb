@@ -221,7 +221,7 @@ export function setPublicKey(
     _type: "organization",
   };
   const update: StrictUpdateFilter<OrganizationAccountDocument> = {
-    $set: { publicKey: publicKey },
+    $set: { publicKey },
   };
 
   return pipe(
