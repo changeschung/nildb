@@ -15,18 +15,7 @@ export function aboutNode(app: App): void {
 }
 
 export function healthCheck(app: App): void {
-  app.get(SystemEndpoint.Health, async (c) => {
-    return await pipe(
-      SystemService.getMaintenanceStatus(c.env),
-      E.flatMap((maintenanceStatus) => {
-        if (maintenanceStatus.active) {
-          return E.succeed(
-            c.text(getReasonPhrase(StatusCodes.SERVICE_UNAVAILABLE)),
-          );
-        }
-        return E.succeed(c.text(getReasonPhrase(StatusCodes.OK)));
-      }),
-      E.runPromise,
-    );
-  });
+  app.get(SystemEndpoint.Health, async (c) =>
+    c.text(getReasonPhrase(StatusCodes.OK)),
+  );
 }
