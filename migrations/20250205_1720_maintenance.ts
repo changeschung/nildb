@@ -6,21 +6,32 @@ import { CollectionName } from "#/common/mongo";
  * Add `maintenance` collection
  */
 export class add_maintenance_collection implements MigrationInterface {
-  public async up(db: Db, client: MongoClient): Promise<void> {
+  #dbNamePrimary: string;
+
+  constructor() {
+    if (!process.env.APP_DB_NAME_PRIMARY) {
+      throw new Error("process.env.APP_DB_NAME_PRIMARY is undefined");
+    }
+    this.#dbNamePrimary = process.env.APP_DB_NAME_PRIMARY;
+  }
+
+  public async up(_db: Db, client: MongoClient): Promise<void> {
+    const primary = client.db(this.#dbNamePrimary);
     const session = client.startSession();
     try {
       await session.withTransaction(async () => {
-        await db.createCollection(CollectionName.Maintenance);
+        await primary.createCollection(CollectionName.Maintenance);
       });
     } finally {
       await session.endSession();
     }
   }
 
-  public async down(db: Db, client: MongoClient): Promise<void> {
+  public async down(_db: Db, client: MongoClient): Promise<void> {
+    const primary = client.db(this.#dbNamePrimary);
     const session = client.startSession();
     try {
-      await db.dropCollection(CollectionName.Maintenance);
+      await primary.dropCollection(CollectionName.Maintenance);
     } finally {
       await session.endSession();
     }
