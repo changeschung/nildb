@@ -9,6 +9,13 @@ import { PUBLIC_KEY_LENGTH } from "#/env";
  */
 export type GetAccountResponse = ApiResponse<OrganizationAccountDocument>;
 
+export const SetPublicKeyRequestSchema = z.object({
+  did: NilDid,
+  publicKey: z.string().length(PUBLIC_KEY_LENGTH),
+});
+export type SetPublicKeyRequest = z.infer<typeof SetPublicKeyRequestSchema>;
+export type SetPublicKeyResponse = ApiResponse<NilDid>;
+
 export const RegisterAccountRequestSchema = z.object({
   did: NilDid,
   publicKey: z.string().length(PUBLIC_KEY_LENGTH),

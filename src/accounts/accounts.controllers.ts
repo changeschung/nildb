@@ -9,10 +9,11 @@ import * as AccountService from "./accounts.services";
 import {
   RegisterAccountRequestSchema,
   RemoveAccountRequestSchema,
+  SetPublicKeyRequestSchema,
 } from "./accounts.types";
 
 export function get(app: App): void {
-  app.get(PathsV1.accounts, async (c) => {
+  app.get(PathsV1.accounts.root, async (c) => {
     if (!isRoleAllowed(c, ["admin", "organization"])) {
       return c.text("Unauthorized", StatusCodes.UNAUTHORIZED);
     }
@@ -29,7 +30,7 @@ export function get(app: App): void {
 
 export function register(app: App): void {
   app.post(
-    PathsV1.accounts,
+    PathsV1.accounts.root,
     payloadValidator(RegisterAccountRequestSchema),
     async (c) => {
       const payload = c.req.valid("json");
@@ -46,7 +47,7 @@ export function register(app: App): void {
 
 export function remove(app: App): void {
   app.delete(
-    PathsV1.accounts,
+    PathsV1.accounts.root,
     payloadValidator(RemoveAccountRequestSchema),
     async (c) => {
       if (!isRoleAllowed(c, ["root", "admin"])) {
@@ -58,6 +59,23 @@ export function remove(app: App): void {
       return pipe(
         AccountService.remove(c.env, payload.id),
         E.map(() => new Response(null, { status: StatusCodes.NO_CONTENT })),
+        handleTaggedErrors(c),
+        E.runPromise,
+      );
+    },
+  );
+}
+
+export function setPublicKey(app: App): void {
+  app.post(
+    PathsV1.accounts.publicKey,
+    payloadValidator(SetPublicKeyRequestSchema),
+    async (c) => {
+      const payload = c.req.valid("json");
+
+      return pipe(
+        AccountService.setPublicKey(c.env, payload.did, payload.publicKey),
+        E.map(() => new Response(null, { status: StatusCodes.OK })),
         handleTaggedErrors(c),
         E.runPromise,
       );

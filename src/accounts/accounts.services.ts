@@ -91,3 +91,14 @@ export function setSubscriptionState(
 > {
   return pipe(AccountRepository.setSubscriptionState(ctx, ids, active));
 }
+
+export function setPublicKey(
+  ctx: AppBindings,
+  id: NilDid,
+  publicKey: string,
+): E.Effect<
+  void,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
+  return pipe(AccountRepository.setPublicKey(ctx, id, publicKey));
+}

@@ -1,4 +1,7 @@
-import type { RegisterAccountRequest } from "#/accounts/accounts.types";
+import type {
+  RegisterAccountRequest,
+  SetPublicKeyRequest,
+} from "#/accounts/accounts.types";
 import type {
   AdminAddQueryRequest,
   AdminAddSchemaRequest,
@@ -173,14 +176,18 @@ export class TestAdminUserClient extends TestRootUserClient {
 
 export class TestOrganizationUserClient extends TestClient {
   async register(body: RegisterAccountRequest): Promise<Response> {
-    return this.request(PathsV1.accounts, {
+    return this.request(PathsV1.accounts.root, {
       method: "POST",
       body,
     });
   }
 
   async getAccount(): Promise<Response> {
-    return this.request(PathsV1.accounts);
+    return this.request(PathsV1.accounts.root);
+  }
+
+  async updateAccount(body: SetPublicKeyRequest): Promise<Response> {
+    return this.request(PathsV1.accounts.publicKey, { method: "POST", body });
   }
 
   async listSchemas(): Promise<Response> {

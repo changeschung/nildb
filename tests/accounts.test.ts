@@ -85,6 +85,27 @@ describe("account management", () => {
     expect(document).toBeDefined;
   });
 
+  it("organization can update its public key", async ({
+    expect,
+    organization,
+  }) => {
+    const newPublicKey = Identity.new().pk;
+    const response = await organization.updateAccount({
+      did: organization.did,
+      publicKey: newPublicKey,
+    });
+    expect(response.status).toBe(StatusCodes.OK);
+
+    const account = await organization.getAccount();
+    const data = await expectSuccessResponse(account);
+
+    expect(data.data).toMatchObject({
+      _id: organization.did,
+      _type: "organization",
+      publicKey: newPublicKey,
+    });
+  });
+
   it("admin can remove an organization account", async ({
     expect,
     bindings,

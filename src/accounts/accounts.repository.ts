@@ -207,3 +207,43 @@ export function setSubscriptionState(
     ),
   );
 }
+
+export function setPublicKey(
+  ctx: AppBindings,
+  _id: NilDid,
+  publicKey: string,
+): E.Effect<
+  UpdateResult,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
+  const filter: StrictFilter<OrganizationAccountDocument> = {
+    _id,
+    _type: "organization",
+  };
+  const update: StrictUpdateFilter<OrganizationAccountDocument> = {
+    $set: { publicKey: publicKey },
+  };
+
+  return pipe(
+    checkPrimaryCollectionExists<OrganizationAccountDocument>(
+      ctx,
+      CollectionName.Accounts,
+    ),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.updateOne(filter, update),
+        catch: (cause) => new DatabaseError({ cause, message: "setPublicKey" }),
+      }),
+    ),
+    E.flatMap((result) =>
+      result === null
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Accounts,
+              filter,
+            }),
+          )
+        : E.succeed(result),
+    ),
+  );
+}
