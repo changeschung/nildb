@@ -6,7 +6,7 @@ import type { AppBindings, AppContext } from "#/env";
 import * as SystemService from "#/system/system.services";
 
 export function useMaintenanceMiddleware(
-  _bindings: AppBindings,
+  bindings: AppBindings,
 ): MiddlewareHandler {
   return async (c: AppContext, next: Next) => {
     if (PathsV1.admin.system.maintenance === c.req.path) {
@@ -14,7 +14,7 @@ export function useMaintenanceMiddleware(
     }
 
     return pipe(
-      SystemService.getMaintenanceStatus(_bindings),
+      SystemService.getMaintenanceStatus(bindings),
       E.match({
         onFailure: (error) => {
           c.env.log.debug("Request failed: %O", error);
