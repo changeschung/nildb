@@ -46,4 +46,5 @@ export function buildAdminRouter(app: App, _bindings: AppBindings): void {
   AdminSchemasControllers.dropIndex(app);
 
   AdminSystemControllers.setMaintenanceWindow(app);
+  AdminSystemControllers.deleteMaintenanceWindow(app);
 }

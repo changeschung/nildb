@@ -17,7 +17,11 @@ export function useMaintenanceMiddleware(
   bindings: AppBindings,
 ): MiddlewareHandler {
   return async (c: AppContext, next: Next) => {
-    if (MAINTENANCE_EXCLUDED_PATHS.includes(c.req.path)) {
+    const isPathExcludedFromMaintenance = MAINTENANCE_EXCLUDED_PATHS.some(
+      (path) => c.req.path.startsWith(path),
+    );
+
+    if (isPathExcludedFromMaintenance) {
       return next();
     }
 

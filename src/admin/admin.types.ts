@@ -52,6 +52,13 @@ export type AdminSetMaintenanceWindowRequest = z.infer<
   typeof AdminSetMaintenanceWindowRequestSchema
 >;
 
+export const AdminDeleteMaintenanceWindowRequestSchema = z.object({
+  did: NilDid,
+});
+export type AdminDeleteMaintenanceWindowRequest = z.infer<
+  typeof AdminDeleteMaintenanceWindowRequestSchema
+>;
+
 export const CreateSchemaIndexRequestSchema = z.object({
   name: z.string().min(4),
   keys: z.array(

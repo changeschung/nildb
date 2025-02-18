@@ -23,6 +23,7 @@ export const PathsV1 = {
     },
     system: {
       maintenance: "/api/v1/admin/maintenance",
+      byDidMaintenance: "/api/v1/admin/maintenance/:did",
     },
   },
   data: {

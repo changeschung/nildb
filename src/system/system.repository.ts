@@ -1,7 +1,10 @@
 import { Effect as E, Option as O, pipe } from "effect";
 import type { StrictFilter, StrictUpdateFilter } from "mongodb";
 import { Temporal } from "temporal-polyfill";
-import type { AdminSetMaintenanceWindowRequest } from "#/admin/admin.types";
+import type {
+  AdminDeleteMaintenanceWindowRequest,
+  AdminSetMaintenanceWindowRequest,
+} from "#/admin/admin.types";
 import {
   DatabaseError,
   DocumentNotFoundError,
@@ -93,5 +96,37 @@ export function findMaintenanceWindow(
           filter,
         }),
     ),
+  );
+}
+
+export function deleteMaintenanceWindow(
+  ctx: AppBindings,
+  data: AdminDeleteMaintenanceWindowRequest,
+): E.Effect<
+  void,
+  PrimaryCollectionNotFoundError | DatabaseError | DocumentNotFoundError
+> {
+  const filter: StrictFilter<MaintenanceDocument> = { _id: data.did };
+
+  return pipe(
+    checkPrimaryCollectionExists<MaintenanceDocument>(
+      ctx,
+      CollectionName.Maintenance,
+    ),
+    E.flatMap((collection) =>
+      E.tryPromise({
+        try: () => collection.deleteOne(filter),
+        catch: (cause) =>
+          new DatabaseError({ cause, message: "deleteMaintenanceWindow" }),
+      }),
+    ),
+    E.mapError(
+      () =>
+        new DocumentNotFoundError({
+          collection: CollectionName.Maintenance,
+          filter,
+        }),
+    ),
+    E.as(void 0),
   );
 }

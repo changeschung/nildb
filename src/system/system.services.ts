@@ -3,7 +3,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Effect as E, Option as O, pipe } from "effect";
 import { Temporal } from "temporal-polyfill";
-import type { AdminSetMaintenanceWindowRequest } from "#/admin/admin.types";
+import type {
+  AdminDeleteMaintenanceWindowRequest,
+  AdminSetMaintenanceWindowRequest,
+} from "#/admin/admin.types";
 import {
   DataValidationError,
   type DatabaseError,
@@ -155,6 +158,40 @@ export function getMaintenanceStatus(
       maintenanceStatus.active = now >= start && now <= end;
       maintenanceStatus.window = window.value;
       return E.succeed(maintenanceStatus);
+    }),
+  );
+}
+
+export function deleteMaintenanceWindow(
+  ctx: AppBindings,
+  request: AdminDeleteMaintenanceWindowRequest,
+): E.Effect<
+  void,
+  | DocumentNotFoundError
+  | DataValidationError
+  | PrimaryCollectionNotFoundError
+  | DatabaseError
+> {
+  return pipe(
+    E.succeed(request),
+    E.flatMap((request) => {
+      if (request.did !== ctx.node.identity.did) {
+        return E.fail(
+          new DataValidationError({
+            issues: ["DID prohibited"],
+            cause: request,
+          }),
+        );
+      }
+
+      return E.succeed(request);
+    }),
+    E.flatMap((request) =>
+      SystemRepository.deleteMaintenanceWindow(ctx, request),
+    ),
+    E.as(void 0),
+    E.tap(() => {
+      ctx.log.debug(`Deleted maintenance window for node: ${request.did}`);
     }),
   );
 }
