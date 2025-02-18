@@ -5,11 +5,19 @@ import { PathsV1 } from "#/common/paths";
 import type { AppBindings, AppContext } from "#/env";
 import * as SystemService from "#/system/system.services";
 
+const MAINTENANCE_EXCLUDED_PATHS: string[] = [
+  PathsV1.admin.system.maintenance,
+  PathsV1.system.health,
+  PathsV1.system.about,
+  PathsV1.system.metrics,
+  PathsV1.docs,
+];
+
 export function useMaintenanceMiddleware(
   bindings: AppBindings,
 ): MiddlewareHandler {
   return async (c: AppContext, next: Next) => {
-    if (PathsV1.admin.system.maintenance === c.req.path) {
+    if (MAINTENANCE_EXCLUDED_PATHS.includes(c.req.path)) {
       return next();
     }
 

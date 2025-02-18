@@ -45,6 +45,7 @@ export const PathsV1 = {
   system: {
     about: "/about",
     health: "/health",
+    metrics: "/metrics",
   },
 } as const;
 
