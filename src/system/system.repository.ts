@@ -55,8 +55,8 @@ export function setMaintenanceWindow(
 export function findMaintenanceWindow(
   ctx: AppBindings,
 ): E.Effect<
-  MaintenanceDocument["window"] | null,
-  PrimaryCollectionNotFoundError | DatabaseError
+  O.Option<MaintenanceDocument["window"]>,
+  PrimaryCollectionNotFoundError | DatabaseError | DocumentNotFoundError
 > {
   const filter: StrictFilter<MaintenanceDocument> = {
     _id: ctx.node.identity.did,
@@ -74,7 +74,7 @@ export function findMaintenanceWindow(
           new DatabaseError({ cause, message: "findMaintenanceWindow" }),
       }),
     ),
-    E.flatMap((result) => O.fromNullable(result?.window)),
+    E.flatMap((result) => E.succeed(O.fromNullable(result?.window))),
     E.mapError(
       () =>
         new DocumentNotFoundError({
@@ -82,6 +82,5 @@ export function findMaintenanceWindow(
           filter,
         }),
     ),
-    E.catchTag("DocumentNotFoundError", () => E.succeed(null)),
   );
 }

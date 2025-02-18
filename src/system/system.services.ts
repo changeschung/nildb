@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { Effect as E, pipe } from "effect";
+import { Effect as E, Option as O, pipe } from "effect";
 import type { AdminSetMaintenanceWindowRequest } from "#/admin/admin.types";
 import {
   DataValidationError,
@@ -129,18 +129,21 @@ export function getMaintenanceStatus(
 ): E.Effect<MaintenanceStatus, PrimaryCollectionNotFoundError | DatabaseError> {
   return pipe(
     SystemRepository.findMaintenanceWindow(ctx),
+    E.catchTag("DocumentNotFoundError", () => E.succeed(O.none())),
     E.flatMap((window) => {
-      const maintenanceStatus = {
+      const maintenanceStatus: MaintenanceStatus = {
         active: false,
-        window,
+        window: null,
       };
 
-      if (!window) {
+      if (O.isNone(window)) {
         return E.succeed(maintenanceStatus);
       }
 
       const now = new Date();
-      maintenanceStatus.active = now >= window.start && now <= window.end;
+      maintenanceStatus.active =
+        now >= window.value.start && now <= window.value.end;
+      maintenanceStatus.window = window.value;
       return E.succeed(maintenanceStatus);
     }),
   );
