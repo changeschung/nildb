@@ -44,7 +44,7 @@ export const AdminAddSchemaRequestSchema = AddSchemaRequestSchema.extend({
 export type AdminAddSchemaRequest = z.infer<typeof AdminAddSchemaRequestSchema>;
 
 export const AdminSetMaintenanceWindowRequestSchema = z.object({
-  id: NilDid,
+  did: NilDid,
   start: z.coerce.date(),
   end: z.coerce.date(),
 });

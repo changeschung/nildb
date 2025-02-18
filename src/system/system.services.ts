@@ -90,7 +90,7 @@ export function setMaintenanceWindow(
   return pipe(
     E.succeed(request),
     E.flatMap((request) => {
-      if (request.id !== ctx.node.identity.did) {
+      if (request.did !== ctx.node.identity.did) {
         return E.fail(
           new DataValidationError({
             issues: ["DID prohibited"],
@@ -121,7 +121,7 @@ export function setMaintenanceWindow(
     E.flatMap((request) => SystemRepository.setMaintenanceWindow(ctx, request)),
     E.tap(() => {
       ctx.log.debug(
-        `Set maintenance window.start=${request.start.toISOString()} and window.end=${request.end.toISOString()} for node: ${request.id}`,
+        `Set maintenance window.start=${request.start.toISOString()} and window.end=${request.end.toISOString()} for node: ${request.did}`,
       );
     }),
   );

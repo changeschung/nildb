@@ -18,7 +18,7 @@ export function setMaintenanceWindow(
   boolean,
   PrimaryCollectionNotFoundError | DatabaseError | DocumentNotFoundError
 > {
-  const filter: StrictFilter<MaintenanceDocument> = { _id: data.id };
+  const filter: StrictFilter<MaintenanceDocument> = { _id: data.did };
   const update: StrictUpdateFilter<MaintenanceDocument> = {
     $set: { window: { start: data.start, end: data.end } },
   };
