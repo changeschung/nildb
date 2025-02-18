@@ -1,3 +1,4 @@
+import type { Temporal } from "temporal-polyfill";
 import type { NilDid } from "#/common/nil-did";
 
 /**
@@ -12,4 +13,13 @@ export type MaintenanceDocument = {
     start: Date;
     end: Date;
   };
+};
+
+/**
+ *
+ * Repository types
+ */
+export type MaintenanceWindow = {
+  start: Temporal.Instant;
+  end: Temporal.Instant;
 };

@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Effect as E, Option as O, pipe } from "effect";
+import { Temporal } from "temporal-polyfill";
 import type { AdminSetMaintenanceWindowRequest } from "#/admin/admin.types";
 import {
   DataValidationError,
@@ -12,7 +13,7 @@ import {
 import type { NilDid } from "#/common/nil-did";
 import type { AppBindings } from "#/env";
 import * as SystemRepository from "./system.repository";
-import type { MaintenanceDocument } from "./system.types";
+import type { MaintenanceWindow } from "./system.types";
 
 export type AboutNode = {
   started: Date;
@@ -20,7 +21,7 @@ export type AboutNode = {
   did: NilDid;
   publicKey: string;
   url: string;
-  maintenance?: MaintenanceDocument["window"];
+  maintenance?: MaintenanceWindow;
 };
 
 type BuildInfo = {
@@ -98,8 +99,15 @@ export function setMaintenanceWindow(
         );
       }
 
-      const now = new Date();
-      if (request.end < now || request.end <= request.start) {
+      const now = Temporal.Now.instant().epochMilliseconds;
+      const start = Temporal.Instant.from(
+        request.start.toISOString(),
+      ).epochMilliseconds;
+      const end = Temporal.Instant.from(
+        request.end.toISOString(),
+      ).epochMilliseconds;
+
+      if (end < now || end <= start) {
         return E.fail(
           new DataValidationError({
             issues: ["End date must be in the future and after the start date"],
@@ -121,7 +129,7 @@ export function setMaintenanceWindow(
 
 type MaintenanceStatus = {
   active: boolean;
-  window: MaintenanceDocument["window"] | null;
+  window: MaintenanceWindow | null;
 };
 
 export function getMaintenanceStatus(
@@ -140,9 +148,11 @@ export function getMaintenanceStatus(
         return E.succeed(maintenanceStatus);
       }
 
-      const now = new Date();
-      maintenanceStatus.active =
-        now >= window.value.start && now <= window.value.end;
+      const now = Temporal.Now.instant().epochMilliseconds;
+      const start = window.value.start.epochMilliseconds;
+      const end = window.value.end.epochMilliseconds;
+
+      maintenanceStatus.active = now >= start && now <= end;
       maintenanceStatus.window = window.value;
       return E.succeed(maintenanceStatus);
     }),

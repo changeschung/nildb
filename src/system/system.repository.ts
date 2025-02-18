@@ -1,5 +1,6 @@
 import { Effect as E, Option as O, pipe } from "effect";
 import type { StrictFilter, StrictUpdateFilter } from "mongodb";
+import { Temporal } from "temporal-polyfill";
 import type { AdminSetMaintenanceWindowRequest } from "#/admin/admin.types";
 import {
   DatabaseError,
@@ -8,7 +9,7 @@ import {
 } from "#/common/errors";
 import { CollectionName, checkPrimaryCollectionExists } from "#/common/mongo";
 import type { AppBindings } from "#/env";
-import type { MaintenanceDocument } from "./system.types";
+import type { MaintenanceDocument, MaintenanceWindow } from "./system.types";
 
 export function setMaintenanceWindow(
   ctx: AppBindings,
@@ -55,7 +56,7 @@ export function setMaintenanceWindow(
 export function findMaintenanceWindow(
   ctx: AppBindings,
 ): E.Effect<
-  O.Option<MaintenanceDocument["window"]>,
+  O.Option<MaintenanceWindow>,
   PrimaryCollectionNotFoundError | DatabaseError | DocumentNotFoundError
 > {
   const filter: StrictFilter<MaintenanceDocument> = {
@@ -74,7 +75,17 @@ export function findMaintenanceWindow(
           new DatabaseError({ cause, message: "findMaintenanceWindow" }),
       }),
     ),
-    E.flatMap((result) => E.succeed(O.fromNullable(result?.window))),
+    E.flatMap((result) => {
+      if (!result) {
+        return O.none();
+      }
+
+      const window = {
+        start: Temporal.Instant.from(result.window.start.toISOString()),
+        end: Temporal.Instant.from(result.window.end.toISOString()),
+      };
+      return E.succeed(O.some(window));
+    }),
     E.mapError(
       () =>
         new DocumentNotFoundError({
