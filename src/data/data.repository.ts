@@ -14,7 +14,7 @@ import type { AppBindings } from "#/env";
 import {
   isSoarchainHotFixedQuery,
   runSoarchainHotFixedQuery,
-} from "#/queries/hotfix/soarchain-queries";
+} from "#/queries/hotfix/soarchain";
 import type { QueryDocument } from "#/queries/queries.types";
 import type { SchemaDocument } from "#/schemas/schemas.repository";
 import type { PartialDataDocumentDto } from "./data.types";
