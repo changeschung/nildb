@@ -12,7 +12,7 @@ export function validateSchema(
   return E.try({
     try: () => {
       const ajv = new Ajv();
-      addFormats.default(ajv);
+      registerFormats(ajv);
       registerCoercions(ajv);
       ajv.compile(schema);
       return true;
@@ -36,9 +36,10 @@ export function validateData<T>(
 ): E.Effect<T, DataValidationError> {
   // TODO this is inefficient the ajv instance should be created once ... move to ctx
   const ajv = new Ajv();
-  addFormats.default(ajv);
+  registerFormats(ajv);
   registerCoercions(ajv);
   const validator = ajv.compile<T>(schema);
+
   if (validator(data)) {
     return E.succeed(data as T);
   }
@@ -58,7 +59,19 @@ export function validateData<T>(
   return E.fail(error);
 }
 
-type SupportedCoercions = "date-time" | "uuid";
+function registerFormats(ajv: Ajv): void {
+  addFormats.default(ajv);
+
+  ajv.addFormat("numeric", {
+    type: "string",
+    validate: (str: string) => {
+      const num = Number(str);
+      return !Number.isNaN(num) && Number.isFinite(num);
+    },
+  });
+}
+
+type SupportedCoercions = "date-time" | "uuid" | "numeric";
 
 function registerCoercions(ajv: Ajv): void {
   const coercers: Record<
@@ -74,6 +87,13 @@ function registerCoercions(ajv: Ajv): void {
         }, z.date())
         .safeParse(data),
     uuid: (data) => Uuid.safeParse(data),
+    numeric: (data) =>
+      z
+        .preprocess((arg) => {
+          if (arg === null || arg === undefined) return undefined;
+          return Number(arg);
+        }, z.number())
+        .safeParse(data),
   };
 
   ajv.addKeyword({
