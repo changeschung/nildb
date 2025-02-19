@@ -38,7 +38,7 @@ export function validateData<T>(
   return E.try({
     try: () => {
       const ajv = new Ajv();
-      addFormats.default(ajv);
+      registerFormats(ajv);
       registerCoercions(ajv);
       const validator = ajv.compile<T>(schema);
 
@@ -67,7 +67,19 @@ export function validateData<T>(
   });
 }
 
-type SupportedCoercions = "date-time" | "uuid";
+function registerFormats(ajv: Ajv): void {
+  addFormats.default(ajv);
+
+  ajv.addFormat("numeric", {
+    type: "string",
+    validate: (str: string) => {
+      const num = Number(str);
+      return !Number.isNaN(num) && Number.isFinite(num);
+    },
+  });
+}
+
+type SupportedCoercions = "date-time" | "uuid" | "numeric";
 
 function registerCoercions(ajv: Ajv): void {
   const coercers: Record<
@@ -83,6 +95,13 @@ function registerCoercions(ajv: Ajv): void {
         }, z.date())
         .safeParse(data),
     uuid: (data) => Uuid.safeParse(data),
+    numeric: (data) =>
+      z
+        .preprocess((arg) => {
+          if (arg === null || arg === undefined) return undefined;
+          return Number(arg);
+        }, z.number())
+        .safeParse(data),
   };
 
   ajv.addKeyword({
@@ -94,7 +113,7 @@ function registerCoercions(ajv: Ajv): void {
 
       if (!format) {
         throw new DataValidationError({
-          issues: ["coerce keyword requires format to be specified"],
+          issues: ["Coerce keyword requires format to be specified"],
           cause: format,
         });
       }
