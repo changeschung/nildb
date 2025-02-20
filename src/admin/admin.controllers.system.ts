@@ -11,7 +11,7 @@ import {
 } from "./admin.types";
 
 export function setMaintenanceWindow(app: App): void {
-  app.post(
+  app.put(
     PathsV1.admin.system.maintenance,
     payloadValidator(AdminSetMaintenanceWindowRequestSchema),
     async (c) => {

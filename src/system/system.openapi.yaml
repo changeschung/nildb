@@ -92,7 +92,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AboutNode'
   /api/v1/admin/maintenance:
-    post:
+    put:
       summary: Set node maintenance window
       description: Set node maintenance window for a single node by it's DID
       operationId: setMaintenanceWindow
