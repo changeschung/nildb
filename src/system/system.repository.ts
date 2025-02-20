@@ -17,10 +17,7 @@ import type { MaintenanceDocument, MaintenanceWindow } from "./system.types";
 export function setMaintenanceWindow(
   ctx: AppBindings,
   data: AdminSetMaintenanceWindowRequest,
-): E.Effect<
-  boolean,
-  PrimaryCollectionNotFoundError | DatabaseError | DocumentNotFoundError
-> {
+): E.Effect<void, PrimaryCollectionNotFoundError | DatabaseError> {
   const filter: StrictFilter<MaintenanceDocument> = { _id: data.did };
   const update: StrictUpdateFilter<MaintenanceDocument> = {
     $set: { window: { start: data.start, end: data.end } },
@@ -41,18 +38,7 @@ export function setMaintenanceWindow(
           new DatabaseError({ cause, message: "setMaintenanceWindow" }),
       }),
     ),
-    E.flatMap((result) =>
-      result.upsertedCount === 1 || result.matchedCount === 1
-        ? O.some(true)
-        : O.none(),
-    ),
-    E.mapError(
-      () =>
-        new DocumentNotFoundError({
-          collection: CollectionName.Maintenance,
-          filter,
-        }),
-    ),
+    E.as(void 0),
   );
 }
 

@@ -84,11 +84,8 @@ export function setMaintenanceWindow(
   ctx: AppBindings,
   request: AdminSetMaintenanceWindowRequest,
 ): E.Effect<
-  boolean,
-  | DocumentNotFoundError
-  | DataValidationError
-  | PrimaryCollectionNotFoundError
-  | DatabaseError
+  void,
+  DataValidationError | PrimaryCollectionNotFoundError | DatabaseError
 > {
   return pipe(
     E.succeed(request),
