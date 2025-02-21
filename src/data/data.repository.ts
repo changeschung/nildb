@@ -234,11 +234,14 @@ export function updateMany(
   const documentFilter = coerceFilter<Filter<DocumentBase>>(
     completeDocumentBaseFilter(filter),
   );
+  const documentUpdate = coerceFilter<UpdateFilter<DocumentBase>>(
+    completeDocumentBaseFilter(update),
+  );
   return pipe(
     checkDataCollectionExists<DocumentBase>(ctx, schema.toString()),
     E.flatMap((collection) =>
       E.tryPromise({
-        try: () => collection.updateMany(documentFilter, update),
+        try: () => collection.updateMany(documentFilter, documentUpdate),
         catch: (cause) => new DatabaseError({ cause, message: "updateMany" }),
       }),
     ),
