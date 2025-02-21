@@ -20,8 +20,8 @@ import {
 import {
   type DocumentBase,
   MongoErrorCode,
-  checkDataCollectionExists,
   applyCoercions,
+  checkDataCollectionExists,
   completeDocumentBaseFilter,
   isMongoError,
 } from "#/common/mongo";

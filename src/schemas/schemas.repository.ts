@@ -6,6 +6,7 @@ import type {
   StrictFilter,
   UUID,
 } from "mongodb";
+import type { Filter } from "mongodb/lib/beta";
 import {
   type DataCollectionNotFoundError,
   DatabaseError,
@@ -18,20 +19,15 @@ import {
   CollectionName,
   type DocumentBase,
   MongoErrorCode,
+  applyCoercions,
   checkDataCollectionExists,
   checkPrimaryCollectionExists,
-  isMongoError,
   completeDocumentBaseFilter,
-  applyCoercions,
+  isMongoError,
 } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
 import type { AppBindings } from "#/env";
 import type { SchemaMetadata } from "#/schemas/schemas.types";
-import type { Filter } from "mongodb/lib/beta";
-import {
-  completeQueryDocumentFilter,
-  QueryDocument,
-} from "#/queries/queries.types";
 
 export type SchemaDocument = DocumentBase & {
   owner: NilDid;
@@ -186,14 +182,12 @@ export function getCollectionStats(
           E.tryPromise({
             try: async () => {
               const result = await collection.indexes();
-              const indexes = result.map((index) => ({
+              return result.map((index) => ({
                 v: index.v ?? -1,
                 key: index.key,
                 name: index.name ?? "",
                 unique: index.unique ?? false,
               }));
-
-              return indexes;
             },
             catch: (cause) =>
               new DatabaseError({ cause, message: "Failed to get indexes" }),

@@ -8,8 +8,8 @@ import {
 } from "#/common/errors";
 import {
   CollectionName,
-  checkPrimaryCollectionExists,
   applyCoercions,
+  checkPrimaryCollectionExists,
 } from "#/common/mongo";
 import type { AppBindings } from "#/env";
 import {
