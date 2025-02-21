@@ -133,6 +133,8 @@ paths:
   # Account endpoints
   /api/v1/accounts:
     $ref: '../accounts/accounts.openapi.yaml#/paths/~1api~1v1~1accounts'
+  /api/v1/accounts/publicKey:
+    $ref: '../accounts/accounts.openapi.yaml#/paths/~1api~1v1~1accounts~1publicKey'
 
   # Schema endpoints
   /api/v1/schemas:

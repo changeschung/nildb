@@ -22,7 +22,7 @@ describe("account access controls", () => {
   afterAll(async (_ctx) => {});
 
   it("rejects unauthenticated requests", async ({ expect, admin }) => {
-    const response = await admin.app.request(PathsV1.accounts);
+    const response = await admin.app.request(PathsV1.accounts.root);
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });
 

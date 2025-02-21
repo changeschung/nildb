@@ -19,7 +19,8 @@ export function isPublicPath(reqPath: string, reqMethod: string): boolean {
     { path: PathsV1.system.health, method: "GET" },
     { path: PathsV1.system.about, method: "GET" },
     { path: PathsV1.docs, method: "GET" },
-    { path: PathsV1.accounts, method: "POST" },
+    { path: PathsV1.accounts.root, method: "POST" },
+    { path: PathsV1.accounts.publicKey, method: "POST" },
   ];
 
   return publicPaths.some(({ path, method }) => {

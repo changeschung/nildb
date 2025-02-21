@@ -67,3 +67,31 @@ paths:
           $ref: '../docs/base.openapi.yaml#/components/responses/401'
         '500':
           $ref: '../docs/base.openapi.yaml#/components/responses/500'
+  /api/v1/accounts/publicKey:
+    post:
+      summary: Update organization's public key
+      description: Update an organization's public key
+      security:
+        - jwt: [ ]
+      tags:
+        - Data
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - did
+                - publicKey
+              properties:
+                data:
+                  $ref: '#/components/schemas/Account'
+      responses:
+        '200':
+          description: The public key has been updated
+        '400':
+          $ref: '../docs/base.openapi.yaml#/components/responses/400'
+        '401':
+          $ref: '../docs/base.openapi.yaml#/components/responses/401'
+        '500':
+          $ref: '../docs/base.openapi.yaml#/components/responses/500'

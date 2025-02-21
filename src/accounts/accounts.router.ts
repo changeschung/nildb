@@ -6,4 +6,5 @@ export function buildAccountsRouter(app: App, _bindings: AppBindings): void {
   AccountController.get(app);
   AccountController.register(app);
   AccountController.remove(app);
+  AccountController.setPublicKey(app);
 }
