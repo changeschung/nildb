@@ -149,19 +149,17 @@ function applyCoercionToField(
   type: string,
 ) {
   if (field in filter) {
-    const value = filter[field];
-    // TODO the mongo operators can be traversed here, for now, we allow '$in' only
-    if (
-      typeof value === "object" &&
-      value &&
-      "$in" in value &&
-      Array.isArray(value.$in)
-    ) {
-      filter[field] = {
-        $in: value.$in.map((innerValue) => toPrimitiveValue(innerValue, type)),
-      };
+    if (typeof filter[field] === "object") {
+      const value = filter[field] as unknown as Record<string, unknown>;
+      for (const op in value) {
+        if (op.startsWith("$") && Array.isArray(value[op])) {
+          value[op] = Array.from(value[op]).map((innerValue) =>
+            toPrimitiveValue(innerValue, type),
+          );
+        }
+      }
     } else {
-      filter[field] = toPrimitiveValue(value, type);
+      filter[field] = toPrimitiveValue(filter[field], type);
     }
   }
 }
