@@ -129,13 +129,13 @@ export function checkDataCollectionExists<T extends Document>(
   );
 }
 
-export function coerceFilter<T>(filter: Record<string, unknown>): T {
+export function applyCoercions<T>(filter: Record<string, unknown>): T {
   if ("$coerce" in filter) {
     const { $coerce, ...coercedFilter } = filter;
     if ($coerce && typeof $coerce === "object") {
       for (const field in $coerce) {
         const type = $coerce[field as keyof typeof $coerce];
-        coerceFilterProperty(coercedFilter, field, type);
+        applyCoercionToField(coercedFilter, field, type);
       }
     }
     return coercedFilter as unknown as T;
@@ -143,7 +143,7 @@ export function coerceFilter<T>(filter: Record<string, unknown>): T {
   return filter as unknown as T;
 }
 
-function coerceFilterProperty(
+function applyCoercionToField(
   filter: Record<string, unknown>,
   field: string,
   type: string,
@@ -158,16 +158,16 @@ function coerceFilterProperty(
       Array.isArray(value.$in)
     ) {
       filter[field] = {
-        $in: value.$in.map((innerValue) => coerceValue(innerValue, type)),
+        $in: value.$in.map((innerValue) => toPrimitiveValue(innerValue, type)),
       };
     } else {
-      filter[field] = coerceValue(value, type);
+      filter[field] = toPrimitiveValue(value, type);
     }
   }
 }
 
-function coerceValue(value: unknown, type: unknown): unknown {
-  if (typeof value === "string" && typeof type === "string") {
+function toPrimitiveValue(value: unknown, type: string): unknown {
+  if (typeof value === "string") {
     switch (type.toLowerCase()) {
       case "uuid":
         return new UUID(value);

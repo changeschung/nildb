@@ -22,7 +22,7 @@ import {
   checkPrimaryCollectionExists,
   isMongoError,
   completeDocumentBaseFilter,
-  coerceFilter,
+  applyCoercions,
 } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
 import type { AppBindings } from "#/env";
@@ -65,7 +65,7 @@ export function findMany(
   ctx: AppBindings,
   filter: StrictFilter<SchemaDocument>,
 ): E.Effect<SchemaDocument[], PrimaryCollectionNotFoundError | DatabaseError> {
-  const documentFilter = coerceFilter<Filter<SchemaDocument>>(
+  const documentFilter = applyCoercions<Filter<SchemaDocument>>(
     completeSchemaDocumentFilter(filter),
   );
   return pipe(
@@ -86,7 +86,7 @@ export function findOne(
   SchemaDocument,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
-  const documentFilter = coerceFilter<Filter<SchemaDocument>>(
+  const documentFilter = applyCoercions<Filter<SchemaDocument>>(
     completeSchemaDocumentFilter(filter),
   );
   return pipe(
@@ -117,7 +117,7 @@ export function deleteOne(
   SchemaDocument,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
-  const documentFilter = coerceFilter<Filter<SchemaDocument>>(
+  const documentFilter = applyCoercions<Filter<SchemaDocument>>(
     completeSchemaDocumentFilter(filter),
   );
   return pipe(

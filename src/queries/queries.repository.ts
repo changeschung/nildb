@@ -9,7 +9,7 @@ import {
 import {
   CollectionName,
   checkPrimaryCollectionExists,
-  coerceFilter,
+  applyCoercions,
 } from "#/common/mongo";
 import type { AppBindings } from "#/env";
 import {
@@ -40,7 +40,7 @@ export function findMany(
   QueryDocument[],
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
-  const documentFilter = coerceFilter<Filter<QueryDocument>>(
+  const documentFilter = applyCoercions<Filter<QueryDocument>>(
     completeQueryDocumentFilter(filter),
   );
   return pipe(
@@ -71,7 +71,7 @@ export function findOne(
   QueryDocument,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
-  const documentFilter = coerceFilter<Filter<QueryDocument>>(
+  const documentFilter = applyCoercions<Filter<QueryDocument>>(
     completeQueryDocumentFilter(filter),
   );
   return pipe(
@@ -102,7 +102,7 @@ export function findOneAndDelete(
   QueryDocument,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
-  const documentFilter = coerceFilter<Filter<QueryDocument>>(
+  const documentFilter = applyCoercions<Filter<QueryDocument>>(
     completeQueryDocumentFilter(filter),
   );
   return pipe(

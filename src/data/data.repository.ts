@@ -21,7 +21,7 @@ import {
   type DocumentBase,
   MongoErrorCode,
   checkDataCollectionExists,
-  coerceFilter,
+  applyCoercions,
   completeDocumentBaseFilter,
   isMongoError,
 } from "#/common/mongo";
@@ -231,10 +231,10 @@ export function updateMany(
   filter: Filter<DocumentBase>,
   update: UpdateFilter<DocumentBase>,
 ): E.Effect<UpdateResult, DataCollectionNotFoundError | DatabaseError> {
-  const documentFilter = coerceFilter<Filter<DocumentBase>>(
+  const documentFilter = applyCoercions<Filter<DocumentBase>>(
     completeDocumentBaseFilter(filter),
   );
-  const documentUpdate = coerceFilter<UpdateFilter<DocumentBase>>(
+  const documentUpdate = applyCoercions<UpdateFilter<DocumentBase>>(
     completeDocumentBaseFilter(update),
   );
   return pipe(
@@ -253,7 +253,7 @@ export function deleteMany(
   schema: UUID,
   filter: StrictFilter<DocumentBase>,
 ): E.Effect<DeleteResult, DataCollectionNotFoundError | DatabaseError> {
-  const documentFilter = coerceFilter<Filter<DocumentBase>>(
+  const documentFilter = applyCoercions<Filter<DocumentBase>>(
     completeDocumentBaseFilter(filter),
   );
   return pipe(
@@ -289,7 +289,7 @@ export function findMany(
   schema: UUID,
   filter: Filter<DocumentBase>,
 ): E.Effect<DataDocument[], DataCollectionNotFoundError | DatabaseError> {
-  const documentFilter = coerceFilter<Filter<DocumentBase>>(
+  const documentFilter = applyCoercions<Filter<DocumentBase>>(
     completeDocumentBaseFilter(filter),
   );
   return pipe(
