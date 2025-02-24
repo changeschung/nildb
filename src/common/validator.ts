@@ -12,7 +12,7 @@ export function validateSchema(
   return E.try({
     try: () => {
       const ajv = new Ajv();
-      addFormats.default(ajv);
+      registerFormats(ajv);
       registerCoercions(ajv);
       ajv.compile(schema);
     },
