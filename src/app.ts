@@ -12,7 +12,12 @@ import { useSubscriptionCheckMiddleware } from "#/middleware/subscription.middle
 import { buildQueriesRouter } from "#/queries/queries.router";
 import { buildSchemasRouter } from "#/schemas/schemas.router";
 import { createOpenApiRouter } from "./docs/docs.router";
-import type { AppBindings, AppEnv } from "./env";
+import {
+  type AppBindings,
+  type AppEnv,
+  FeatureFlag,
+  hasFeatureFlag,
+} from "./env";
 import { useAuthMiddleware } from "./middleware/auth.middleware";
 import { useMaintenanceMiddleware } from "./middleware/maintenance.middleware";
 import { buildSystemRouter } from "./system/system.router";
@@ -35,7 +40,12 @@ export function buildApp(bindings: AppBindings): { app: App; metrics: Hono } {
   });
 
   buildSystemRouter(app, bindings);
-  createOpenApiRouter(app, bindings);
+
+  if (
+    hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.OPENAPI_DOCS)
+  ) {
+    createOpenApiRouter(app, bindings);
+  }
 
   app.use(useLoggerMiddleware(bindings.log));
   app.use(useMaintenanceMiddleware(bindings));
