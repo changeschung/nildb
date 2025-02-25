@@ -28,21 +28,19 @@ export type DocumentBase = {
   _updated: Date;
 };
 
-export function completeDocumentBaseFilter(
-  filter: Record<string, unknown>,
-): Record<string, unknown> {
-  const { $coerce, ...remainingFilter } = filter;
-  const { _id, _updated, _created, ...remainingCoercions } =
-    ($coerce as unknown as Record<string, unknown>) ?? {};
-  const coerce = {
-    ...remainingCoercions,
-    _id: "uuid",
-    _created: "date",
-    _updated: "date",
-  };
+export function addDocumentBaseCoercions(
+  coercibleMap: CoercibleMap,
+): CoercibleMap {
+  const { $coerce, ...document } = coercibleMap;
+  const { _id, _updated, _created, ...remainingCoercions } = $coerce ?? {};
   return {
-    $coerce: coerce,
-    ...remainingFilter,
+    $coerce: {
+      ...remainingCoercions,
+      _id: "uuid",
+      _created: "date",
+      _updated: "date",
+    },
+    ...document,
   };
 }
 

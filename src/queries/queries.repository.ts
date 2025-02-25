@@ -8,14 +8,13 @@ import {
 } from "#/common/errors";
 import {
   CollectionName,
+  addDocumentBaseCoercions,
   applyCoercions,
   checkPrimaryCollectionExists,
 } from "#/common/mongo";
+import type { CoercibleMap } from "#/common/types";
 import type { AppBindings } from "#/env";
-import {
-  type QueryDocument,
-  completeQueryDocumentFilter,
-} from "./queries.types";
+import type { QueryDocument } from "./queries.types";
 
 export function insert(
   ctx: AppBindings,
@@ -41,7 +40,7 @@ export function findMany(
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
   const documentFilter = applyCoercions<Filter<QueryDocument>>(
-    completeQueryDocumentFilter(filter),
+    addQueryDocumentCoercions(filter),
   );
   return pipe(
     checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
@@ -72,7 +71,7 @@ export function findOne(
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
   const documentFilter = applyCoercions<Filter<QueryDocument>>(
-    completeQueryDocumentFilter(filter),
+    addQueryDocumentCoercions(filter),
   );
   return pipe(
     checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
@@ -103,7 +102,7 @@ export function findOneAndDelete(
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
   const documentFilter = applyCoercions<Filter<QueryDocument>>(
-    completeQueryDocumentFilter(filter),
+    addQueryDocumentCoercions(filter),
   );
   return pipe(
     checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
@@ -125,4 +124,10 @@ export function findOneAndDelete(
         : E.succeed(result),
     ),
   );
+}
+
+export function addQueryDocumentCoercions(
+  coercibleMap: CoercibleMap,
+): CoercibleMap {
+  return addDocumentBaseCoercions(coercibleMap);
 }

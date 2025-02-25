@@ -19,13 +19,14 @@ import {
   CollectionName,
   type DocumentBase,
   MongoErrorCode,
+  addDocumentBaseCoercions,
   applyCoercions,
   checkDataCollectionExists,
   checkPrimaryCollectionExists,
-  completeDocumentBaseFilter,
   isMongoError,
 } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
+import type { CoercibleMap } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { SchemaMetadata } from "#/schemas/schemas.types";
 
@@ -35,10 +36,10 @@ export type SchemaDocument = DocumentBase & {
   schema: Record<string, unknown>;
 };
 
-export function completeSchemaDocumentFilter(
-  filter: Record<string, unknown>,
-): Record<string, unknown> {
-  return completeDocumentBaseFilter(filter);
+export function addSchemaDocumentCoercions(
+  coercibleMap: CoercibleMap,
+): CoercibleMap {
+  return addDocumentBaseCoercions(coercibleMap);
 }
 
 export function insert(
@@ -62,7 +63,7 @@ export function findMany(
   filter: StrictFilter<SchemaDocument>,
 ): E.Effect<SchemaDocument[], PrimaryCollectionNotFoundError | DatabaseError> {
   const documentFilter = applyCoercions<Filter<SchemaDocument>>(
-    completeSchemaDocumentFilter(filter),
+    addSchemaDocumentCoercions(filter),
   );
   return pipe(
     checkPrimaryCollectionExists<SchemaDocument>(ctx, CollectionName.Schemas),
@@ -83,7 +84,7 @@ export function findOne(
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
   const documentFilter = applyCoercions<Filter<SchemaDocument>>(
-    completeSchemaDocumentFilter(filter),
+    addSchemaDocumentCoercions(filter),
   );
   return pipe(
     checkPrimaryCollectionExists<SchemaDocument>(ctx, CollectionName.Schemas),
@@ -114,7 +115,7 @@ export function deleteOne(
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
   const documentFilter = applyCoercions<Filter<SchemaDocument>>(
-    completeSchemaDocumentFilter(filter),
+    addSchemaDocumentCoercions(filter),
   );
   return pipe(
     checkPrimaryCollectionExists<SchemaDocument>(ctx, CollectionName.Schemas),
