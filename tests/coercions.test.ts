@@ -1,5 +1,7 @@
+import { UUID } from "mongodb";
 import { describe } from "vitest";
-import { createUuidDto } from "#/common/types";
+import { applyCoercions } from "#/common/mongo";
+import { type CoercibleMap, createUuidDto } from "#/common/types";
 import type { UploadResult } from "#/data/data.repository";
 import schemaJson from "./data/coercions.schema.json";
 import {
@@ -16,6 +18,94 @@ describe("data operations", () => {
   });
   beforeAll(async (_ctx) => {});
   afterAll(async (_ctx) => {});
+
+  it("coerces single uuid", async ({ expect }) => {
+    const _id = "3f5c92dd-214a-49b5-a129-e56c29fe5d3a";
+    const expected = new UUID(_id);
+    const data: CoercibleMap = {
+      _id,
+      $coerce: {
+        _id: "uuid",
+      },
+    };
+    const coercedData = applyCoercions(data) as CoercibleMap;
+    expect(coercedData._id).toStrictEqual(expected);
+  });
+
+  it("coerces multiple uuid", async ({ expect }) => {
+    const _ids = [
+      "3f5c92dd-214a-49b5-a129-e56c29fe5d3a",
+      "3f5c92dd-214a-49b5-a129-e56c29fe5d3a",
+    ];
+    const expected = _ids.map((id) => new UUID(id));
+    const data: CoercibleMap = {
+      _id: {
+        $in: _ids,
+      },
+      $coerce: {
+        _id: "uuid",
+      },
+    };
+    const coercedData = applyCoercions(data) as CoercibleMap;
+    const coercedIds = coercedData._id as Record<string, unknown>;
+    expect(coercedIds.$in).toStrictEqual(expected);
+  });
+
+  it("coerces single date", async ({ expect }) => {
+    const _created = "2025-02-24T17:09:00.267Z";
+    const expected = new Date(_created);
+    const data: CoercibleMap = {
+      _created,
+      $coerce: {
+        _created: "date",
+      },
+    };
+    const coercedData = applyCoercions(data) as CoercibleMap;
+    expect(coercedData._created).toStrictEqual(expected);
+  });
+
+  it("coerces multiple dates", async ({ expect }) => {
+    const _created = ["2025-02-24T17:09:00.267Z", "2025-02-24T17:09:00.267Z"];
+    const expected = _created.map((date) => new Date(date));
+    const data: CoercibleMap = {
+      _created: {
+        $in: _created,
+      },
+      $coerce: {
+        _created: "date",
+      },
+    };
+    const coercedData = applyCoercions(data) as CoercibleMap;
+    const coercedDates = coercedData._created as Record<string, unknown>;
+    expect(coercedDates.$in).toStrictEqual(expected);
+  });
+
+  it("do not coerce value", async ({ expect }) => {
+    const _created = ["2025-02-24T17:09:00.267Z", "2025-02-24T17:09:00.267Z"];
+    const data: CoercibleMap = {
+      _created: {
+        $in: _created,
+      },
+    };
+    const coercedData = applyCoercions(data) as CoercibleMap;
+    const coercedDates = coercedData._created as Record<string, unknown>;
+    expect(coercedDates.$in).toStrictEqual(_created);
+  });
+
+  it("coercible value is not defined", async ({ expect }) => {
+    const _created = ["2025-02-24T17:09:00.267Z", "2025-02-24T17:09:00.267Z"];
+    const data: CoercibleMap = {
+      _created: {
+        $in: _created,
+      },
+      $coerce: {
+        _updated: "date",
+      },
+    };
+    const coercedData = applyCoercions(data) as CoercibleMap;
+    const coercedDates = coercedData._created as Record<string, unknown>;
+    expect(coercedDates.$in).toStrictEqual(_created);
+  });
 
   it("coerces valid data", async ({ expect, organization, bindings }) => {
     const testId = createUuidDto();
