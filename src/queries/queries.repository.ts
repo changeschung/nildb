@@ -1,11 +1,18 @@
 import { Effect as E, pipe } from "effect";
 import type { StrictFilter } from "mongodb";
+import type { Filter } from "mongodb/lib/beta";
 import {
   DatabaseError,
   DocumentNotFoundError,
   type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
-import { CollectionName, checkPrimaryCollectionExists } from "#/common/mongo";
+import {
+  CollectionName,
+  addDocumentBaseCoercions,
+  applyCoercions,
+  checkPrimaryCollectionExists,
+} from "#/common/mongo";
+import type { CoercibleMap } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { QueryDocument } from "./queries.types";
 
@@ -32,11 +39,14 @@ export function findMany(
   QueryDocument[],
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
+  const documentFilter = applyCoercions<Filter<QueryDocument>>(
+    addQueryDocumentCoercions(filter),
+  );
   return pipe(
     checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
     E.flatMap((collection) =>
       E.tryPromise({
-        try: () => collection.find(filter).toArray(),
+        try: () => collection.find(documentFilter).toArray(),
         catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
       }),
     ),
@@ -60,11 +70,14 @@ export function findOne(
   QueryDocument,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
+  const documentFilter = applyCoercions<Filter<QueryDocument>>(
+    addQueryDocumentCoercions(filter),
+  );
   return pipe(
     checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
     E.flatMap((collection) =>
       E.tryPromise({
-        try: () => collection.findOne(filter),
+        try: () => collection.findOne(documentFilter),
         catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
       }),
     ),
@@ -88,11 +101,14 @@ export function findOneAndDelete(
   QueryDocument,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
+  const documentFilter = applyCoercions<Filter<QueryDocument>>(
+    addQueryDocumentCoercions(filter),
+  );
   return pipe(
     checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
     E.flatMap((collection) =>
       E.tryPromise({
-        try: () => collection.findOneAndDelete(filter),
+        try: () => collection.findOneAndDelete(documentFilter),
         catch: (cause) =>
           new DatabaseError({ cause, message: "findOneAndDelete" }),
       }),
@@ -108,4 +124,10 @@ export function findOneAndDelete(
         : E.succeed(result),
     ),
   );
+}
+
+export function addQueryDocumentCoercions(
+  coercibleMap: CoercibleMap,
+): CoercibleMap {
+  return addDocumentBaseCoercions(coercibleMap);
 }

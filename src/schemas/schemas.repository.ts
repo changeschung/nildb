@@ -6,6 +6,7 @@ import type {
   StrictFilter,
   UUID,
 } from "mongodb";
+import type { Filter } from "mongodb/lib/beta";
 import {
   type DataCollectionNotFoundError,
   DatabaseError,
@@ -18,11 +19,14 @@ import {
   CollectionName,
   type DocumentBase,
   MongoErrorCode,
+  addDocumentBaseCoercions,
+  applyCoercions,
   checkDataCollectionExists,
   checkPrimaryCollectionExists,
   isMongoError,
 } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
+import type { CoercibleMap } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { SchemaMetadata } from "#/schemas/schemas.types";
 
@@ -31,6 +35,12 @@ export type SchemaDocument = DocumentBase & {
   name: string;
   schema: Record<string, unknown>;
 };
+
+export function addSchemaDocumentCoercions(
+  coercibleMap: CoercibleMap,
+): CoercibleMap {
+  return addDocumentBaseCoercions(coercibleMap);
+}
 
 export function insert(
   ctx: AppBindings,
@@ -52,11 +62,14 @@ export function findMany(
   ctx: AppBindings,
   filter: StrictFilter<SchemaDocument>,
 ): E.Effect<SchemaDocument[], PrimaryCollectionNotFoundError | DatabaseError> {
+  const documentFilter = applyCoercions<Filter<SchemaDocument>>(
+    addSchemaDocumentCoercions(filter),
+  );
   return pipe(
     checkPrimaryCollectionExists<SchemaDocument>(ctx, CollectionName.Schemas),
     E.flatMap((collection) =>
       E.tryPromise({
-        try: async () => collection.find(filter).toArray(),
+        try: async () => collection.find(documentFilter).toArray(),
         catch: (cause) => new DatabaseError({ cause, message: "" }),
       }),
     ),
@@ -70,11 +83,14 @@ export function findOne(
   SchemaDocument,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
+  const documentFilter = applyCoercions<Filter<SchemaDocument>>(
+    addSchemaDocumentCoercions(filter),
+  );
   return pipe(
     checkPrimaryCollectionExists<SchemaDocument>(ctx, CollectionName.Schemas),
     E.flatMap((collection) =>
       E.tryPromise({
-        try: async () => collection.findOne(filter),
+        try: async () => collection.findOne(documentFilter),
         catch: (cause) => new DatabaseError({ cause, message: "" }),
       }),
     ),
@@ -98,11 +114,14 @@ export function deleteOne(
   SchemaDocument,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
+  const documentFilter = applyCoercions<Filter<SchemaDocument>>(
+    addSchemaDocumentCoercions(filter),
+  );
   return pipe(
     checkPrimaryCollectionExists<SchemaDocument>(ctx, CollectionName.Schemas),
     E.flatMap((collection) =>
       E.tryPromise({
-        try: () => collection.findOneAndDelete(filter),
+        try: () => collection.findOneAndDelete(documentFilter),
         catch: (cause) => new DatabaseError({ cause, message: "deleteOne" }),
       }),
     ),
@@ -164,14 +183,12 @@ export function getCollectionStats(
           E.tryPromise({
             try: async () => {
               const result = await collection.indexes();
-              const indexes = result.map((index) => ({
+              return result.map((index) => ({
                 v: index.v ?? -1,
                 key: index.key,
                 name: index.name ?? "",
                 unique: index.unique ?? false,
               }));
-
-              return indexes;
             },
             catch: (cause) =>
               new DatabaseError({ cause, message: "Failed to get indexes" }),

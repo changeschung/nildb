@@ -5,14 +5,19 @@ import {
   type Document,
   MongoClient,
   MongoError,
-  type UUID,
+  UUID,
 } from "mongodb";
 import {
   DataCollectionNotFoundError,
   DatabaseError,
   PrimaryCollectionNotFoundError,
 } from "#/common/errors";
-import type { UuidDto } from "#/common/types";
+import type {
+  CoercibleMap,
+  CoercibleTypes,
+  CoercibleValues,
+  UuidDto,
+} from "#/common/types";
 import type { AppBindings, EnvVars } from "#/env";
 
 // A common base for all documents. UUID v4 is used so that records have a unique but stable
@@ -22,6 +27,22 @@ export type DocumentBase = {
   _created: Date;
   _updated: Date;
 };
+
+export function addDocumentBaseCoercions(
+  coercibleMap: CoercibleMap,
+): CoercibleMap {
+  const { $coerce, ...document } = coercibleMap;
+  const { _id, _updated, _created, ...remainingCoercions } = $coerce ?? {};
+  return {
+    $coerce: {
+      ...remainingCoercions,
+      _id: "uuid",
+      _created: "date",
+      _updated: "date",
+    },
+    ...document,
+  };
+}
 
 export async function initAndCreateDbClients(
   env: EnvVars,
@@ -109,4 +130,51 @@ export function checkDataCollectionExists<T extends Document>(
         : E.fail(new DataCollectionNotFoundError({ name: name as UuidDto })),
     ),
   );
+}
+
+export function applyCoercions<T>(coercibleMap: CoercibleMap): T {
+  if ("$coerce" in coercibleMap) {
+    const { $coerce, ...coercibleValues } = coercibleMap;
+    if ($coerce && typeof $coerce === "object") {
+      for (const field in $coerce) {
+        const type = $coerce[field];
+        applyCoercionToField(coercibleValues, field, type);
+      }
+    }
+    return coercibleValues as unknown as T;
+  }
+  return coercibleMap as unknown as T;
+}
+
+function applyCoercionToField(
+  coercibleValues: CoercibleValues,
+  field: string,
+  type: CoercibleTypes,
+) {
+  if (coercibleValues[field]) {
+    if (typeof coercibleValues[field] === "object") {
+      const value = coercibleValues[field] as Record<string, unknown>;
+      for (const op in value) {
+        if (op.startsWith("$") && Array.isArray(value[op])) {
+          value[op] = Array.from(value[op]).map((innerValue) =>
+            toPrimitiveValue(innerValue, type),
+          );
+        }
+      }
+    } else {
+      coercibleValues[field] = toPrimitiveValue(coercibleValues[field], type);
+    }
+  }
+}
+
+function toPrimitiveValue(value: unknown, type: string): unknown {
+  if (typeof value === "string") {
+    switch (type.toLowerCase()) {
+      case "uuid":
+        return new UUID(value);
+      case "date":
+        return new Date(value);
+    }
+  }
+  return value;
 }
