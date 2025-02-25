@@ -67,7 +67,7 @@ export function setSubscriptionState(app: App): void {
       const payload = c.req.valid("json");
 
       return pipe(
-        AccountService.setSubscriptionState(c.env, payload.ids, payload.active),
+        AccountService.setSubscriptionState(c.env, payload),
         E.map(() => new Response(null, { status: StatusCodes.OK })),
         handleTaggedErrors(c),
         E.runPromise,

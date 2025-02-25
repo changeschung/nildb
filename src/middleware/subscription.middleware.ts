@@ -16,14 +16,19 @@ export function useSubscriptionCheckMiddleware(
 
     const account = c.var.account;
 
-    if (isOrganizationAccount(account) && !account.subscription.active) {
-      return c.json(
-        {
-          ts: new Date(),
-          errors: ["Subscription inactive"],
-        },
-        StatusCodes.PAYMENT_REQUIRED,
-      );
+    if (isOrganizationAccount(account)) {
+      const now = new Date();
+      const isSubscriptionActive =
+        account.subscription.start <= now && account.subscription.end >= now;
+      if (!isSubscriptionActive) {
+        return c.json(
+          {
+            ts: new Date(),
+            errors: ["Subscription inactive"],
+          },
+          StatusCodes.PAYMENT_REQUIRED,
+        );
+      }
     }
     return next();
   };

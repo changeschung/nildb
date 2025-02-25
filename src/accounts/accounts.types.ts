@@ -43,7 +43,9 @@ export type OrganizationAccountDocument = {
   publicKey: string;
   name: string;
   subscription: {
-    active: boolean;
+    start: Date;
+    end: Date;
+    txHash: string;
   };
   schemas: UUID[];
   queries: UUID[];

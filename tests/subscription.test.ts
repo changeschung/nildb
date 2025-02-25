@@ -1,6 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
+import { advance } from "#/common/date";
 import { type UuidDto, createUuidDto } from "#/common/types";
 import { TAIL_DATA_LIMIT } from "#/data/data.repository";
 import queryJson from "./data/simple.query.json";
@@ -50,10 +51,17 @@ describe("subscriptions.test.ts", () => {
     admin,
     organization,
   }) => {
-    await admin.setSubscriptionState({
-      active: false,
-      ids: [organization.did],
+    const now = new Date();
+    const start = advance(now);
+    const end = advance(start);
+    const txHash = "";
+    const setSubscriptionResponse = await admin.setSubscriptionState({
+      did: organization.did,
+      start,
+      end,
+      txHash,
     });
+    expect(setSubscriptionResponse.status).toBe(StatusCodes.OK);
 
     const response = await organization.tailData({
       schema: schema.id,
@@ -66,10 +74,12 @@ describe("subscriptions.test.ts", () => {
     admin,
     organization,
   }) => {
-    await admin.setSubscriptionState({
-      active: true,
-      ids: [organization.did],
+    const txHash = "";
+    const setSubscriptionResponse = await admin.setSubscriptionState({
+      did: organization.did,
+      txHash,
     });
+    expect(setSubscriptionResponse.status).toBe(StatusCodes.OK);
 
     const response = await organization.tailData({
       schema: schema.id,
