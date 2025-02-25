@@ -128,6 +128,14 @@ paths:
                   additionalProperties:
                     type: object
                     description: A flexible object allowing any key-value pairs, where values can be of any type.
+                  properties:
+                    $coerce:
+                      type: object
+                      description:
+                        A flexible object allowing any key-value pairs, where the keys refers to a property in the filter
+                        and the value is the MongoDB primitive type which the property will be transformed.
+                        Only the primitive types 'date' and 'uuid' are supported.
+                        The required properties (_id, _created and _update) are supported automatically.
       responses:
         '200':
           description: The result of the update operation

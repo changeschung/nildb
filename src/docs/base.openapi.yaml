@@ -45,6 +45,14 @@ components:
       minProperties: 1
       additionalProperties: true
       description: MongoDB-style query filter
+      properties:
+        $coerce:
+          type: object
+          description:
+            A flexible object allowing any key-value pairs, where the keys refers to a property in the filter
+            and the value is the MongoDB primitive type which the property will be transformed.
+            Only the primitive types 'date' and 'uuid' are supported.
+            The required properties (_id, _created and _update) are supported automatically.
     DocumentBase:
       type: object
       properties:
