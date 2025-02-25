@@ -12,7 +12,12 @@ import {
   DatabaseError,
   PrimaryCollectionNotFoundError,
 } from "#/common/errors";
-import type { UuidDto } from "#/common/types";
+import type {
+  CoercibleMap,
+  CoercibleTypes,
+  CoercibleValues,
+  UuidDto,
+} from "#/common/types";
 import type { AppBindings, EnvVars } from "#/env";
 
 // A common base for all documents. UUID v4 is used so that records have a unique but stable
@@ -129,28 +134,28 @@ export function checkDataCollectionExists<T extends Document>(
   );
 }
 
-export function applyCoercions<T>(filter: Record<string, unknown>): T {
-  if ("$coerce" in filter) {
-    const { $coerce, ...coercedFilter } = filter;
+export function applyCoercions<T>(coercibleMap: CoercibleMap): T {
+  if ("$coerce" in coercibleMap) {
+    const { $coerce, ...coercibleValues } = coercibleMap;
     if ($coerce && typeof $coerce === "object") {
       for (const field in $coerce) {
-        const type = $coerce[field as keyof typeof $coerce];
-        applyCoercionToField(coercedFilter, field, type);
+        const type = $coerce[field];
+        applyCoercionToField(coercibleValues, field, type);
       }
     }
-    return coercedFilter as unknown as T;
+    return coercibleValues as unknown as T;
   }
-  return filter as unknown as T;
+  return coercibleMap as unknown as T;
 }
 
 function applyCoercionToField(
-  filter: Record<string, unknown>,
+  coercibleValues: CoercibleValues,
   field: string,
-  type: string,
+  type: CoercibleTypes,
 ) {
-  if (field in filter) {
-    if (typeof filter[field] === "object") {
-      const value = filter[field] as unknown as Record<string, unknown>;
+  if (coercibleValues[field]) {
+    if (typeof coercibleValues[field] === "object") {
+      const value = coercibleValues[field] as Record<string, unknown>;
       for (const op in value) {
         if (op.startsWith("$") && Array.isArray(value[op])) {
           value[op] = Array.from(value[op]).map((innerValue) =>
@@ -159,7 +164,7 @@ function applyCoercionToField(
         }
       }
     } else {
-      filter[field] = toPrimitiveValue(filter[field], type);
+      coercibleValues[field] = toPrimitiveValue(coercibleValues[field], type);
     }
   }
 }
