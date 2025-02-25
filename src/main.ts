@@ -24,7 +24,7 @@ async function main() {
   const options = program.opts<NilDbCliOptions>();
   console.info("! Starting api ...");
 
-  const envFilePath = options.envFile ?? ".env"
+  const envFilePath = options.envFile ?? ".env";
   console.info(`! Using env file: ${envFilePath}`);
   dotenv.config({ path: envFilePath, override: true });
 

@@ -1,7 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import type { StrictFilter, StrictUpdateFilter, UpdateResult } from "mongodb";
 import type { AccountDocument } from "#/admin/admin.types";
-import { advance } from "#/common/date";
 import {
   DatabaseError,
   DocumentNotFoundError,
@@ -18,7 +17,6 @@ import type {
 
 export function toOrganizationAccountDocument(
   data: RegisterAccountRequest,
-  env: "mainnet" | "testnet",
 ): OrganizationAccountDocument {
   const { did, publicKey, name } = data;
   const now = new Date();
@@ -32,8 +30,7 @@ export function toOrganizationAccountDocument(
     name,
     subscription: {
       start: now,
-      // testnet subscriptions default to active for 365 days
-      end: env === "testnet" ? advance(now, 365) : now,
+      end: now,
       txHash: "",
     },
     schemas: [],

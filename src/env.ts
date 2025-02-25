@@ -36,7 +36,6 @@ export const EnvVarsSchema = z.object({
   dbNamePrimary: z.string().min(4),
   dbNameData: z.string().min(4),
   dbUri: z.string().startsWith("mongodb"),
-  env: z.enum(["testnet", "mainnet"]),
   enabledFeatures: z.array(z.string()).default([]),
   logLevel: z.enum(LOG_LEVELS),
   nodeSecretKey: z.string().min(PRIVATE_KEY_LENGTH),
@@ -76,7 +75,6 @@ declare global {
       APP_DB_NAME_PRIMARY: string;
       APP_DB_URI: string;
       APP_ENABLED_FEATURES: string;
-      APP_ENV: string;
       APP_LOG_LEVEL: string;
       APP_METRICS_PORT: number;
       APP_MQ_URI: string;
@@ -105,7 +103,6 @@ export async function loadBindings(override?: EnvVars): Promise<AppBindings> {
         enabledFeatures: process.env.APP_ENABLED_FEATURES
           ? process.env.APP_ENABLED_FEATURES.split(",")
           : [],
-        env: process.env.APP_ENV,
         logLevel: process.env.APP_LOG_LEVEL,
         nodeSecretKey: process.env.APP_NODE_SECRET_KEY,
         nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
