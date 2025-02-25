@@ -2,6 +2,7 @@ export const PathsV1 = {
   accounts: {
     root: "/api/v1/accounts",
     publicKey: "/api/v1/accounts/public_key",
+    subscription: "/api/v1/accounts/subscription",
   },
   admin: {
     root: "/api/v1/admin",

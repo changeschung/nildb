@@ -17,6 +17,7 @@ import type { NilDid } from "#/common/nil-did";
 import type { AppBindings } from "#/env";
 import * as AccountRepository from "./accounts.repository";
 import type {
+  AccountSubscriptionDocument,
   OrganizationAccountDocument,
   RegisterAccountRequest,
 } from "./accounts.types";
@@ -96,6 +97,16 @@ export function setSubscriptionState(
   return pipe(
     AccountRepository.setSubscriptionState(ctx, did, start, end, txHash),
   );
+}
+
+export function getSubscriptionState(
+  ctx: AppBindings,
+  did: NilDid,
+): E.Effect<
+  AccountSubscriptionDocument,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
+  return AccountRepository.getSubscriptionState(ctx, did);
 }
 
 export function setPublicKey(

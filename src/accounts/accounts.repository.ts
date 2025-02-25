@@ -11,6 +11,7 @@ import { CollectionName, checkPrimaryCollectionExists } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
 import type { AppBindings } from "#/env";
 import type {
+  AccountSubscriptionDocument,
   OrganizationAccountDocument,
   RegisterAccountRequest,
 } from "./accounts.types";
@@ -216,6 +217,28 @@ export function setSubscriptionState(
         : E.succeed(result),
     ),
     E.tap(() => ctx.cache.accounts.taint(did)),
+  );
+}
+
+export function getSubscriptionState(
+  ctx: AppBindings,
+  _id: NilDid,
+): E.Effect<
+  AccountSubscriptionDocument,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
+  const now = new Date();
+  return pipe(
+    findOneOrganization(ctx, _id),
+    E.map((document) => {
+      const { start, end, txHash } = document.subscription;
+      return {
+        active: start <= now && end >= now,
+        start,
+        end,
+        txHash,
+      };
+    }),
   );
 }
 

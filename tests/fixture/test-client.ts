@@ -202,6 +202,10 @@ export class TestOrganizationUserClient extends TestClient {
     return this.request(PathsV1.accounts.root);
   }
 
+  async getSubscriptionState(): Promise<Response> {
+    return this.request(PathsV1.accounts.subscription);
+  }
+
   async updateAccount(body: SetPublicKeyRequest): Promise<Response> {
     return this.request(PathsV1.accounts.publicKey, { method: "POST", body });
   }

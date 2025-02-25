@@ -1,6 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
+import type { AccountSubscriptionDocument } from "#/accounts/accounts.types";
 import { advance } from "#/common/date";
 import { type UuidDto, createUuidDto } from "#/common/types";
 import { TAIL_DATA_LIMIT } from "#/data/data.repository";
@@ -87,5 +88,16 @@ describe("subscriptions.test.ts", () => {
 
     const result = await expectSuccessResponse<Record[]>(response);
     expect(result.data).toHaveLength(TAIL_DATA_LIMIT);
+  });
+
+  it("organization can query its subscription", async ({
+    expect,
+    organization,
+  }) => {
+    const response = await organization.getSubscriptionState();
+    expect(response.status).toBe(StatusCodes.OK);
+    const result =
+      await expectSuccessResponse<AccountSubscriptionDocument>(response);
+    expect(result.data.active).toBeTruthy;
   });
 });
