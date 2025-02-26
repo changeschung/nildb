@@ -1,8 +1,8 @@
 import { faker } from "@faker-js/faker";
 import { StatusCodes } from "http-status-codes";
+import { Temporal } from "temporal-polyfill";
 import { describe } from "vitest";
 import type { AccountSubscriptionDocument } from "#/accounts/accounts.types";
-import { advance } from "#/common/date";
 import { type UuidDto, createUuidDto } from "#/common/types";
 import { TAIL_DATA_LIMIT } from "#/data/data.repository";
 import queryJson from "./data/simple.query.json";
@@ -52,14 +52,14 @@ describe("subscriptions.test.ts", () => {
     admin,
     organization,
   }) => {
-    const now = new Date();
-    const start = advance(now);
-    const end = advance(start);
+    const now = Temporal.Now.instant();
+    const start = now.add({ hours: 24 });
+    const end = start.add({ hours: 24 });
     const txHash = "";
     const setSubscriptionResponse = await admin.setSubscriptionState({
       did: organization.did,
-      start,
-      end,
+      start: new Date(start.epochMilliseconds),
+      end: new Date(end.epochMilliseconds),
       txHash,
     });
     expect(setSubscriptionResponse.status).toBe(StatusCodes.OK);
