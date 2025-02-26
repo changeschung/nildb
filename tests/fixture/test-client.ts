@@ -12,6 +12,7 @@ import type {
 } from "#/admin/admin.types";
 import type { App } from "#/app";
 import type { Identity } from "#/common/identity";
+import type { NilDid } from "#/common/nil-did";
 import { PathsBeta, PathsV1 } from "#/common/paths";
 import type { UuidDto } from "#/common/types";
 import type {
@@ -117,10 +118,16 @@ export class TestAdminUserClient extends TestRootUserClient {
   async setSubscriptionState(
     body: AdminSetSubscriptionStateRequest,
   ): Promise<Response> {
-    return this.request(PathsV1.admin.accounts.subscriptions, {
+    return this.request(PathsV1.admin.accounts.subscription, {
       method: "POST",
       body,
     });
+  }
+
+  async getSubscriptionState(did: NilDid): Promise<Response> {
+    return this.request(
+      PathsV1.admin.accounts.subscriptionByDid.replace(":did", did),
+    );
   }
 
   async setMaintenanceWindow(
@@ -200,6 +207,10 @@ export class TestOrganizationUserClient extends TestClient {
 
   async getAccount(): Promise<Response> {
     return this.request(PathsV1.accounts.root);
+  }
+
+  async getSubscriptionState(): Promise<Response> {
+    return this.request(PathsV1.accounts.subscription);
   }
 
   async updateAccount(body: SetPublicKeyRequest): Promise<Response> {

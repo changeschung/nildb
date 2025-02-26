@@ -1,6 +1,10 @@
 import { Effect as E, pipe } from "effect";
 import * as AdminAccountRepository from "#/admin/admin.repository";
-import type { AdminCreateAccountRequest } from "#/admin/admin.types";
+import type {
+  AdminCreateAccountRequest,
+  AdminSetSubscriptionStateRequest,
+} from "#/admin/admin.types";
+import { advance } from "#/common/date";
 import {
   DataValidationError,
   type DatabaseError,
@@ -13,6 +17,7 @@ import type { NilDid } from "#/common/nil-did";
 import type { AppBindings } from "#/env";
 import * as AccountRepository from "./accounts.repository";
 import type {
+  AccountSubscriptionDocument,
   OrganizationAccountDocument,
   RegisterAccountRequest,
 } from "./accounts.types";
@@ -78,13 +83,30 @@ export function remove(
 
 export function setSubscriptionState(
   ctx: AppBindings,
-  ids: NilDid[],
-  active: boolean,
+  payload: AdminSetSubscriptionStateRequest,
 ): E.Effect<
   void,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
-  return pipe(AccountRepository.setSubscriptionState(ctx, ids, active));
+  const {
+    did,
+    start = new Date(),
+    end = advance(start, 30),
+    txHash = "",
+  } = payload;
+  return pipe(
+    AccountRepository.setSubscriptionState(ctx, did, start, end, txHash),
+  );
+}
+
+export function getSubscriptionState(
+  ctx: AppBindings,
+  did: NilDid,
+): E.Effect<
+  AccountSubscriptionDocument,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
+  return AccountRepository.getSubscriptionState(ctx, did);
 }
 
 export function setPublicKey(

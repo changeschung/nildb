@@ -1,6 +1,7 @@
 import { Effect as E, pipe } from "effect";
 import type { StrictFilter, StrictUpdateFilter, UpdateResult } from "mongodb";
 import type { AccountDocument } from "#/admin/admin.types";
+import { advance } from "#/common/date";
 import {
   DatabaseError,
   DocumentNotFoundError,
@@ -10,6 +11,7 @@ import { CollectionName, checkPrimaryCollectionExists } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
 import type { AppBindings } from "#/env";
 import type {
+  AccountSubscriptionDocument,
   OrganizationAccountDocument,
   RegisterAccountRequest,
 } from "./accounts.types";
@@ -29,8 +31,10 @@ export function toOrganizationAccountDocument(
     publicKey,
     name,
     subscription: {
-      // testnet subscriptions default to active
-      active: env === "testnet",
+      start: now,
+      // testnet subscriptions default to active for 365 days
+      end: env === "testnet" ? advance(now, 365) : now,
+      txHash: "",
     },
     schemas: [],
     queries: [],
@@ -170,18 +174,24 @@ export function deleteOneById(
 
 export function setSubscriptionState(
   ctx: AppBindings,
-  ids: NilDid[],
-  active: boolean,
+  did: NilDid,
+  start: Date,
+  end: Date,
+  txHash: string,
 ): E.Effect<
   UpdateResult,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
   const filter: StrictFilter<OrganizationAccountDocument> = {
-    _id: { $in: ids },
+    _id: did,
     _type: "organization",
   };
   const update: StrictUpdateFilter<OrganizationAccountDocument> = {
-    $set: { "subscription.active": active },
+    $set: {
+      "subscription.start": start,
+      "subscription.end": end,
+      "subscription.txHash": txHash,
+    },
   };
 
   return pipe(
@@ -191,7 +201,7 @@ export function setSubscriptionState(
     ),
     E.flatMap((collection) =>
       E.tryPromise({
-        try: () => collection.updateMany(filter, update),
+        try: () => collection.updateOne(filter, update),
         catch: (cause) =>
           new DatabaseError({ cause, message: "setSubscriptionState" }),
       }),
@@ -206,9 +216,29 @@ export function setSubscriptionState(
           )
         : E.succeed(result),
     ),
-    E.tap(() =>
-      E.forEach(ids, (id) => E.sync(() => ctx.cache.accounts.taint(id))),
-    ),
+    E.tap(() => ctx.cache.accounts.taint(did)),
+  );
+}
+
+export function getSubscriptionState(
+  ctx: AppBindings,
+  _id: NilDid,
+): E.Effect<
+  AccountSubscriptionDocument,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
+  const now = new Date();
+  return pipe(
+    findOneOrganization(ctx, _id),
+    E.map((document) => {
+      const { start, end, txHash } = document.subscription;
+      return {
+        active: start <= now && end >= now,
+        start,
+        end,
+        txHash,
+      };
+    }),
   );
 }
 

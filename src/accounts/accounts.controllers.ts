@@ -88,3 +88,19 @@ export function setPublicKey(app: App): void {
     },
   );
 }
+
+export function getSubscription(app: App): void {
+  app.get(PathsV1.accounts.subscription, async (c) => {
+    if (!isRoleAllowed(c, ["admin", "organization"])) {
+      return c.text("Unauthorized", StatusCodes.UNAUTHORIZED);
+    }
+
+    const account = c.var.account;
+    return pipe(
+      AccountService.getSubscriptionState(c.env, account._id),
+      E.map((data) => c.json({ data })),
+      handleTaggedErrors(c),
+      E.runPromise,
+    );
+  });
+}

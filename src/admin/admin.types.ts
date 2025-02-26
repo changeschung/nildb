@@ -26,8 +26,10 @@ export type AdminDeleteAccountRequest = z.infer<
 >;
 
 export const AdminSetSubscriptionStateRequestSchema = z.object({
-  ids: z.array(NilDid).nonempty(),
-  active: z.boolean(),
+  did: NilDid,
+  start: z.coerce.date().optional(),
+  end: z.coerce.date().optional(),
+  txHash: z.string().optional(),
 });
 export type AdminSetSubscriptionStateRequest = z.infer<
   typeof AdminSetSubscriptionStateRequestSchema

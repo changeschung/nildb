@@ -27,6 +27,7 @@ export function buildAdminRouter(app: App, _bindings: AppBindings): void {
   AdminAccountsControllers.remove(app);
   AdminAccountsControllers.list(app);
   AdminAccountsControllers.setSubscriptionState(app);
+  AdminAccountsControllers.getSubscriptionState(app);
 
   AdminDataControllers.remove(app);
   AdminDataControllers.flush(app);
