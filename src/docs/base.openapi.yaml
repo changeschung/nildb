@@ -19,6 +19,8 @@ tags:
     description: Manage your schemas
   - name: Node
     description: Node information
+  - name: Admin
+    description: Admin management
   - name: Beta
     description: Features under incubation
 
@@ -163,10 +165,10 @@ paths:
     $ref: '../system/system.openapi.yaml#/paths/~1health'
   /about:
     $ref: '../system/system.openapi.yaml#/paths/~1about'
+
+  # Admin endpoints
   /api/v1/admin/maintenance:
-    $ref: '../system/system.openapi.yaml#/paths/~1api~1v1~1admin~1maintenance'
-  /api/v1/admin/maintenance/{did}:
-    $ref: '../system/system.openapi.yaml#/paths/~1api~1v1~1admin~1maintenance~1{did}'
+    $ref: '../admin/admin.system.openapi.yaml#/paths/~1api~1v1~1admin~1maintenance'
 
   # Beta endpoints
   /api/beta/schemas/{id}/meta:
