@@ -14,7 +14,7 @@ export function corsMiddleware(bindings: AppBindings): MiddlewareHandler {
     return cors({
       origin: ALLOW_ORIGINS,
       allowHeaders: ["Content-Type", "Authorization"],
-      allowMethods: ["GET", "PUT", "POST", "DELETE"],
+      allowMethods: ["GET", "POST", "DELETE"],
       maxAge: 3600,
       credentials: true,
     });

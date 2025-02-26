@@ -124,7 +124,7 @@ export class TestAdminUserClient extends TestRootUserClient {
     body: AdminSetMaintenanceWindowRequest,
   ): Promise<Response> {
     return this.request(PathsV1.admin.system.maintenance, {
-      method: "PUT",
+      method: "POST",
       body,
     });
   }

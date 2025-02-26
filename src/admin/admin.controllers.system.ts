@@ -8,7 +8,7 @@ import * as SystemService from "#/system/system.services";
 import { AdminSetMaintenanceWindowRequestSchema } from "./admin.types";
 
 export function setMaintenanceWindow(app: App): void {
-  app.put(
+  app.post(
     PathsV1.admin.system.maintenance,
     payloadValidator(AdminSetMaintenanceWindowRequestSchema),
     async (c) => {
