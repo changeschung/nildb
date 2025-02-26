@@ -7,6 +7,7 @@ import type {
   AdminAddSchemaRequest,
   AdminCreateAccountRequest,
   AdminDeleteAccountRequest,
+  AdminSetMaintenanceWindowRequest,
   AdminSetSubscriptionStateRequest,
 } from "#/admin/admin.types";
 import type { App } from "#/app";
@@ -119,6 +120,21 @@ export class TestAdminUserClient extends TestRootUserClient {
     return this.request(PathsV1.admin.accounts.subscriptions, {
       method: "POST",
       body,
+    });
+  }
+
+  async setMaintenanceWindow(
+    body: AdminSetMaintenanceWindowRequest,
+  ): Promise<Response> {
+    return this.request(PathsV1.admin.system.maintenance, {
+      method: "POST",
+      body,
+    });
+  }
+
+  async deleteMaintenanceWindow(): Promise<Response> {
+    return this.request(PathsV1.admin.system.maintenance, {
+      method: "DELETE",
     });
   }
 

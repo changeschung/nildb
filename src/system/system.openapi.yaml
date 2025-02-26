@@ -1,5 +1,9 @@
 components:
   schemas:
+    DID:
+      type: string
+      description: Decentralized Identifier (DID) of the node
+      example: 'did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc'
     AboutNode:
       type: object
       required:
@@ -35,9 +39,7 @@ components:
               description: Node's api version
               example: 0.4.0
         did:
-          type: string
-          description: Decentralized Identifier (DID) of the node
-          example: 'did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc'
+          $ref: '#/components/schemas/DID'
         publicKey:
           type: string
           description: Public key of the node
@@ -47,6 +49,22 @@ components:
           format: uri
           description: URL where the node can be reached
           example: 'https://nildb-demo.nillion.network'
+        maintenance:
+          type: object
+          required:
+            - start
+            - end
+          properties:
+            start:
+              type: string
+              format: date-time
+              description: Maintenance window starts at
+              example: '2025-02-14T00:00:00.000Z'
+            end:
+              type: string
+              format: date-time
+              description: Maintenance window ends at
+              example: '2025-02-14T00:30:00.000Z'
 
 paths:
   /health:
