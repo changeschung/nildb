@@ -39,11 +39,13 @@ export function useMaintenanceMiddleware(
           );
         },
         onSuccess: (maintenanceStatus) => {
-          if (maintenanceStatus.active) {
+          if (maintenanceStatus.active && maintenanceStatus.window) {
             return c.json(
               {
                 ts: new Date(),
-                errors: ["Node in maintenance"],
+                errors: [
+                  `Node in maintenance until ${maintenanceStatus.window.end}`,
+                ],
               },
               StatusCodes.SERVICE_UNAVAILABLE,
             );
