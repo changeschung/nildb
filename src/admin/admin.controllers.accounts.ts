@@ -80,7 +80,7 @@ export function setSubscriptionState(app: App): void {
 
 export function getSubscriptionState(app: App): void {
   app.get(
-    PathsV1.admin.accounts.subscriptionById,
+    PathsV1.admin.accounts.subscriptionByDid,
     paramsValidator(
       z.object({
         did: NilDid,

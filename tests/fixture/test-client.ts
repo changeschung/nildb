@@ -126,7 +126,7 @@ export class TestAdminUserClient extends TestRootUserClient {
 
   async getSubscriptionState(did: NilDid): Promise<Response> {
     return this.request(
-      PathsV1.admin.accounts.subscriptionById.replace(":did", did),
+      PathsV1.admin.accounts.subscriptionByDid.replace(":did", did),
     );
   }
 

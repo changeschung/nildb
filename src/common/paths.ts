@@ -9,7 +9,7 @@ export const PathsV1 = {
     accounts: {
       root: "/api/v1/admin/accounts",
       subscription: "/api/v1/admin/accounts/subscription",
-      subscriptionById: "/api/v1/admin/accounts/subscription/:did",
+      subscriptionByDid: "/api/v1/admin/accounts/subscription/:did",
     },
     data: {
       delete: "/api/v1/admin/data/delete",
