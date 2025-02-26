@@ -1,10 +1,12 @@
 import { Effect as E, pipe } from "effect";
 import { StatusCodes } from "http-status-codes";
+import { z } from "zod";
 import * as AccountService from "#/accounts/accounts.services";
 import type { App } from "#/app";
 import { handleTaggedErrors } from "#/common/handler";
+import { NilDid } from "#/common/nil-did";
 import { PathsV1 } from "#/common/paths";
-import { payloadValidator } from "#/common/zod-utils";
+import { paramsValidator, payloadValidator } from "#/common/zod-utils";
 import * as AdminService from "./admin.services";
 import {
   AdminCreateAccountRequestSchema,
@@ -61,7 +63,7 @@ export function list(app: App): void {
 
 export function setSubscriptionState(app: App): void {
   app.post(
-    PathsV1.admin.accounts.subscriptions,
+    PathsV1.admin.accounts.subscription,
     payloadValidator(AdminSetSubscriptionStateRequestSchema),
     async (c) => {
       const payload = c.req.valid("json");
@@ -69,6 +71,31 @@ export function setSubscriptionState(app: App): void {
       return pipe(
         AccountService.setSubscriptionState(c.env, payload),
         E.map(() => new Response(null, { status: StatusCodes.OK })),
+        handleTaggedErrors(c),
+        E.runPromise,
+      );
+    },
+  );
+}
+
+export function getSubscriptionState(app: App): void {
+  app.get(
+    PathsV1.admin.accounts.subscriptionById,
+    paramsValidator(
+      z.object({
+        did: NilDid,
+      }),
+    ),
+    async (c) => {
+      const payload = c.req.valid("param");
+
+      return pipe(
+        AccountService.getSubscriptionState(c.env, payload.did),
+        E.map((data) =>
+          c.json({
+            data,
+          }),
+        ),
         handleTaggedErrors(c),
         E.runPromise,
       );

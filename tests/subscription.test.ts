@@ -100,4 +100,16 @@ describe("subscriptions.test.ts", () => {
       await expectSuccessResponse<AccountSubscriptionDocument>(response);
     expect(result.data.active).toBeTruthy;
   });
+
+  it("admin can query an organization subscription", async ({
+    expect,
+    admin,
+    organization,
+  }) => {
+    const response = await admin.getSubscriptionState(organization.did);
+    expect(response.status).toBe(StatusCodes.OK);
+    const result =
+      await expectSuccessResponse<AccountSubscriptionDocument>(response);
+    expect(result.data.active).toBeTruthy;
+  });
 });
