@@ -62,7 +62,7 @@ abstract class TestClient {
   async request<T>(
     path: string,
     options: {
-      method?: "GET" | "PUT" | "POST" | "DELETE";
+      method?: "GET" | "POST" | "DELETE";
       body?: T;
     } = {},
   ): Promise<Response> {
