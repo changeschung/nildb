@@ -1,7 +1,6 @@
 import { StatusCodes } from "http-status-codes";
 import { Temporal } from "temporal-polyfill";
 import { describe, expect } from "vitest";
-import type { AdminSetMaintenanceWindowRequest } from "#/admin/admin.types";
 import type { AboutNode } from "#/system/system.services";
 import { expectErrorResponse } from "./fixture/assertions";
 import { createTestFixtureExtension } from "./fixture/it";
@@ -18,33 +17,9 @@ describe("node maintenance window management", () => {
     end: new Date(end.epochMilliseconds),
   };
 
-  it("rejects if node's DID does not match target node's DID", async ({
-    expect,
-    admin,
-  }) => {
-    const invalidMaintenanceWindow: AdminSetMaintenanceWindowRequest = {
-      did: "did:nil:testnet:nillion1definitelynotanildidofthetargetnodeeee",
-      start: maintenanceWindow.start,
-      end: maintenanceWindow.end,
-    };
-
-    let response = await admin.setMaintenanceWindow(invalidMaintenanceWindow);
-    expect(response.status).toBe(StatusCodes.BAD_REQUEST);
-
-    response = await admin.deleteMaintenanceWindow({
-      did: invalidMaintenanceWindow.did,
-    });
-    expect(response.status).toBe(StatusCodes.BAD_REQUEST);
-  });
-
-  it("rejects if start or end dates are invalid", async ({
-    expect,
-    admin,
-    bindings,
-  }) => {
+  it("rejects if start or end dates are invalid", async ({ expect, admin }) => {
     // End is less than start
     const invalidMaintenanceWindow = {
-      did: bindings.node.identity.did,
       start: maintenanceWindow.start,
       end: new Date(start.subtract({ hours: 2 }).epochMilliseconds),
     };
@@ -78,9 +53,8 @@ describe("node maintenance window management", () => {
     expect(error.errors).includes("DataValidationError");
   });
 
-  it("can set a maintenance window", async ({ admin, bindings }) => {
+  it("can set a maintenance window", async ({ admin }) => {
     const response = await admin.setMaintenanceWindow({
-      did: bindings.node.identity.did,
       start: maintenanceWindow.start,
       end: maintenanceWindow.end,
     });
@@ -104,10 +78,8 @@ describe("node maintenance window management", () => {
     );
   });
 
-  it("can delete a maintenance window", async ({ expect, admin, bindings }) => {
-    const response = await admin.deleteMaintenanceWindow({
-      did: bindings.node.identity.did,
-    });
+  it("can delete a maintenance window", async ({ expect, admin }) => {
+    const response = await admin.deleteMaintenanceWindow();
     expect(response.status).toBe(StatusCodes.NO_CONTENT);
   });
 });

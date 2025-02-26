@@ -3,10 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Effect as E, Option as O, pipe } from "effect";
 import { Temporal } from "temporal-polyfill";
-import type {
-  AdminDeleteMaintenanceWindowRequest,
-  AdminSetMaintenanceWindowRequest,
-} from "#/admin/admin.types";
+import type { AdminSetMaintenanceWindowRequest } from "#/admin/admin.types";
 import {
   DataValidationError,
   type DatabaseError,
@@ -90,15 +87,6 @@ export function setMaintenanceWindow(
   return pipe(
     E.succeed(request),
     E.flatMap((request) => {
-      if (request.did !== ctx.node.identity.did) {
-        return E.fail(
-          new DataValidationError({
-            issues: ["DID prohibited"],
-            cause: request,
-          }),
-        );
-      }
-
       const now = Temporal.Now.instant().epochMilliseconds;
       const start = Temporal.Instant.from(
         request.start.toISOString(),
@@ -119,11 +107,11 @@ export function setMaintenanceWindow(
       return E.succeed(request);
     }),
     E.flatMap((request) => SystemRepository.setMaintenanceWindow(ctx, request)),
-    E.tap(() => {
+    E.tap(() =>
       ctx.log.debug(
-        `Set maintenance window.start=${request.start.toISOString()} and window.end=${request.end.toISOString()} for node: ${request.did}`,
-      );
-    }),
+        `Set maintenance window.start=${request.start.toISOString()} and window.end=${request.end.toISOString()}`,
+      ),
+    ),
   );
 }
 
@@ -161,7 +149,6 @@ export function getMaintenanceStatus(
 
 export function deleteMaintenanceWindow(
   ctx: AppBindings,
-  request: AdminDeleteMaintenanceWindowRequest,
 ): E.Effect<
   void,
   | DocumentNotFoundError
@@ -170,25 +157,8 @@ export function deleteMaintenanceWindow(
   | DatabaseError
 > {
   return pipe(
-    E.succeed(request),
-    E.flatMap((request) => {
-      if (request.did !== ctx.node.identity.did) {
-        return E.fail(
-          new DataValidationError({
-            issues: ["DID prohibited"],
-            cause: request,
-          }),
-        );
-      }
-
-      return E.succeed(request);
-    }),
-    E.flatMap((request) =>
-      SystemRepository.deleteMaintenanceWindow(ctx, request),
-    ),
+    SystemRepository.deleteMaintenanceWindow(ctx),
     E.as(void 0),
-    E.tap(() => {
-      ctx.log.debug(`Deleted maintenance window for node: ${request.did}`);
-    }),
+    E.tap(() => ctx.log.debug("Deleted maintenance window")),
   );
 }

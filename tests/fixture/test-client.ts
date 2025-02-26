@@ -4,7 +4,6 @@ import type {
   AdminAddSchemaRequest,
   AdminCreateAccountRequest,
   AdminDeleteAccountRequest,
-  AdminDeleteMaintenanceWindowRequest,
   AdminSetMaintenanceWindowRequest,
   AdminSetSubscriptionStateRequest,
 } from "#/admin/admin.types";
@@ -130,15 +129,10 @@ export class TestAdminUserClient extends TestRootUserClient {
     });
   }
 
-  async deleteMaintenanceWindow(
-    req: AdminDeleteMaintenanceWindowRequest,
-  ): Promise<Response> {
-    return this.request(
-      PathsV1.admin.system.byDidMaintenance.replace(":did", req.did),
-      {
-        method: "DELETE",
-      },
-    );
+  async deleteMaintenanceWindow(): Promise<Response> {
+    return this.request(PathsV1.admin.system.maintenance, {
+      method: "DELETE",
+    });
   }
 
   async addSchema(body: AdminAddSchemaRequest): Promise<Response> {

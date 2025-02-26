@@ -3,9 +3,9 @@ import type { Db, MongoClient } from "mongodb";
 import { CollectionName } from "#/common/mongo";
 
 /**
- * Add `maintenance` collection
+ * Add `config` collection
  */
-export class add_maintenance_collection implements MigrationInterface {
+export class add_config_collection implements MigrationInterface {
   #dbNamePrimary: string;
 
   constructor() {
@@ -20,7 +20,7 @@ export class add_maintenance_collection implements MigrationInterface {
     const session = client.startSession();
     try {
       await session.withTransaction(async () => {
-        await primary.createCollection(CollectionName.Maintenance);
+        await primary.createCollection(CollectionName.Config);
       });
     } finally {
       await session.endSession();
@@ -31,7 +31,7 @@ export class add_maintenance_collection implements MigrationInterface {
     const primary = client.db(this.#dbNamePrimary);
     const session = client.startSession();
     try {
-      await primary.dropCollection(CollectionName.Maintenance);
+      await primary.dropCollection(CollectionName.Config);
     } finally {
       await session.endSession();
     }

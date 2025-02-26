@@ -1,15 +1,16 @@
+import type { ObjectId } from "mongodb";
 import type { Temporal } from "temporal-polyfill";
-import type { NilDid } from "#/common/nil-did";
 
 /**
  *
  * Controller types
  */
-export type MaintenanceDocument = {
-  _id: NilDid;
+export type ConfigDocument = {
+  _id: ObjectId;
   _created: Date;
   _updated: Date;
-  window: {
+  _type: "maintenance";
+  window?: {
     start: Date;
     end: Date;
   };

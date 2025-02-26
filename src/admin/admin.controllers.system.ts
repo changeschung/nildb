@@ -3,12 +3,9 @@ import { StatusCodes } from "http-status-codes";
 import type { App } from "#/app";
 import { handleTaggedErrors } from "#/common/handler";
 import { PathsV1 } from "#/common/paths";
-import { paramsValidator, payloadValidator } from "#/common/zod-utils";
+import { payloadValidator } from "#/common/zod-utils";
 import * as SystemService from "#/system/system.services";
-import {
-  AdminDeleteMaintenanceWindowRequestSchema,
-  AdminSetMaintenanceWindowRequestSchema,
-} from "./admin.types";
+import { AdminSetMaintenanceWindowRequestSchema } from "./admin.types";
 
 export function setMaintenanceWindow(app: App): void {
   app.put(
@@ -27,17 +24,12 @@ export function setMaintenanceWindow(app: App): void {
 }
 
 export function deleteMaintenanceWindow(app: App): void {
-  app.delete(
-    PathsV1.admin.system.byDidMaintenance,
-    paramsValidator(AdminDeleteMaintenanceWindowRequestSchema),
-    async (c) => {
-      const payload = c.req.valid("param");
-      return pipe(
-        SystemService.deleteMaintenanceWindow(c.env, payload),
-        E.map(() => new Response(null, { status: StatusCodes.NO_CONTENT })),
-        handleTaggedErrors(c),
-        E.runPromise,
-      );
-    },
+  app.delete(PathsV1.admin.system.maintenance, async (c) =>
+    pipe(
+      SystemService.deleteMaintenanceWindow(c.env),
+      E.map(() => new Response(null, { status: StatusCodes.NO_CONTENT })),
+      handleTaggedErrors(c),
+      E.runPromise,
+    ),
   );
 }

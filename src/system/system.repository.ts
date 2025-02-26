@@ -1,10 +1,7 @@
 import { Effect as E, Option as O, pipe } from "effect";
 import type { StrictFilter, StrictUpdateFilter } from "mongodb";
 import { Temporal } from "temporal-polyfill";
-import type {
-  AdminDeleteMaintenanceWindowRequest,
-  AdminSetMaintenanceWindowRequest,
-} from "#/admin/admin.types";
+import type { AdminSetMaintenanceWindowRequest } from "#/admin/admin.types";
 import {
   DatabaseError,
   DocumentNotFoundError,
@@ -12,22 +9,19 @@ import {
 } from "#/common/errors";
 import { CollectionName, checkPrimaryCollectionExists } from "#/common/mongo";
 import type { AppBindings } from "#/env";
-import type { MaintenanceDocument, MaintenanceWindow } from "./system.types";
+import type { ConfigDocument, MaintenanceWindow } from "./system.types";
 
 export function setMaintenanceWindow(
   ctx: AppBindings,
   data: AdminSetMaintenanceWindowRequest,
 ): E.Effect<void, PrimaryCollectionNotFoundError | DatabaseError> {
-  const filter: StrictFilter<MaintenanceDocument> = { _id: data.did };
-  const update: StrictUpdateFilter<MaintenanceDocument> = {
+  const filter: StrictFilter<ConfigDocument> = { _type: "maintenance" };
+  const update: StrictUpdateFilter<ConfigDocument> = {
     $set: { window: { start: data.start, end: data.end } },
   };
 
   return pipe(
-    checkPrimaryCollectionExists<MaintenanceDocument>(
-      ctx,
-      CollectionName.Maintenance,
-    ),
+    checkPrimaryCollectionExists<ConfigDocument>(ctx, CollectionName.Config),
     E.flatMap((collection) =>
       E.tryPromise({
         try: () =>
@@ -48,15 +42,12 @@ export function findMaintenanceWindow(
   O.Option<MaintenanceWindow>,
   PrimaryCollectionNotFoundError | DatabaseError | DocumentNotFoundError
 > {
-  const filter: StrictFilter<MaintenanceDocument> = {
-    _id: ctx.node.identity.did,
+  const filter: StrictFilter<ConfigDocument> = {
+    _type: "maintenance",
   };
 
   return pipe(
-    checkPrimaryCollectionExists<MaintenanceDocument>(
-      ctx,
-      CollectionName.Maintenance,
-    ),
+    checkPrimaryCollectionExists<ConfigDocument>(ctx, CollectionName.Config),
     E.flatMap((collection) =>
       E.tryPromise({
         try: () => collection.findOne(filter),
@@ -65,7 +56,7 @@ export function findMaintenanceWindow(
       }),
     ),
     E.flatMap((result) => {
-      if (!result) {
+      if (!result || !result.window) {
         return O.none();
       }
 
@@ -78,7 +69,7 @@ export function findMaintenanceWindow(
     E.mapError(
       () =>
         new DocumentNotFoundError({
-          collection: CollectionName.Maintenance,
+          collection: CollectionName.Config,
           filter,
         }),
     ),
@@ -87,21 +78,20 @@ export function findMaintenanceWindow(
 
 export function deleteMaintenanceWindow(
   ctx: AppBindings,
-  data: AdminDeleteMaintenanceWindowRequest,
 ): E.Effect<
   void,
   PrimaryCollectionNotFoundError | DatabaseError | DocumentNotFoundError
 > {
-  const filter: StrictFilter<MaintenanceDocument> = { _id: data.did };
+  const filter: StrictFilter<ConfigDocument> = { _type: "maintenance" };
 
   return pipe(
-    checkPrimaryCollectionExists<MaintenanceDocument>(
-      ctx,
-      CollectionName.Maintenance,
-    ),
+    checkPrimaryCollectionExists<ConfigDocument>(ctx, CollectionName.Config),
     E.flatMap((collection) =>
       E.tryPromise({
-        try: () => collection.deleteOne(filter),
+        try: () =>
+          collection.updateOne(filter, {
+            $unset: { window: "" },
+          }),
         catch: (cause) =>
           new DatabaseError({ cause, message: "deleteMaintenanceWindow" }),
       }),
@@ -109,7 +99,7 @@ export function deleteMaintenanceWindow(
     E.mapError(
       () =>
         new DocumentNotFoundError({
-          collection: CollectionName.Maintenance,
+          collection: CollectionName.Config,
           filter,
         }),
     ),
