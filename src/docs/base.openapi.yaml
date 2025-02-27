@@ -179,6 +179,8 @@ paths:
   # Admin endpoints
   /api/v1/admin/maintenance:
     $ref: '../admin/admin.system.openapi.yaml#/paths/~1api~1v1~1admin~1maintenance'
+  /api/v1/admin/log_level:
+    $ref: '../admin/admin.system.openapi.yaml#/paths/~1api~1v1~1admin~1log_level'
 
   # Beta endpoints
   /api/beta/schemas/{id}/meta:
