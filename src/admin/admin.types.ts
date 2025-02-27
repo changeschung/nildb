@@ -75,6 +75,12 @@ export const CreateSchemaIndexRequestSchema = z.object({
 export type CreateSchemaIndexRequest = z.infer<
   typeof CreateSchemaIndexRequestSchema
 >;
+
+export type LogLevelInfo = {
+  level: AdminSetLogLevelRequest["level"];
+  levelValue: number;
+};
+
 /**
  * Repository types
  */

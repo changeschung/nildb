@@ -8,6 +8,7 @@ import * as SystemService from "#/system/system.services";
 import {
   AdminSetLogLevelRequestSchema,
   AdminSetMaintenanceWindowRequestSchema,
+  type LogLevelInfo,
 } from "./admin.types";
 
 export function setMaintenanceWindow(app: App): void {
@@ -50,10 +51,11 @@ export function setLogLevel(app: App): void {
 }
 
 export function getLogLevel(app: App): void {
-  app.get(PathsV1.admin.system.logLevel, async (c) =>
-    c.json({
+  app.get(PathsV1.admin.system.logLevel, async (c) => {
+    const logLevelInfo = {
       level: c.env.log.level,
       levelValue: c.env.log.levelVal,
-    }),
-  );
+    } as LogLevelInfo;
+    return c.json(logLevelInfo);
+  });
 }
