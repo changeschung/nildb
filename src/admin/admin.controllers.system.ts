@@ -5,7 +5,10 @@ import { handleTaggedErrors } from "#/common/handler";
 import { PathsV1 } from "#/common/paths";
 import { payloadValidator } from "#/common/zod-utils";
 import * as SystemService from "#/system/system.services";
-import { AdminSetMaintenanceWindowRequestSchema } from "./admin.types";
+import {
+  AdminSetLogLevelRequestSchema,
+  AdminSetMaintenanceWindowRequestSchema,
+} from "./admin.types";
 
 export function setMaintenanceWindow(app: App): void {
   app.post(
@@ -31,5 +34,26 @@ export function deleteMaintenanceWindow(app: App): void {
       handleTaggedErrors(c),
       E.runPromise,
     ),
+  );
+}
+
+export function setLogLevel(app: App): void {
+  app.post(
+    PathsV1.admin.system.logLevel,
+    payloadValidator(AdminSetLogLevelRequestSchema),
+    async (c) => {
+      const payload = c.req.valid("json");
+      c.env.log.level = payload.level;
+      return new Response(null, { status: StatusCodes.OK });
+    },
+  );
+}
+
+export function getLogLevel(app: App): void {
+  app.get(PathsV1.admin.system.logLevel, async (c) =>
+    c.json({
+      level: c.env.log.level,
+      levelValue: c.env.log.levelVal,
+    }),
   );
 }

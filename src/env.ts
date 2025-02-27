@@ -12,6 +12,7 @@ import { initAndCreateDbClients } from "./common/mongo";
 
 export const PRIVATE_KEY_LENGTH = 64;
 export const PUBLIC_KEY_LENGTH = 66;
+export const LOG_LEVELS = ["debug", "info", "warn", "error"] as const;
 
 export type AppContext = Context<AppEnv>;
 
@@ -25,7 +26,7 @@ export const EnvVarsSchema = z.object({
   dbNameData: z.string().min(4),
   dbUri: z.string().startsWith("mongodb"),
   env: z.enum(["testnet", "mainnet"]),
-  logLevel: z.enum(["debug", "info", "warn", "error"]),
+  logLevel: z.enum(LOG_LEVELS),
   nodeSecretKey: z.string().min(PRIVATE_KEY_LENGTH),
   nodePublicEndpoint: z.string().url(),
   metricsPort: z.number().int().positive(),

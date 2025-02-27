@@ -26,6 +26,7 @@ export const PathsV1 = {
     },
     system: {
       maintenance: "/api/v1/admin/maintenance",
+      logLevel: "/api/v1/admin/log_level",
     },
   },
   data: {
