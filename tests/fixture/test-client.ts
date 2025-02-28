@@ -7,6 +7,7 @@ import type {
   AdminAddSchemaRequest,
   AdminCreateAccountRequest,
   AdminDeleteAccountRequest,
+  AdminSetLogLevelRequest,
   AdminSetMaintenanceWindowRequest,
   AdminSetSubscriptionStateRequest,
 } from "#/admin/admin.types";
@@ -142,6 +143,19 @@ export class TestAdminUserClient extends TestRootUserClient {
   async deleteMaintenanceWindow(): Promise<Response> {
     return this.request(PathsV1.admin.system.maintenance, {
       method: "DELETE",
+    });
+  }
+
+  async getLogLevel(): Promise<Response> {
+    return this.request(PathsV1.admin.system.logLevel, {
+      method: "GET",
+    });
+  }
+
+  async setLogLevel(body: AdminSetLogLevelRequest): Promise<Response> {
+    return this.request(PathsV1.admin.system.logLevel, {
+      method: "POST",
+      body,
     });
   }
 

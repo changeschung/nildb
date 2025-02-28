@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import { NilDid } from "#/common/nil-did";
-import { PUBLIC_KEY_LENGTH } from "#/env";
+import { LOG_LEVELS, PUBLIC_KEY_LENGTH } from "#/env";
 import { AddQueryRequestSchema } from "#/queries/queries.types";
 import { AddSchemaRequestSchema } from "#/schemas/schemas.types";
 
@@ -53,6 +53,13 @@ export type AdminSetMaintenanceWindowRequest = z.infer<
   typeof AdminSetMaintenanceWindowRequestSchema
 >;
 
+export const AdminSetLogLevelRequestSchema = z.object({
+  level: z.enum(LOG_LEVELS),
+});
+export type AdminSetLogLevelRequest = z.infer<
+  typeof AdminSetLogLevelRequestSchema
+>;
+
 export const CreateSchemaIndexRequestSchema = z.object({
   name: z.string().min(4),
   keys: z.array(
@@ -70,6 +77,12 @@ export const CreateSchemaIndexRequestSchema = z.object({
 export type CreateSchemaIndexRequest = z.infer<
   typeof CreateSchemaIndexRequestSchema
 >;
+
+export type LogLevelInfo = {
+  level: AdminSetLogLevelRequest["level"];
+  levelValue: number;
+};
+
 /**
  * Repository types
  */
