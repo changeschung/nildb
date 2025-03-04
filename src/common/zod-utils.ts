@@ -4,17 +4,15 @@ import { StatusCodes } from "http-status-codes";
 import { Temporal } from "temporal-polyfill";
 import type { Schema, ZodError } from "zod";
 import { DataValidationError } from "#/common/errors";
+import { fromZodError } from "zod-validation-error";
 
 export function flattenZodError(error: ZodError): string[] {
-  const reasons = [];
-  const flattened = error.flatten();
+  const errorMessage = fromZodError(error, {
+    prefix: null,
+    issueSeparator: ";",
+  }).message;
 
-  const fieldErrors = Object.entries(flattened.fieldErrors).flatMap(
-    ([field, errors]) =>
-      (errors ?? []).map((error) => `key=${field}, reason=${error}`),
-  );
-  reasons.push(...fieldErrors, ...flattened.formErrors);
-
+  const reasons = errorMessage.split(";");
   return reasons;
 }
 
