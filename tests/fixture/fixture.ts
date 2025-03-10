@@ -65,7 +65,7 @@ export async function buildFixture(
     await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
   }
 
-  const { app } = buildApp(bindings);
+  const { app } = await buildApp(bindings);
 
   const node = {
     identity: Identity.fromSk(bindings.config.nodeSecretKey),
