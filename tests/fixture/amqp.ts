@@ -12,6 +12,8 @@ export async function purgeQueues(channel: amqp.Channel): Promise<void> {
 
   await Promise.all(
     queues.map(async (queue) => {
+      // forces nack'd messages into ready state so they can be purged
+      await channel.recover();
       await channel.purgeQueue(queue);
     }),
   );
