@@ -123,7 +123,12 @@ Use the root jwt to create the admin account:
  curl ${NODE_URL}/api/v1/admin/accounts \
    --header "Authorization: Bearer ${ROOT_JWT}" \
    --header "Content-type: application/json" \
-   -d '{ "did": "${ADMIN_DID}", "publicKey": "${ADMIN_PK}" }'
+   -d '{
+       "type": "admin",
+       "name": "${ADMIN_NAME}",
+       "did": "${ADMIN_DID}", 
+       "publicKey": "${ADMIN_PK}" 
+   }'
  ```
 
 Create a JWT for the admin account:
