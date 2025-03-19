@@ -138,3 +138,21 @@ tsx bin/credentials.ts --secret-key ${ADMIN_SECRET_KEY} --node-public-key ${APP_
 ```
 
 All user-facing endpoints have an admin equivalent prefixed by `/api/v1/admin/*`. Inspect admin routes in the [src/admin/admin.router.ts](../src/admin/admin.router.ts). For user-facing operations, there is an openapi ui hosted at `${APP_NODE_PUBLIC_ENDPOINT}/api/v1/openapi/docs`.
+
+## Storage Retention
+
+Configure MongoDB with the following backup/snapshot policy. This policy applies to both MongoDB Atlas and self-hosted MongoDB. Details specific to each are mentioned further below.
+
+* Full hourly snapshots with 1-day retention
+* Full daily snapshots with 7-day retention; configured snapshot time: 04:00 UTC
+
+### MongoDB Atlas
+
+Disable [Continuous Cloud Backups][continuous-backups]. Point-in-time recovery is not required, and additional costs are incurred by having it enabled.
+
+### Self-Hosted
+
+Users self-hosting MongoDB may implement the retention policy with periodic jobs that use [`mongodump`][mongodump].
+
+[continuous-backups]: https://www.mongodb.com/docs/atlas/recover-pit-continuous-cloud-backup/
+[mongodump]: https://www.mongodb.com/docs/database-tools/mongodump/
