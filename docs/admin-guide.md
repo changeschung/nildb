@@ -12,6 +12,7 @@ This section provides task-oriented instructions for node administrators.
 - [Upgrades](#upgrades)
 - [Database migrations](#database-migrations)
 - [The admin api](#the-admin-api)
+- [Storage Retention](#storage-retention)
 
 ## Configuration
 
