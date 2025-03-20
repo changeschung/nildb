@@ -21,23 +21,21 @@ async function main() {
     .parse(process.argv);
 
   const options = program.opts<NilDbCliOptions>();
-  console.info("! Starting api ...");
+  console.info("! Cli options: %O", options);
 
   const envFilePath = options.envFile ?? ".env";
-  console.info(`! Using env file: ${envFilePath}`);
   dotenv.config({ path: envFilePath, override: true });
-
   const bindings = await loadBindings();
-
-  console.info("! Cli options: %O", options);
-  console.info("! Enabled features: %O", bindings.config.enabledFeatures);
+  bindings.log.info("! Enabled features: %O", bindings.config.enabledFeatures);
 
   if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.MIGRATIONS)) {
     await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
   }
 
+  bindings.log.info("Building app ...");
   const { app, metrics } = await buildApp(bindings);
 
+  bindings.log.info("Starting servers ...");
   const appServer = serve(
     {
       fetch: app.fetch,
@@ -71,7 +69,7 @@ async function main() {
       const promises = [
         new Promise((resolve) => appServer.close(resolve)),
         new Promise((resolve) => metricsServer.close(resolve)),
-        bindings.db.client.close(),
+        await bindings.db.client.close(),
       ];
 
       if (bindings.mq) {

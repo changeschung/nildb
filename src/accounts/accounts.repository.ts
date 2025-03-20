@@ -1,6 +1,7 @@
 import { Effect as E, pipe } from "effect";
 import type { StrictFilter, StrictUpdateFilter, UpdateResult } from "mongodb";
 import type { AccountDocument } from "#/admin/admin.types";
+import { advance } from "#/common/date";
 import {
   DatabaseError,
   DocumentNotFoundError,
@@ -30,7 +31,7 @@ export function toOrganizationAccountDocument(
     name,
     subscription: {
       start: now,
-      end: now,
+      end: advance(now, 365),
       txHash: "",
     },
     schemas: [],
