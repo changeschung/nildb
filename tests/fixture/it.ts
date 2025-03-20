@@ -92,5 +92,5 @@ export function createTestFixtureExtension(
       await fn(fixture);
     });
 
-  return { it, beforeAll, afterAll };
+  return { beforeAll, afterAll, it };
 }
