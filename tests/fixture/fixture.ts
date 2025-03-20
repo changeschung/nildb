@@ -36,6 +36,8 @@ export async function buildFixture(
   opts: {
     schema?: SchemaFixture;
     query?: QueryFixture;
+    keepDbs?: boolean;
+    enableNilcomm?: boolean;
   } = {},
 ): Promise<TestFixture> {
   dotenv.config({ path: ".env.test" });
@@ -60,6 +62,10 @@ export async function buildFixture(
     metricsPort: Number(process.env.APP_METRICS_PORT),
     webPort: Number(process.env.APP_PORT),
   });
+
+  if (opts.enableNilcomm) {
+    config.enabledFeatures.push("nilcomm");
+  }
 
   const bindings = (await loadBindings(config)) as AppBindingsWithNilcomm;
 

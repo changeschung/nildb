@@ -34,7 +34,9 @@ type TestShare = {
  * 6. Check result event - Validates end-to-end system behavior
  */
 describe("nilcomm.test.ts > blind auction", () => {
-  const { beforeAll, afterAll, it } = createTestFixtureExtension();
+  const { beforeAll, afterAll, it } = createTestFixtureExtension({
+    enableNilcomm: true,
+  });
 
   let channel: amqp.Channel;
   const shares: TestShare[] = [777n, -1n, 4042n, 0n].map((bid) => ({
