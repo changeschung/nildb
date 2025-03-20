@@ -43,14 +43,21 @@ export function processDappStoreSecret(
   | AmqpPublishMessageError
 > {
   const schemaId = new UUID(commitRevealSchema._id);
-  const share = payload.share.decrypt(ctx.config.nodeSecretKey).toBase64();
-  const data = {
-    _id: payload.mappingId.toString(),
-    share,
-  };
 
   return pipe(
-    DataService.createRecords(ctx, schemaId, [data]),
+    E.try({
+      try: () => {
+        const share = payload.share
+          .decrypt(ctx.config.nodeSecretKey)
+          .toBase64();
+        return {
+          _id: payload.mappingId.toString(),
+          share,
+        };
+      },
+      catch: (cause) => Error("Share decryption failed", { cause }),
+    }),
+    E.flatMap((data) => DataService.createRecords(ctx, schemaId, [data])),
     E.flatMap((_record) =>
       NilCommMqService.emitSecretStoredEvent(ctx, payload.mappingId),
     ),

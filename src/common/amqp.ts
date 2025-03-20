@@ -103,14 +103,16 @@ export function runMessageConsume<E>(
             key,
             consumeTag: msg.fields.consumerTag,
           }),
-        onFailure: (error) =>
+        onFailure: (cause) => {
+          const { stack = "unknown" } = cause as Error;
           ctx.log.error("Message consume failed: %O", {
             exchange,
             queue,
             key,
             consumerTag: msg.fields.consumerTag,
-            error,
-          }),
+            error: stack,
+          });
+        },
       }),
       E.runPromise,
     );

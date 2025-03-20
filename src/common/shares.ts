@@ -1,11 +1,12 @@
-import { decrypt } from "eciesjs";
+import { PrivateKey, decrypt } from "eciesjs";
 import { UUID } from "mongodb";
 
 export class EncryptedShare {
   constructor(public inner: Uint8Array) {}
 
   decrypt(secretKey: string): Share {
-    const pt = decrypt(secretKey, this.inner);
+    const sk = PrivateKey.fromHex(secretKey);
+    const pt = decrypt(sk.secret, this.inner);
     return new Share(pt);
   }
 

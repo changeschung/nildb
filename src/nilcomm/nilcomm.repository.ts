@@ -53,12 +53,12 @@ export function runCommitRevealAggregation(
       const sharesMap = new Map(
         listOfShares.map((document) => [
           document._id.toString(),
-          Array.from(Buffer.from(document.share, "base64")),
+          [...Buffer.from(document.share, "base64")],
         ]),
       );
 
       const result: CommitRevealResult = {};
-      for (const [storeId, share] of Object.entries(sharesMap)) {
+      for (const [storeId, share] of sharesMap.entries()) {
         if (!share) {
           log.warn(`Missing share for storeId=${storeId}`);
         }

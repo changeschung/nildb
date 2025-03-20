@@ -92,7 +92,7 @@ export type DappCommandStartQueryExecution = z.infer<
 export const DappEventQueryExecutionCompletedSchema = z
   .object({
     mappingId: z.instanceof(UUID),
-    data: z.record(z.string(), z.string()),
+    data: z.record(z.string(), z.array(z.number())),
   })
   .transform((d) => {
     return {
