@@ -35,7 +35,7 @@ export function emitSecretStoredEvent(
 
   return pipe(
     parseToEffect<DappEventSecretStored>(DappEventSecretStoredSchema, {
-      id: storeId,
+      mappingId: storeId,
     }),
     E.map((message) =>
       channel.publish(exchange, key, Buffer.from(JSON.stringify(message))),

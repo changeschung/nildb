@@ -6,6 +6,7 @@ import type { DocumentBase } from "#/common/mongo";
 import { uuidFromBytes } from "#/common/shares";
 import {
   type DappEventQueryExecutionCompleted,
+  type DappEventSecretStored,
   NILCOMM_COMMIT_REVEAL_QUERY_ID,
   NILCOMM_COMMIT_REVEAL_SCHEMA_ID,
 } from "#/nilcomm/nilcomm.types";
@@ -74,8 +75,12 @@ describe("nilcomm.test.ts > blind auction", () => {
           if (!msg) return;
 
           try {
-            const data = JSON.parse(msg.content.toString()) as { id: number[] };
-            const storeId = uuidFromBytes(Buffer.from(data.id)).toString();
+            const data = JSON.parse(
+              msg.content.toString(),
+            ) as DappEventSecretStored;
+            const storeId = uuidFromBytes(
+              Buffer.from(data.mapping_id),
+            ).toString();
             receivedIds.add(storeId);
             channel.ack(msg);
 

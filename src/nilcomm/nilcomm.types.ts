@@ -42,10 +42,10 @@ export type DappCommandStoreSecret = z.infer<
 
 export const DappEventSecretStoredSchema = z
   .object({
-    id: z.custom<UUID>(),
+    mappingId: z.custom<UUID>(),
   })
   .transform((d) => ({
-    id: uuidToBytes(d.id),
+    mapping_id: uuidToBytes(d.mappingId),
   }));
 
 export type DappEventSecretStored = z.infer<typeof DappEventSecretStoredSchema>;
