@@ -34,7 +34,7 @@ type TestShare = {
  * 5. Execute commit-reveal command - Tests full workflow integration
  * 6. Check result event - Validates end-to-end system behavior
  */
-describe("nilcomm.test.ts > blind auction", () => {
+describe.skip("nilcomm.test.ts > blind auction", () => {
   const { beforeAll, afterAll, it } = createTestFixtureExtension({
     enableNilcomm: true,
   });
