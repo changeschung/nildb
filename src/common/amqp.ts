@@ -2,7 +2,6 @@ import type * as amqp from "amqplib";
 import { Data, Effect as E, pipe } from "effect";
 import type * as zod from "zod";
 import { DataValidationError } from "#/common/errors";
-import { flattenZodError } from "#/common/zod-utils";
 import type { AppBindingsWithNilcomm } from "#/env";
 import {
   ackMessageProcessedSuccessfully,
@@ -76,7 +75,7 @@ export function parseAmqpMessage<T>(
         : E.fail(
             new DataValidationError({
               issues: ["Amqp message failed schema validation"],
-              cause: flattenZodError(result.error),
+              cause: [result.error],
             }),
           );
     }),
