@@ -2,21 +2,8 @@ import { zValidator } from "@hono/zod-validator";
 import { Effect as E } from "effect";
 import { StatusCodes } from "http-status-codes";
 import { Temporal } from "temporal-polyfill";
-import type { Schema, ZodError } from "zod";
-import { DataValidationError } from "#/common/errors";
-
-export function flattenZodError(error: ZodError): string[] {
-  const reasons = [];
-  const flattened = error.flatten();
-
-  const fieldErrors = Object.entries(flattened.fieldErrors).flatMap(
-    ([field, errors]) =>
-      (errors ?? []).map((error) => `key=${field}, reason=${error}`),
-  );
-  reasons.push(...fieldErrors, ...flattened.formErrors);
-
-  return reasons;
-}
+import type { Schema } from "zod";
+import { DataValidationError } from "./errors";
 
 export function payloadValidator<T extends Schema>(schema: T) {
   return zValidator("json", schema, (result, c) => {
@@ -24,7 +11,11 @@ export function payloadValidator<T extends Schema>(schema: T) {
       return result.data;
     }
 
-    const errors = flattenZodError(result.error);
+    const errors = new DataValidationError({
+      issues: [result.error],
+      cause: null,
+    }).humanize();
+
     return c.json(
       { ts: Temporal.Now.instant().toString(), errors },
       StatusCodes.BAD_REQUEST,
@@ -38,7 +29,11 @@ export function paramsValidator<T extends Schema>(schema: T) {
       return result.data;
     }
 
-    const errors = flattenZodError(result.error);
+    const errors = new DataValidationError({
+      issues: [result.error],
+      cause: null,
+    }).humanize();
+
     return c.json(
       { ts: Temporal.Now.instant().toString(), errors },
       StatusCodes.BAD_REQUEST,
@@ -57,7 +52,7 @@ export function parseToEffect<T, S extends Schema = Schema>(
   }
 
   const error = new DataValidationError({
-    issues: flattenZodError(result.error),
+    issues: [result.error],
     cause: data,
   });
   return E.fail(error);

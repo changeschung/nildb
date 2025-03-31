@@ -1,6 +1,8 @@
 import { Data } from "effect";
 import type { JsonObject } from "type-fest";
-import type { NilDid } from "#/common/nil-did";
+import { ZodError } from "zod";
+import { fromZodError } from "zod-validation-error";
+import type { Did } from "#/common/types";
 
 export class DuplicateEntryError extends Data.TaggedError(
   "DuplicateEntryError",
@@ -17,7 +19,7 @@ export class ResourceAccessDeniedError extends Data.TaggedError(
 )<{
   type: string;
   id: string;
-  user: NilDid;
+  user: Did;
 }> {
   humanize(): string[] {
     return [
@@ -100,11 +102,22 @@ export class DataCollectionNotFoundError extends Data.TaggedError(
 export class DataValidationError extends Data.TaggedError(
   "DataValidationError",
 )<{
-  issues: string[];
+  issues: (string | ZodError)[];
   cause: unknown;
 }> {
   humanize(): string[] {
-    return [this._tag, this.issues.join(", ")];
+    const flattenedIssues = this.issues.flatMap((issue) => {
+      if (issue instanceof ZodError) {
+        const errorMessage = fromZodError(issue, {
+          prefix: null,
+          issueSeparator: ";",
+        }).message;
+        return errorMessage.split(";");
+      }
+      return issue;
+    });
+
+    return [this._tag, ...flattenedIssues];
   }
 }
 

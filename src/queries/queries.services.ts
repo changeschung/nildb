@@ -10,9 +10,8 @@ import {
   type PrimaryCollectionNotFoundError,
   VariableInjectionError,
 } from "#/common/errors";
-import type { NilDid } from "#/common/nil-did";
+import type { Did } from "#/common/types";
 import { validateData } from "#/common/validator";
-import { flattenZodError } from "#/common/zod-utils";
 import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
 import * as OrganizationRepository from "#/organizations/organizations.repository";
@@ -23,7 +22,7 @@ import type { QueryArrayVariable, QueryDocument } from "./queries.types";
 
 export function addQuery(
   ctx: AppBindings,
-  request: AddQueryRequest & { owner: NilDid },
+  request: AddQueryRequest & { owner: Did },
 ): E.Effect<
   void,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
@@ -76,7 +75,7 @@ export function executeQuery(
 
 export function findQueries(
   ctx: AppBindings,
-  owner: NilDid,
+  owner: Did,
 ): E.Effect<
   QueryDocument[],
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
@@ -217,8 +216,10 @@ function parsePrimitiveVariable(
     return E.succeed(result.data);
   }
 
-  const issues = flattenZodError(result.error);
-  const error = new DataValidationError({ issues, cause: null });
+  const error = new DataValidationError({
+    issues: [result.error],
+    cause: null,
+  });
   return E.fail(error);
 }
 

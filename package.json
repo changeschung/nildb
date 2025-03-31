@@ -20,6 +20,7 @@
     "@hono/prometheus": "^1.0.1",
     "@hono/swagger-ui": "^0.5.0",
     "@hono/zod-validator": "^0.4.2",
+    "@nillion/nuc": "0.1.0-rc.0",
     "@noble/hashes": "^1.7.1",
     "@noble/secp256k1": "^2.2.3",
     "ajv": "^8.17.1",
@@ -31,6 +32,7 @@
     "cors": "^2.8.5",
     "did-jwt": "^8.0.8",
     "did-resolver": "^4.1.0",
+    "docker-compose": "^1.2.0",
     "dotenv": "^16.4.7",
     "eciesjs": "^0.4.14",
     "effect": "^3.12.9",
@@ -46,7 +48,8 @@
     "swagger-ui-express": "^5.0.1",
     "temporal-polyfill": "^0.2.5",
     "tsx": "^4.19.2",
-    "zod": "^3.24.1"
+    "zod": "^3.24.1",
+    "zod-validation-error": "^3.4.0"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
